@@ -3,8 +3,11 @@
     <Project Path="src\AlirezaMahDev.Extensions.Abstractions\AlirezaMahDev.Extensions.Abstractions.csproj" />
     <Project Path="src\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
   </Folder>
-  <Folder Name="/src/Brain/" />
+  <Folder Name="/src/Brain/">
+    <Project Path="src\AlirezaMahDev.Extensions.Brain\AlirezaMahDev.Extensions.Brain.csproj" />
+  </Folder>
   <Folder Name="/src/DataManager/">
+    <Project Path="src/AlirezaMahDev.Extensions.DataManager.Abstractions/AlirezaMahDev.Extensions.DataManager.Abstractions.csproj" />
     <Project Path="src/AlirezaMahDev.Extensions.DataManager/AlirezaMahDev.Extensions.DataManager.csproj" />
   </Folder>
   <Folder Name="/src/FileService/">

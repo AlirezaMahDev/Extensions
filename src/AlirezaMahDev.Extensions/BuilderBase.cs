@@ -7,20 +7,20 @@ using AlirezaMahDev.Extensions.Abstractions;
 
 namespace AlirezaMahDev.Extensions;
 
-public abstract class BuilderBase<
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TOptions> : IBuilderBase<TOptions>
+public abstract class BuilderBase(IServiceCollection services) : IBuilderBase
+{
+    public IServiceCollection Services { get; } = services;
+}
+
+public abstract class BuilderBase<TOptions> : BuilderBase, IBuilderBase<TOptions>
     where TOptions : class, IOptionsBase
 {
-    private readonly IServiceCollection _services;
-
     protected BuilderBase(IServiceCollection services) : this(services, TOptions.Key)
     {
     }
 
-    protected internal BuilderBase(IServiceCollection services, string key)
+    protected internal BuilderBase(IServiceCollection services, string key) : base(services)
     {
-        _services = services;
         Key = key;
         OptionsBuilder = services.AddOptions<TOptions>().BindConfiguration(key);
     }
@@ -34,13 +34,11 @@ public abstract class BuilderBase<
         TSubOptions>()
         where TSubOptions : class, IOptionsBase
     {
-        return _services.AddOptions<TSubOptions>().BindConfiguration($"{Key}:{TSubOptions.Key}");
+        return Services.AddOptions<TSubOptions>().BindConfiguration($"{Key}:{TSubOptions.Key}");
     }
 }
 
-public abstract class BuilderBase<
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TOptions, TParent, TParentOptions>(IServiceCollection services, TParent parent)
+public abstract class BuilderBase<TOptions, TParent, TParentOptions>(IServiceCollection services, TParent parent)
     : BuilderBase<TOptions>(services, $"{parent.Key}:{TOptions.Key}")
     where TOptions : class, IOptionsBase
     where TParent : BuilderBase<TParentOptions>

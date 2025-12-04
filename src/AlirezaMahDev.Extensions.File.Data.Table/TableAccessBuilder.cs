@@ -18,10 +18,10 @@ internal class TableAccessBuilder : ITableAccessBuilder
             builder.AddStack();
             builder.AddCollection();
         });
-        dataAccessBuilder.FileBuilder.ExtensionsBuilder.Services.AddParameterInstanceFactory<TableAccessFactory>();
-        dataAccessBuilder.FileBuilder.ExtensionsBuilder.Services.AddParameterInstanceFactory<TableColumnFactory>();
-        dataAccessBuilder.FileBuilder.ExtensionsBuilder.Services.AddParameterInstanceFactory<TableColumnsFactory>();
-        dataAccessBuilder.FileBuilder.ExtensionsBuilder.Services.AddParameterInstanceFactory<TableRowsFactory>();
-        dataAccessBuilder.FileBuilder.ExtensionsBuilder.Services.AddParameterInstanceFactory<TableRowFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<TableAccessFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<TableColumnFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<TableColumnsFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<TableRowsFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<TableRowFactory>();
     }
 }

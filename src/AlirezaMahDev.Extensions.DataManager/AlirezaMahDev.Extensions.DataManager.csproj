@@ -10,4 +10,9 @@
   <ItemGroup>
     <PackageReference Include="System.IO.Hashing" Version="10.0.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager.Abstractions\AlirezaMahDev.Extensions.DataManager.Abstractions.csproj" />
+    <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
+  </ItemGroup>
 </Project>

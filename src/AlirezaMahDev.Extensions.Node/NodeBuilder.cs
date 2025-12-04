@@ -1,25 +1,23 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
-using AlirezaMahDev.Extensions.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Node;
 
-public class NodeBuilder(IExtensionsBuilder extensionsBuilder)
+public class NodeBuilder(IServiceCollection services) : BuilderBase(services)
 {
     public NodeBuilder Add<TNodeService, TNodeServiceOptions>(Action<NodeOptions>? action = null)
         where TNodeService : class, INodeService
         where TNodeServiceOptions : NodeOptions
     {
-        extensionsBuilder.Services.TryAddSingleton<TNodeService>();
-        var optionsBuilder = extensionsBuilder.Services.AddOptions<TNodeServiceOptions>();
+        Services.TryAddSingleton<TNodeService>();
+        var optionsBuilder = Services.AddOptions<TNodeServiceOptions>();
         optionsBuilder.Configure(options => options.Assembly = typeof(TNodeService).Assembly);
         if (action != null)
         {
             optionsBuilder.Configure(action);
         }
 
-        extensionsBuilder.Services.AddHostedService<NodeWorker<TNodeService, TNodeServiceOptions>>();
+        Services.AddHostedService<NodeWorker<TNodeService, TNodeServiceOptions>>();
         return this;
     }
 }

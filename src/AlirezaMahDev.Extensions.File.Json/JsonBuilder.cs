@@ -11,6 +11,6 @@ internal class JsonBuilder : IJsonFileBuilder
     public JsonBuilder(IFileBuilder fileBuilder)
     {
         FileBuilder = fileBuilder;
-        FileBuilder.ExtensionsBuilder.Services.AddParameterInstanceFactory(typeof(JsonAccessFactory<>));
+        FileBuilder.Services.AddParameterInstanceFactory(typeof(JsonAccessFactory<>));
     }
 }

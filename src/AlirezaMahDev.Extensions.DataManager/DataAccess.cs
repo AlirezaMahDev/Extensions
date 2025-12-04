@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
+
+using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 using Microsoft.Win32.SafeHandles;
 
@@ -18,8 +19,10 @@ class DataAccess : IDisposable, IDataAccess
     public DataAccess(string path)
     {
         Path = path;
-        _safeFileHandle = File.OpenHandle(
-            System.IO.Path.Combine(Environment.CurrentDirectory, path),
+        var directoryName = System.IO.Path.GetDirectoryName(path)!;
+        if (!Directory.Exists(directoryName))
+            Directory.CreateDirectory(directoryName);
+        _safeFileHandle = File.OpenHandle(path,
             FileMode.OpenOrCreate,
             FileAccess.ReadWrite,
             FileShare.None);

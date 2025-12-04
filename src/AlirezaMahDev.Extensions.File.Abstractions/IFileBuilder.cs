@@ -1,11 +1,9 @@
-using Microsoft.Extensions.Options;
-
 using AlirezaMahDev.Extensions.Abstractions;
+
+using Microsoft.Extensions.Options;
 
 namespace AlirezaMahDev.Extensions.File.Abstractions;
 
-public interface IFileBuilder
+public interface IFileBuilder : IBuilderBase<FileOptions>
 {
-    IExtensionsBuilder ExtensionsBuilder { get; }
-    OptionsBuilder<FileOptions> OptionsBuilder { get; }
 }

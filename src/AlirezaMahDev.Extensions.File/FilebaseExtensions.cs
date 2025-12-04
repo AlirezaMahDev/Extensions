@@ -1,21 +1,22 @@
-using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.File.Abstractions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AlirezaMahDev.Extensions.File;
 
 public static class FilebaseExtensions
 {
-    extension(IExtensionsBuilder builder)
+    extension(IServiceCollection services)
     {
         public IFileBuilder AddFileService()
         {
-            return new FileBuilder(builder);
+            return new FileBuilder(services);
         }
 
-        public IExtensionsBuilder AddFileService(Action<IFileBuilder> action)
+        public IServiceCollection AddFileService(Action<IFileBuilder> action)
         {
-            action(AddFileService(builder));
-            return builder;
+            action(AddFileService(services));
+            return services;
         }
     }
 }

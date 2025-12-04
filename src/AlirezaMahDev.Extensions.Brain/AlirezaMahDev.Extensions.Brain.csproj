@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>preview</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager\AlirezaMahDev.Extensions.DataManager.csproj" />
+        <ProjectReference Include="..\AlirezaMahDev.Extensions.ParameterInstance\AlirezaMahDev.Extensions.ParameterInstance.csproj" />
+        <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
+        <ProjectReference Include="..\Parto.Extensions.File.Data.Stack\Parto.Extensions.File.Data.Stack.csproj"/>
+        <ProjectReference Include="..\Parto.Extensions.File.Data\Parto.Extensions.File.Data.csproj"/>
+        <ProjectReference Include="..\Parto.Extensions.File\Parto.Extensions.File.csproj"/>
+        <ProjectReference Include="..\Parto.Extensions\Parto.Extensions.csproj"/>
+    </ItemGroup>
+
+
+    <ItemGroup>
+        <PackageReference Include="ILGPU" Version="1.5.3"/>
+        <PackageReference Include="ILGPU.Algorithms" Version="1.5.3"/>
+    </ItemGroup>
+
+</Project>

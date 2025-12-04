@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 
 using Microsoft.Extensions.Logging;
 
-using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.File.Data.Abstractions;
 
 namespace AlirezaMahDev.Extensions.File.Data;

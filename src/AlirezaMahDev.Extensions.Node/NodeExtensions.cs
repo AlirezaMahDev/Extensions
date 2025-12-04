@@ -1,20 +1,20 @@
-using AlirezaMahDev.Extensions.Abstractions;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AlirezaMahDev.Extensions.Node;
 
 public static class NodeExtensions
 {
-    extension(IExtensionsBuilder builder)
+    extension(IServiceCollection services)
     {
         public NodeBuilder AddNode()
         {
-            return new(builder);
+            return new(services);
         }
 
-        public IExtensionsBuilder AddNode(Action<NodeBuilder> action)
+        public IServiceCollection AddNode(Action<NodeBuilder> action)
         {
-            action(AddNode(builder));
-            return builder;
+            action(AddNode(services));
+            return services;
         }
     }
 }
