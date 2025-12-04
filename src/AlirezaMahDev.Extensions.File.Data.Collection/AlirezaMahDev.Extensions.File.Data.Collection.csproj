@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>preview</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\AlirezaMahDev.Extensions.File.Data\AlirezaMahDev.Extensions.File.Data.csproj" />
+        <ProjectReference Include="..\AlirezaMahDev.Extensions.File.Data.Collection.Abstractions\AlirezaMahDev.Extensions.File.Data.Collection.Abstractions.csproj" />
+    </ItemGroup>
+
+</Project>

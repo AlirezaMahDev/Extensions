@@ -1,45 +1,48 @@
 <Solution>
-  <Folder Name="/DataManager/" />
-  <Folder Name="/DataManager/src/">
-    <Project Path="DataManager/src/AlirezaMahDev.Extensions.DataManager/AlirezaMahDev.Extensions.DataManager.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src\AlirezaMahDev.Extensions.Abstractions\AlirezaMahDev.Extensions.Abstractions.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
   </Folder>
-  <Folder Name="/DataManager/tests/">
-    <Project Path="DataManager/tests/AlirezaMahDev.Extensions.DataManager.Tests/AlirezaMahDev.Extensions.DataManager.Tests.csproj" />
+  <Folder Name="/src/Brain/" />
+  <Folder Name="/src/DataManager/">
+    <Project Path="src/AlirezaMahDev.Extensions.DataManager/AlirezaMahDev.Extensions.DataManager.csproj" />
   </Folder>
-  <Folder Name="/ExtensionsBase/" />
-  <Folder Name="/ExtensionsBase/src/">
-    <Project Path="ExtensionsBase/src/Parto.Extensions.Abstractions/Parto.Extensions.Abstractions.csproj" />
-    <Project Path="ExtensionsBase/src/Parto.Extensions/Parto.Extensions.csproj" />
+  <Folder Name="/src/FileService/">
+    <Project Path="src\AlirezaMahDev.Extensions.File.Abstractions\AlirezaMahDev.Extensions.File.Abstractions.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Data.Abstractions\AlirezaMahDev.Extensions.File.Data.Abstractions.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Data.Collection.Abstractions\AlirezaMahDev.Extensions.File.Data.Collection.Abstractions.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Data.Collection\AlirezaMahDev.Extensions.File.Data.Collection.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Data.Stack.Abstractions\AlirezaMahDev.Extensions.File.Data.Stack.Abstractions.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Data.Stack\AlirezaMahDev.Extensions.File.Data.Stack.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Data.Table.Abstractions\AlirezaMahDev.Extensions.File.Data.Table.Abstractions.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Data.Table\AlirezaMahDev.Extensions.File.Data.Table.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Data\AlirezaMahDev.Extensions.File.Data.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Json.Abstractions\AlirezaMahDev.Extensions.File.Json.Abstractions.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File.Json\AlirezaMahDev.Extensions.File.Json.csproj" />
+    <Project Path="src\AlirezaMahDev.Extensions.File\AlirezaMahDev.Extensions.File.csproj" />
   </Folder>
-  <Folder Name="/FileService/" />
-  <Folder Name="/FileService/src/">
-    <Project Path="FileService/src/Parto.Extensions.Abstractions/Parto.Extensions.Abstractions.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Abstractions/Parto.Extensions.File.Abstractions.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Data.Abstractions/Parto.Extensions.File.Data.Abstractions.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Data.Collection.Abstractions/Parto.Extensions.File.Data.Collection.Abstractions.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Data.Collection/Parto.Extensions.File.Data.Collection.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Data.Stack.Abstractions/Parto.Extensions.File.Data.Stack.Abstractions.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Data.Stack/Parto.Extensions.File.Data.Stack.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Data.Table.Abstractions/Parto.Extensions.File.Data.Table.Abstractions.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Data.Table/Parto.Extensions.File.Data.Table.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Data/Parto.Extensions.File.Data.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Json.Abstractions/Parto.Extensions.File.Json.Abstractions.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File.Json/Parto.Extensions.File.Json.csproj" />
-    <Project Path="FileService/src/Parto.Extensions.File/Parto.Extensions.File.csproj" />
-    <Project Path="FileService/src/Parto.Extensions/Parto.Extensions.csproj" />
+  <Folder Name="/src/Node/">
+    <Project Path="src\AlirezaMahDev.Extensions.Node\AlirezaMahDev.Extensions.Node.csproj" />
   </Folder>
-  <Folder Name="/NodeProcess/" />
-  <Folder Name="/NodeProcess/src/">
-    <Project Path="NodeProcess/src/Parto.Extensions.Abstractions/Parto.Extensions.Abstractions.csproj" />
-    <Project Path="NodeProcess/src/Parto.Extensions.Node/Parto.Extensions.Node.csproj" />
-    <Project Path="NodeProcess/src/Parto.Extensions/Parto.Extensions.csproj" />
+  <Folder Name="/src/ParameterInstance/">
+    <Project Path="src/AlirezaMahDev.Extensions.ParameterInstance.Abstractions/AlirezaMahDev.Extensions.ParameterInstance.Abstractions.csproj" />
+    <Project Path="src/AlirezaMahDev.Extensions.ParameterInstance/AlirezaMahDev.Extensions.ParameterInstance.csproj" />
   </Folder>
-  <Folder Name="/ParameterInstance/" />
-  <Folder Name="/ParameterInstance/src/">
-    <Project Path="ParameterInstance/src/AlirezaMahDev.Extensions.ParameterInstance/AlirezaMahDev.Extensions.ParameterInstance.csproj" />
+  <Folder Name="/src/PersianTimestamp/">
+    <Project Path="src/AlirezaMahDev.Extensions.PersianTimestamp/AlirezaMahDev.Extensions.PersianTimestamp.csproj" />
   </Folder>
-  <Folder Name="/PersianTimestamp/" />
-  <Folder Name="/PersianTimestamp/src/">
-    <Project Path="PersianTimestamp/src/AlirezaMahDev.Extensions.PersianTimestamp/AlirezaMahDev.Extensions.PersianTimestamp.csproj" />
+  <Folder Name="/src/ProgressLogger/">
+    <Project Path="src/AlirezaMahDev.Extensions.ProgressLogger.Abstractions/AlirezaMahDev.Extensions.ProgressLogger.Abstractions.csproj" />
+    <Project Path="src/AlirezaMahDev.Extensions.ProgressLogger/AlirezaMahDev.Extensions.ProgressLogger.csproj" />
+  </Folder>
+  <Folder Name="/_SolutionItems/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="nuget.config" />
+    <File Path="README.md" />
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path=".gitmodules" />
   </Folder>
 </Solution>
