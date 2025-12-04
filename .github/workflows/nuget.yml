@@ -1,7 +1,7 @@
 on:
-  pull_request:
-    branches: 
-      - main
+  push:
+    tags: 
+      - v*.*.*
 
 name: push packages to nuget
 
