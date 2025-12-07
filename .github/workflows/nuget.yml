@@ -2,15 +2,15 @@ on:
   push:
     tags: 
       - v*.*.*
-
+ 
 name: push packages to nuget
 
-permissions:
-  contents: read
-  packages: write
-  
 jobs:
   build:
+    environment: production
+    permissions:
+      contents: read
+      packages: write
     name: build step
     runs-on: ubuntu-latest
     steps:
