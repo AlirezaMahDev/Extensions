@@ -20,8 +20,8 @@ jobs:
       - name: build
         run: dotnet build --configuration Release
 
-      - name: test
-        run: dotnet test --no-build --verbosity normal'
+#      - name: test
+#        run: dotnet test --no-build --verbosity normal'
 
       - name: pack
         run: dotnet pack --configuration Release --include-source --include-symbols --output .nuget

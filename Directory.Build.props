@@ -5,7 +5,9 @@
     <RepositoryType>git</RepositoryType>
     <Version>0.0.1-alpha</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Authors>https://github.com/AlirezaMahDev</Authors>
-    <License>https://github.com/AlirezaMahDev/Extensions/tree/main/LICENSE</License>
+    <Authors>AlirezaMahDev</Authors>
+    <Copyright>Copyright (c) AlirezaMahDev 2025</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <License>LICENSE</License>
   </PropertyGroup>
 </Project>

@@ -3,5 +3,10 @@
     <Title>$(AssemblyName)</Title>
     <PackageProjectUrl>https://github.com/AlirezaMahDev/Extensions/tree/main/src/$(AssemblyName)</PackageProjectUrl>
     <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true"/>
+  </ItemGroup>
 </Project>
