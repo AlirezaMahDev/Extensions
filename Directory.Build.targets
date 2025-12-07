@@ -3,6 +3,5 @@
     <Title>$(AssemblyName)</Title>
     <PackageProjectUrl>https://github.com/AlirezaMahDev/Extensions/tree/main/src/$(AssemblyName)</PackageProjectUrl>
     <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
-    <PackageLicenseUrl>https://github.com/AlirezaMahDev/Extensions/tree/main/LICENSE</PackageLicenseUrl>
   </PropertyGroup>
 </Project>

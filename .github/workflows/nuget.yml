@@ -26,5 +26,8 @@ jobs:
       - name: pack
         run: dotnet pack --configuration Release --include-source --include-symbols --output .nuget
 
-      - name: push
+      - name: push to nuget
         run: dotnet nuget push --source nuget .nuget/*.nupkg --skip-duplicate
+
+      - name: push to github
+        run: dotnet nuget push --source github .nuget/*.nupkg --skip-duplicate
