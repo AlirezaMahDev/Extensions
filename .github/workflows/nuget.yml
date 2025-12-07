@@ -34,7 +34,7 @@ jobs:
         id: nuget
         uses: NuGet/login@v1
         with:
-          user: AlirezaMahDev
+          user: ${{ github.repository_owner }}
 
       - name: push to nuget
         run: dotnet nuget push --source nuget .nuget/*.nupkg --skip-duplicate --api-key ${{ steps.nuget.outputs.NUGET_API_KEY }}
