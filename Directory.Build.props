@@ -6,6 +6,6 @@
     <Version>0.0.1-alpha</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>https://github.com/AlirezaMahDev</Authors>
-    <PackageLicenseUrl>https://github.com/AlirezaMahDev/Extensions/tree/main/LICENSE</PackageLicenseUrl>
+    <License>https://github.com/AlirezaMahDev/Extensions/tree/main/LICENSE</License>
   </PropertyGroup>
 </Project>
