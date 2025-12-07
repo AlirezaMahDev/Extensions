@@ -10,8 +10,10 @@ jobs:
   build:
     environment: production
     permissions:
+      id-token: write
       contents: read
       packages: write
+      
     name: build step
     runs-on: ubuntu-latest
     steps:
