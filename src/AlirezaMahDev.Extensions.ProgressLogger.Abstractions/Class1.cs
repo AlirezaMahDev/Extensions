@@ -1,5 +1,3 @@
 ﻿namespace AlirezaMahDev.Extensions.ProgressLogger.Abstractions;
 
-public class Class1
-{
-}
+public class Class1;

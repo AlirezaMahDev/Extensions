@@ -1,50 +1,43 @@
 using System.Collections;
 
-using Microsoft.Extensions.DependencyInjection;
+using AlirezaMahDev.Extensions.Brain.Abstractions;
+using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-public class Connection<TData> : IEnumerable<Connection<TData>>
+class Connection<TData> : IConnection<TData>
     where TData : unmanaged
 {
     private readonly Lock _lock = new();
     private readonly NerveArgs<TData> _args;
 
-    protected virtual Connection<TData>[] Cache { get; set; } = [];
-    protected virtual StackItem<ConnectionValue> ConnectionItem { get; }
+    private IConnection<TData>[] Cache { get; set; } = [];
+    public virtual DataLocation<ConnectionValue> Location { get; }
 
-    protected Connection(NerveArgs<TData> args, Neuron<TData> neuron, StackItem<ConnectionValue> connectionItem)
-    {
-        _args = args;
-        ConnectionItem = connectionItem;
-        Neuron = neuron;
-    }
-
-    [ActivatorUtilitiesConstructor]
     public Connection(NerveArgs<TData> args)
     {
         _args = args;
-        ConnectionItem = args.Nerve.ConnectionFactory.ConnectionStack.Items.GetOrAdd(args.Id);
-        Neuron = args.Nerve.NeuronFactory.GetOrCreate(args with { Id = RefValue.Neuron });
+        Location = args.Nerve.Location.Access.Read<ConnectionValue>(args.Offset);
+        Neuron = args.Nerve.NeuronFactory.GetOrCreate(args with { Offset = RefValue.Neuron });
     }
 
-    public int Id => _args.Id;
-    public ref ConnectionValue RefValue => ref ConnectionItem.RefValue;
+    public long Offset => _args.Offset;
+    public ref ConnectionValue RefValue => ref Location.RefValue;
 
-    public virtual Neuron<TData> Neuron { get; }
+    public virtual INeuron<TData> Neuron { get; }
 
-    public Connection<TData>? Previous => RefValue.Previous.IsNotDefault
-        ? _args.Nerve.ConnectionFactory.GetOrCreate(_args with { Id = RefValue.Previous })
+    public IConnection<TData>? Previous => RefValue.Previous != -1
+        ? _args.Nerve.ConnectionFactory.GetOrCreate(_args with { Offset = RefValue.Previous })
         : null;
 
-    public Connection<TData>? Next => RefValue.Next.IsNotDefault
-        ? _args.Nerve.ConnectionFactory.GetOrCreate(_args with { Id = RefValue.Next })
+    public IConnection<TData>? Next => RefValue.Next != -1
+        ? _args.Nerve.ConnectionFactory.GetOrCreate(_args with { Offset = RefValue.Next })
         : null;
 
-    public virtual Connection<TData>[] ToArray()
+    public virtual IConnection<TData>[] ToArray()
     {
-        int? cacheKey = Cache.Length > 0 ? Cache[0].Id : null;
+        long? cacheKey = Cache.Length > 0 ? Cache[0].Offset : null;
         if (!cacheKey.HasValue || cacheKey.Value != Neuron.RefValue.Connection)
         {
             using var scope = _lock.EnterScope();
@@ -53,8 +46,8 @@ public class Connection<TData> : IEnumerable<Connection<TData>>
             {
                 Cache =
                 [
-                    .. Neuron.Where(x => x.RefValue.Previous == Id)
-                        .Select(x => _args with { Id = x.Id })
+                    .. Neuron.Where(x => x.RefValue.Previous == Offset)
+                        .Select(x => _args with { Offset = x.Offset })
                         .Select(x => _args.Nerve.ConnectionFactory.GetOrCreate(x))
                 ];
             }
@@ -63,7 +56,7 @@ public class Connection<TData> : IEnumerable<Connection<TData>>
         return Cache;
     }
 
-    public virtual IEnumerator<Connection<TData>> GetEnumerator() =>
+    public virtual IEnumerator<IConnection<TData>> GetEnumerator() =>
         ToArray().AsEnumerable().GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()

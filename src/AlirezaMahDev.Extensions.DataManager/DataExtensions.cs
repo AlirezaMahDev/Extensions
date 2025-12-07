@@ -1,6 +1,3 @@
 namespace AlirezaMahDev.Extensions.DataManager;
 
-static class DataExtensions
-{
-
-}
+static class DataExtensions;

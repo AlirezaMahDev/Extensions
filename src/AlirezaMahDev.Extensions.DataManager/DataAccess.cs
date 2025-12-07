@@ -9,9 +9,11 @@ namespace AlirezaMahDev.Extensions.DataManager;
 class DataAccess : IDisposable, IDataAccess
 {
     public string Path { get; }
+
     private bool _disposedValue;
 
     private readonly ConcurrentDictionary<long, DataMemory> _cache = [];
+    private readonly ConcurrentDictionary<long, Memory<bool>> _lock = [];
     private long _length;
 
     private readonly SafeFileHandle _safeFileHandle;
@@ -19,10 +21,7 @@ class DataAccess : IDisposable, IDataAccess
     public DataAccess(string path)
     {
         Path = path;
-        var directoryName = System.IO.Path.GetDirectoryName(path)!;
-        if (!Directory.Exists(directoryName))
-            Directory.CreateDirectory(directoryName);
-        _safeFileHandle = File.OpenHandle(path,
+        _safeFileHandle = File.OpenHandle(Path,
             FileMode.OpenOrCreate,
             FileAccess.ReadWrite,
             FileShare.None);
@@ -123,13 +122,25 @@ class DataAccess : IDisposable, IDataAccess
                 await WriteMemoryAsync(pair.Key, pair.Value.Memory, token));
     }
 
+    public void Lock(long offset)
+    {
+        ref var lockLocation = ref _lock.GetOrAdd(offset, _ => new bool[] { false }).Span[0];
+        while (!Interlocked.CompareExchange(ref lockLocation, true, false)) ;
+    }
+
+    public void UnLock(long offset)
+    {
+        ref var lockLocation = ref _lock.GetOrAdd(offset, _ => new bool[] { false }).Span[0];
+        while (Volatile.Read(ref lockLocation) && Interlocked.CompareExchange(ref lockLocation, false, true)) ;
+    }
+
     public void Flush()
     {
         Save();
         _cache.Clear();
     }
-    
-    
+
+
     public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
         await SaveAsync(cancellationToken);
@@ -148,22 +159,10 @@ class DataAccess : IDisposable, IDataAccess
             _disposedValue = true;
         }
     }
-    
+
     public void Dispose()
     {
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
-    }
-}
-
-class TempDataAccess() : DataAccess(System.IO.Path.GetTempFileName())
-{
-    protected override void Dispose(bool disposing)
-    {
-        base.Dispose(disposing);
-        if (disposing)
-        {
-            File.Delete(Path);
-        }
     }
 }

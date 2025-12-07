@@ -1,32 +1,30 @@
 using System.Collections;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 
+using AlirezaMahDev.Extensions.Brain.Abstractions;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] 
-public class Neuron<TData> : INeuron<TData>
+class Neuron<TData> : INeuron<TData>
     where TData : unmanaged
 {
     private readonly Lock _lock = new();
-    private readonly DataLocation<NeuronValue<TData>> _neuronItem;
     private readonly NerveArgs<TData> _args;
+    private readonly DataLocation<NeuronValue<TData>> _location;
 
-    private readonly Lazy<ConcurrentDictionary<NeuronCacheKey<TData>, Lazy<NerveArgs<TData>>>>
-        _cache;
+    private readonly Lazy<ConcurrentDictionary<NeuronCacheKey<TData>, Lazy<NerveArgs<TData>>>> _cache;
 
     public Neuron(NerveArgs<TData> args)
     {
         _args = args;
-        _neuronItem = args.Nerve.NeuronFactory.NeuronStack.Items.GetOrAdd(args.Id);
+        _location = args.Nerve.Location.Access.Read<NeuronValue<TData>>(args.Offset);
         _cache = new(() =>
                 new(this
                     .Select(x =>
                         new KeyValuePair<NeuronCacheKey<TData>, Lazy<NerveArgs<TData>>>(
                             new(x.Neuron.RefData, x.Previous),
-                            new(new NerveArgs<TData>(args.Nerve, x.Id))
+                            new(new NerveArgs<TData>(args.Nerve, x.Offset))
                         )
                     )
                 ),
@@ -34,54 +32,52 @@ public class Neuron<TData> : INeuron<TData>
         );
     }
 
-    public int Id => _args.Id;
+    public long Offset => _args.Offset;
 
-    public ref NeuronValue<TData> RefValue => ref _neuronItem.RefValue;
+    public ref NeuronValue<TData> RefValue => ref _location.RefValue;
     public ref TData RefData => ref RefValue.Data;
 
-    public Connection<TData>? Connection =>
-        RefValue.Connection.IsNotDefault
-            ? _args.Nerve.ConnectionFactory.GetOrCreate(_args with { Id = RefValue.Connection })
+    public IConnection<TData>? Connection =>
+        RefValue.Connection != -1
+            ? _args.Nerve.ConnectionFactory.GetOrCreate(_args with { Offset = RefValue.Connection })
             : null;
 
-    public Connection<TData> GetOrAdd(TData data, Connection<TData>? connection)
-    {
-        return _args.Nerve.ConnectionFactory.GetOrCreate(
+    public IConnection<TData> GetOrAdd(TData data, IConnection<TData>? connection) =>
+        _args.Nerve.ConnectionFactory.GetOrCreate(
             _cache.Value.GetOrAdd(
                     new(data, connection),
                     static (key, neuron) =>
                         new(() => new(
                                 neuron._args.Nerve,
-                                neuron.Add(key.Data, key.Connection).Id
+                                neuron.Add(key.Data, key.Connection).Offset
                             ),
                             LazyThreadSafetyMode.ExecutionAndPublication),
                     this)
                 .Value
         );
-    }
 
-    private Connection<TData> Add(TData data, Connection<TData>? previous)
+    private Connection<TData> Add(TData data, IConnection<TData>? previous)
     {
         using var scope = _lock.EnterScope();
         var to = _args.Nerve.NeuronFactory.GetOrCreate(data);
-        var previousId = previous?.Id ?? 0;
+        var previousId = previous?.Offset ?? 0;
 
         var next = RefValue.Connection;
-        var connectionItem = _args.Nerve.ConnectionFactory.ConnectionStack.Items.Add();
+        var connectionItem = _args.Nerve.Location.Access.Create<ConnectionValue>();
         connectionItem.RefValue = new()
         {
-            Neuron = to.Id,
+            Neuron = to.Offset,
             Previous = previousId,
             Next = next,
             Weight = 1,
             Score = 1
         };
-        RefValue.Connection = connectionItem.Item.Index;
+        RefValue.Connection = connectionItem.Offset;
 
-        return _args.Nerve.ConnectionFactory.GetOrCreate(connectionItem.Item.Index);
+        return _args.Nerve.ConnectionFactory.GetOrCreate(connectionItem.Offset);
     }
 
-    public IEnumerator<Connection<TData>> GetEnumerator()
+    public IEnumerator<IConnection<TData>> GetEnumerator()
     {
         var current = Connection;
         while (current is not null)

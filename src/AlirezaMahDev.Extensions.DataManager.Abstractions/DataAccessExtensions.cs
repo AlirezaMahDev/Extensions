@@ -27,22 +27,44 @@ public static class DataAccessExtensions
 
         public DataLocation<TDataValue> Create<TDataValue>()
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue> =>
-            DataLocation.Create<TDataValue>(access);
+            DataLocation<TDataValue>.Create(access);
+
+        public DataLocation<TDataValue> Create<TDataValue>(TDataValue @default)
+            where TDataValue : unmanaged, IDataValue<TDataValue> =>
+            DataLocation<TDataValue>.Create(access, @default);
 
         public DataLocation<TDataValue> Create<TDataValue>(Func<TDataValue, TDataValue> func)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue> =>
             access.Create<TDataValue>().Update(func);
 
+        public DataLocation<TDataValue> Create<TDataValue>(Func<TDataValue, TDataValue> func, TDataValue @default)
+            where TDataValue : unmanaged, IDataValue<TDataValue> =>
+            access.Create(@default).Update(func);
+
         public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue> =>
-            await DataLocation.CreateAsync<TDataValue>(access, cancellationToken);
+            await DataLocation<TDataValue>.CreateAsync<TDataValue>(access, cancellationToken);
+
+        public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(TDataValue @default,
+            CancellationToken cancellationToken = default)
+            where TDataValue : unmanaged, IDataValue<TDataValue> =>
+            await DataLocation<TDataValue>.CreateAsync(access, @default, cancellationToken);
 
         public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(Func<TDataValue, TDataValue> func,
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {
-            var dataLocation = await access.CreateAsync<TDataValue>(cancellationToken);
+            var dataLocation = await access.CreateAsync<TDataValue>( cancellationToken);
+            return dataLocation.Update(func);
+        }
+        
+        public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(Func<TDataValue, TDataValue> func,
+            TDataValue @default,
+            CancellationToken cancellationToken = default)
+            where TDataValue : unmanaged, IDataValue<TDataValue>
+        {
+            var dataLocation = await access.CreateAsync(@default, cancellationToken);
             return dataLocation.Update(func);
         }
 
@@ -51,26 +73,36 @@ public static class DataAccessExtensions
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {
-            var dataLocation = await access.CreateAsync<TDataValue>(cancellationToken);
+            var dataLocation = await access.CreateAsync<TDataValue>( cancellationToken);
+            return await dataLocation.UpdateAsync(func, cancellationToken);
+        }
+        
+        public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(
+            Func<TDataValue, CancellationToken, ValueTask<TDataValue>> func,
+            TDataValue @default,
+            CancellationToken cancellationToken = default)
+            where TDataValue : unmanaged, IDataValue<TDataValue>
+        {
+            var dataLocation = await access.CreateAsync(@default, cancellationToken);
             return await dataLocation.UpdateAsync(func, cancellationToken);
         }
 
         public DataLocation<TDataValue> Read<TDataValue>(long offset)
             where TDataValue : unmanaged, IDataValue<TDataValue> =>
-            DataLocation.Read<TDataValue>(access, offset);
+            DataLocation<TDataValue>.Read(access, offset);
 
         public async ValueTask<DataLocation<TDataValue>> ReadAsync<TDataValue>(long offset,
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue> =>
-            await DataLocation.ReadAsync<TDataValue>(access, offset, cancellationToken);
+            await DataLocation<TDataValue>.ReadAsync(access, offset, cancellationToken);
 
         public void Write<TDataValue>(DataLocation<TDataValue> location)
             where TDataValue : unmanaged, IDataValue<TDataValue> =>
-            DataLocation.Write(access, location);
+            DataLocation<TDataValue>.Write(access, location);
 
         public async ValueTask WriteAsync<TDataValue>(DataLocation<TDataValue> location,
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue> =>
-            await DataLocation.WriteAsync(access, location, cancellationToken);
+            await DataLocation<TDataValue>.WriteAsync(access, location, cancellationToken);
     }
 }

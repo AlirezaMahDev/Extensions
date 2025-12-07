@@ -1,7 +1,9 @@
 using System.Runtime.InteropServices;
 
+using AlirezaMahDev.Extensions.Brain.Abstractions;
+
 namespace AlirezaMahDev.Extensions.Brain;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public record struct NeuronCacheKey<TData>(TData Data, Connection<TData>? Connection)
+record struct NeuronCacheKey<TData>(TData Data, IConnection<TData>? Connection)
     where TData : unmanaged;

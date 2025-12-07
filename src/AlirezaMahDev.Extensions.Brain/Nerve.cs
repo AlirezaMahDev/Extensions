@@ -1,5 +1,8 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
+using AlirezaMahDev.Extensions.Brain.Abstractions;
+using AlirezaMahDev.Extensions.DataManager;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -7,53 +10,40 @@ using Microsoft.Extensions.Logging;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-public partial class
-    Nerve<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData> : IDataBlockAccessorSave
+class Nerve<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData> : INerve<TData>
     where TData : unmanaged
 {
+    private readonly IDataAccess _dataAccess;
     private readonly ILogger<Nerve<TData>> _logger;
-    private readonly Lazy<Neuron<TData>> _rootNeuron;
-    private readonly Lazy<RootConnection<TData>> _rootConnection;
     // private readonly ConcurrentDictionary<int, Lazy<RootConnection<TData>>> _rootLevelConnections = [];
 
-    [LoggerMessage(LogLevel.Debug, "{message}")]
-    private partial void LogDebug(string message);
-
-    public Nerve(IServiceProvider serviceProvider, IFileService fileService, string name, ILogger<Nerve<TData>> logger)
-    {
-        _logger = logger;
-        Name = name;
-        Location = fileService.Access(name).AsData().Root.GetOrAdd(".brain");
-        NeuronFactory = ActivatorUtilities.CreateInstance<NeuronFactory<TData>>(serviceProvider, this);
-        ConnectionFactory = ActivatorUtilities.CreateInstance<ConnectionFactory<TData>>(serviceProvider, this);
-        _rootNeuron = new(() =>
-            {
-                var rootNeuron = NeuronFactory.GetOrCreate(1);
-                LogDebug($"rootNeuron created: {rootNeuron}");
-                return rootNeuron;
-            },
-            LazyThreadSafetyMode.ExecutionAndPublication);
-        _rootConnection = new(() =>
-        {
-            RootConnection<TData> rootConnection = new(this, _rootNeuron.Value);
-            LogDebug($"rootConnection created: {rootConnection}");
-            return rootConnection;
-        }, LazyThreadSafetyMode.ExecutionAndPublication);
-    }
+    private readonly ConcurrentDictionary<TData, long> _neuronCache = [];
 
     public string Name { get; }
-    public IDataLocation<> Location { get; }
+    public DataLocation<DataPath> Location { get; }
 
     public NeuronFactory<TData> NeuronFactory { get; }
     public ConnectionFactory<TData> ConnectionFactory { get; }
 
+    public IConnection<TData> Root { get; }
 
-    public Neuron<TData> Root => _rootNeuron.Value;
-    public RootConnection<TData> RootConnection => _rootConnection.Value;
+    public Nerve(IServiceProvider serviceProvider, IDataManager dataManager, string name, ILogger<Nerve<TData>> logger)
+    {
+        _logger = logger;
+        Name = name;
+        _dataAccess = dataManager.Open(name);
+        Location = _dataAccess.GetRoot().Wrap(x => x.Dictionary()).GetOrAdd(".nerve");
 
-    // public RootLevelConnection<TData> GetRootConnection(int level) =>
-    //     _rootLevelConnections.AddOrUpdate(level, (i, arg) => , (i, lazy, arg3) => , _rootConnection.Value);
+        NeuronFactory = ActivatorUtilities.CreateInstance<NeuronFactory<TData>>(serviceProvider, this);
+        ConnectionFactory = ActivatorUtilities.CreateInstance<ConnectionFactory<TData>>(serviceProvider, this);
+        var neuron = NeuronFactory.Location
+            .Wrap(x => x.Storage())
+            .GetOrCreateData(NeuronValue<TData>.Default);
+        var connection = ConnectionFactory.Location
+            .Wrap(x => x.Storage())
+            .GetOrCreateData(new ConnectionValue() { Next = neuron.Offset });
+        Root = ConnectionFactory.GetOrCreate(connection.Offset);
+    }
 
     public void Learn(params ReadOnlySpan<TData> data)
     {
@@ -63,7 +53,7 @@ public partial class
             return;
         }
 
-        var connection = Root.GetOrAdd(enumerator.Current, null);
+        var connection = Root.Neuron.GetOrAdd(enumerator.Current, null);
         Interlocked.Increment(ref connection.Neuron.RefValue.Weight);
         Interlocked.Increment(ref connection.RefValue.Weight);
         while (enumerator.MoveNext())
@@ -74,9 +64,23 @@ public partial class
         }
     }
 
+    public void Sleep()
+    {
+        throw new NotImplementedException();
+    }
+
+    public TData? Think(params ReadOnlySpan<TData> data)
+    {
+        throw new NotImplementedException();
+    }
+
     public void Save()
     {
-        NeuronFactory.Save();
-        ConnectionFactory.Save();
+        _dataAccess.Save();
+    }
+
+    public async ValueTask SaveAsync()
+    {
+        await _dataAccess.SaveAsync();
     }
 }

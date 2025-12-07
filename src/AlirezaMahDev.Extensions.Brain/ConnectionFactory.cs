@@ -1,23 +1,18 @@
+using AlirezaMahDev.Extensions.DataManager.Abstractions;
 using AlirezaMahDev.Extensions.ParameterInstance;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-public class ConnectionFactory<TData>(
+class ConnectionFactory<TData>(
     IServiceProvider provider,
     Nerve<TData> nerve)
-    : ParameterInstanceFactory<Connection<TData>, NerveArgs<TData>>(provider), IDataBlockAccessorSave
+    : ParameterInstanceFactory<Connection<TData>, NerveArgs<TData>>(provider)
     where TData : unmanaged
 {
-    public StackAccess<ConnectionValue> ConnectionStack { get; } =
-        nerve.Location.GetOrAdd(".connections").AsStack().As<ConnectionValue>();
+    public DataLocation<DataPath> Location { get; } = nerve.Location.Wrap(x => x.Dictionary()).GetOrAdd(".connection");
 
-    public Connection<TData> GetOrCreate(int id)
+    public Connection<TData> GetOrCreate(long offset)
     {
-        return GetOrCreate(new NerveArgs<TData>(nerve, id));
-    }
-
-    public void Save()
-    {
-        ConnectionStack.Stack.Save();
+        return GetOrCreate(new NerveArgs<TData>(nerve, offset));
     }
 }

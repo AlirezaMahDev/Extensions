@@ -2,8 +2,6 @@
   <!-- See https://aka.ms/dotnet/msbuild/customize for more details on customizing your build -->
   <PropertyGroup>
     <IsPackable>true</IsPackable>
-    <PackageProjectUrl>https://github.com/AlirezaMahDev/Extensions</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/AlirezaMahDev/Extensions</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Version>0.0.1-alpha</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>

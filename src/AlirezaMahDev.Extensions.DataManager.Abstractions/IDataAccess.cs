@@ -2,6 +2,8 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public interface IDataAccess
 {
+    string Path { get; }
+
     long AllocateOffset(int length);
 
     DataLocation<DataPath> GetRoot();
@@ -21,4 +23,7 @@ public interface IDataAccess
 
     void Save();
     Task SaveAsync(CancellationToken cancellationToken = default);
+
+    void Lock(long offset);
+    void UnLock(long offset);
 }

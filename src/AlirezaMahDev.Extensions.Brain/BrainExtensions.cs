@@ -1,18 +1,20 @@
+using Microsoft.Extensions.DependencyInjection;
+
 namespace AlirezaMahDev.Extensions.Brain;
 
 public static class BrainExtensions
 {
-    extension(IExtensionsBuilder builder)
+    extension(IServiceCollection services)
     {
-        public BrainBuilder AddBrainService()
+        public BrainBuilder AddBrain()
         {
-            return new(builder);
+            return new(services);
         }
 
-        public IExtensionsBuilder AddBrainService(Action<BrainBuilder> action)
+        public IServiceCollection AddBrain(Action<BrainBuilder> action)
         {
-            action(AddBrainService(builder));
-            return builder;
+            action(AddBrain(services));
+            return services;
         }
     }
 }

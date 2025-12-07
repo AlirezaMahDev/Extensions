@@ -8,13 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\AlirezaMahDev.Extensions.Brain.Abstractions\AlirezaMahDev.Extensions.Brain.Abstractions.csproj" />
         <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager\AlirezaMahDev.Extensions.DataManager.csproj" />
         <ProjectReference Include="..\AlirezaMahDev.Extensions.ParameterInstance\AlirezaMahDev.Extensions.ParameterInstance.csproj" />
         <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
-        <ProjectReference Include="..\Parto.Extensions.File.Data.Stack\Parto.Extensions.File.Data.Stack.csproj"/>
-        <ProjectReference Include="..\Parto.Extensions.File.Data\Parto.Extensions.File.Data.csproj"/>
-        <ProjectReference Include="..\Parto.Extensions.File\Parto.Extensions.File.csproj"/>
-        <ProjectReference Include="..\Parto.Extensions\Parto.Extensions.csproj"/>
     </ItemGroup>
 
 
