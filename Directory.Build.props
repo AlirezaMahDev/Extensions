@@ -7,7 +7,10 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>AlirezaMahDev</Authors>
     <Copyright>Copyright (c) AlirezaMahDev 2025</Copyright>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <License>LICENSE</License>
+    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE.txt" Pack="true" PackagePath="\"/>
+  </ItemGroup>
 </Project>

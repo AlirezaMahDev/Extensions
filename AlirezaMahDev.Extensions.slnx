@@ -51,7 +51,7 @@
   <Folder Name="/_SolutionItems/">
     <File Path="Directory.Build.props" />
     <File Path="Directory.Build.targets" />
-    <File Path="LICENSE" />
+    <File Path="LICENSE.txt" />
     <File Path="nuget.config" />
     <File Path="README.md" />
     <File Path=".editorconfig" />
