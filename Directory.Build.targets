@@ -1,8 +1,8 @@
 <Project>
   <PropertyGroup>
     <Title>$(AssemblyName)</Title>
-    <PackageProjectUrl>https://github.com/AlirezaMahDev/Extensions/tree/main/src/$(AssemblyName)</PackageProjectUrl>
-    <RepositoryUrl>$(PackageProjectUrl)</RepositoryUrl>
+    <RepositoryUrl>https://github.com/AlirezaMahDev/Extensions</RepositoryUrl>
+    <PackageProjectUrl>$(RepositoryUrl)/tree/main/src/$(AssemblyName)</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
