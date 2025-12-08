@@ -3,7 +3,7 @@
   <PropertyGroup>
     <IsPackable>true</IsPackable>
     <RepositoryType>git</RepositoryType>
-    <Version>0.0.1-alpha2</Version>
+    <Version>0.0.1-alpha7</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>AlirezaMahDev</Authors>
     <Copyright>Copyright (c) AlirezaMahDev 2025</Copyright>
