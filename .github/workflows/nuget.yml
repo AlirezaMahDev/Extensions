@@ -42,5 +42,5 @@ jobs:
       - name: push to nuget
         run: dotnet nuget push --source nuget .nuget/*.nupkg --skip-duplicate --api-key ${{ steps.nuget.outputs.NUGET_API_KEY }}
 
-      - name: push to github
-        run: dotnet nuget push --source github .nuget/*.nupkg --skip-duplicate --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --api-key ${{ github.token }}
+#      - name: push to github
+#        run: dotnet nuget push --source github .nuget/*.nupkg --skip-duplicate --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --api-key ${{ github.token }}
