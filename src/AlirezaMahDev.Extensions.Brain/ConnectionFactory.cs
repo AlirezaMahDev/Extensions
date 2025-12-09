@@ -3,16 +3,17 @@ using AlirezaMahDev.Extensions.ParameterInstance;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-class ConnectionFactory<TData>(
+class ConnectionFactory<TData,TLink>(
     IServiceProvider provider,
-    Nerve<TData> nerve)
-    : ParameterInstanceFactory<Connection<TData>, NerveArgs<TData>>(provider)
+    Nerve<TData,TLink> nerve)
+    : ParameterInstanceFactory<Connection<TData,TLink>, NerveArgs<TData,TLink>>(provider)
     where TData : unmanaged
+    where TLink : unmanaged
 {
     public DataLocation<DataPath> Location { get; } = nerve.Location.Wrap(x => x.Dictionary()).GetOrAdd(".connection");
 
-    public Connection<TData> GetOrCreate(long offset)
+    public Connection<TData,TLink> GetOrCreate(long offset)
     {
-        return GetOrCreate(new NerveArgs<TData>(nerve, offset));
+        return GetOrCreate(new NerveArgs<TData,TLink>(nerve, offset));
     }
 }

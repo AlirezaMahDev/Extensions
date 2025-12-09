@@ -3,8 +3,9 @@ using System.Runtime.InteropServices;
 namespace AlirezaMahDev.Extensions.Brain;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-readonly record struct NerveArgs<TData>(Nerve<TData> Nerve, long Offset)
+readonly record struct NerveArgs<TData,TLink>(Nerve<TData,TLink> Nerve, long Offset)
     where TData : unmanaged
+    where TLink : unmanaged
 {
-    public Nerve<TData> Nerve { get; } = Nerve;
+    public Nerve<TData,TLink> Nerve { get; } = Nerve;
 }

@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 using Microsoft.Extensions.Logging;
 
-namespace AlirezaMahDev.Extensions.ProgressLogger;
+namespace AlirezaMahDev.Extensions.Progress;
 
 public partial class ProgressLogger(ILogger? logger, Action<ProgressLoggerState>? action = null, int length = -1)
     : Progress<ProgressLoggerState>(action ?? (_ => { })),IDisposable

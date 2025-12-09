@@ -18,12 +18,12 @@ class DataManager(IOptions<DataManagerOptions> options) : IDisposable, IDataMana
         return _cache.GetOrAdd(key,
                 static (key, arg) => new(() =>
                     {
-                        var directory = Path.GetDirectoryName(key)!;
-                        if (!Directory.Exists(directory))
-                            Directory.CreateDirectory(directory);
                         var optionsValue = arg._options.Value;
                         var path = Path.Combine(optionsValue.DirectoryPath,
                             string.Format(optionsValue.FileFormat, key));
+                        var directory = Path.GetDirectoryName(path)!;
+                        if (!Directory.Exists(directory))
+                            Directory.CreateDirectory(directory);
                         return new(path);
                     },
                     LazyThreadSafetyMode.ExecutionAndPublication),

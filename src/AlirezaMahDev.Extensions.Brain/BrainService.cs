@@ -6,9 +6,10 @@ namespace AlirezaMahDev.Extensions.Brain;
 
 internal class BrainService(IServiceProvider provider) : IBrainService
 {
-    public INerve<TData> GetOrAdd<TData>(string name)
+    public INerve<TData, TLink> GetOrAdd<TData, TLink>(string name)
         where TData : unmanaged, IEquatable<TData>
+        where TLink : unmanaged, IEquatable<TLink>
     {
-        return provider.GetRequiredService<NerveFactory<TData>>().GetOrCreate(name);
+        return provider.GetRequiredService<NerveFactory<TData, TLink>>().GetOrCreate(name);
     }
 }

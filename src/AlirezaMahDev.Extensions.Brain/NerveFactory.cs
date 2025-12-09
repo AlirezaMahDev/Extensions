@@ -1,10 +1,9 @@
-using System.Diagnostics.CodeAnalysis;
-
 using AlirezaMahDev.Extensions.ParameterInstance;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-class NerveFactory<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TData>(
+class NerveFactory<TData,TLink>(
     IServiceProvider provider)
-    : ParameterInstanceFactory<Nerve<TData>, string>(provider)
-    where TData : unmanaged;
+    : ParameterInstanceFactory<Nerve<TData,TLink>, string>(provider)
+    where TData : unmanaged
+    where TLink : unmanaged;

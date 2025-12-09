@@ -1,15 +1,11 @@
 {
-  "name": "parto.extensions.node",
+  "name": "alirezamahdev.extensions.node",
   "version": "1.0.0",
   "description": "",
   "main": "index.ts",
   "type": "commonjs",
   "scripts": {
     "dev": "tsx index.ts"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/AlirezaMahDev/PartoDev.git"
   },
   "private": true,
   "devDependencies": {

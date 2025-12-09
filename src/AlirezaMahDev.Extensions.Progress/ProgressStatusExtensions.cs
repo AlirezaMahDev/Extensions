@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-namespace AlirezaMahDev.Extensions.ProgressLogger;
+namespace AlirezaMahDev.Extensions.Progress;
 
 public static class ProgressStatusExtensions
 {

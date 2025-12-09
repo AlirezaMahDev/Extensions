@@ -10,8 +10,8 @@ public static class DataLocationCollectionExtensions
         where TItem : unmanaged, IDataValue<TItem>
     {
         public DataCollection<TValue, TItem> Collection(
-            Expression<Func<TValue, long>> selectChildExpression,
-            Expression<Func<TItem, long>> selectNextExpression) =>
+            Expression<SelectValueFunc<TValue, long>> selectChildExpression,
+            Expression<SelectValueFunc<TItem, long>> selectNextExpression) =>
             new(selectChildExpression, selectNextExpression);
     }
 
@@ -20,7 +20,7 @@ public static class DataLocationCollectionExtensions
         where TItem : unmanaged, IDataValue<TItem>
     {
         public DataCollection<TValue, TItem> Collection(
-            Expression<Func<TItem, long>> selectNextExpression) =>
+            Expression<SelectValueFunc<TItem, long>> selectNextExpression) =>
             new(x => x.Child, selectNextExpression);
     }
 
@@ -41,7 +41,7 @@ public static class DataLocationCollectionExtensions
     extension<TValue>(IDataValue<TValue> value)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public DataCollectionItem<TValue> CollectionItem(Expression<Func<TValue, long>> selectNextExpression) =>
+        public DataCollectionItem<TValue> CollectionItem(Expression<SelectValueFunc<TValue, long>> selectNextExpression) =>
             new(selectNextExpression);
     }
 
@@ -199,11 +199,11 @@ public static class DataLocationCollectionExtensions
                 var child = locationWrap.Wrap.GetChild(value);
                 dataLocation.Update(innerValue =>
                 {
-                    locationWrap.Wrap.ItemWrap.SetNext(innerValue, child);
+                    locationWrap.Wrap.ItemWrap.SetNext(ref innerValue, child);
                     return innerValue;
                 });
 
-                locationWrap.Wrap.SetChild(value, dataLocation.Offset);
+                locationWrap.Wrap.SetChild(ref value, dataLocation.Offset);
                 return value;
             });
             return dataLocation;
@@ -220,7 +220,7 @@ public static class DataLocationCollectionExtensions
                     {
                         previous.Value.Update(value =>
                         {
-                            locationWrap.Wrap.ItemWrap.SetNext(value,
+                            locationWrap.Wrap.ItemWrap.SetNext(ref value,
                                 locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));
                             return value;
                         });
@@ -229,7 +229,7 @@ public static class DataLocationCollectionExtensions
                     {
                         locationWrap.Location.Update(value =>
                         {
-                            locationWrap.Wrap.SetChild(value,
+                            locationWrap.Wrap.SetChild(ref value,
                                 locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));    
                             return value;
                         });
@@ -258,7 +258,7 @@ public static class DataLocationCollectionExtensions
                     {
                         previous.Value.Update(value =>
                         {
-                            locationWrap.Wrap.ItemWrap.SetNext(value,
+                            locationWrap.Wrap.ItemWrap.SetNext(ref value,
                                 locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));
                             return value;
                         });
@@ -267,7 +267,7 @@ public static class DataLocationCollectionExtensions
                     {
                         locationWrap.Location.Update(value =>
                         {
-                            locationWrap.Wrap.SetChild(value,
+                            locationWrap.Wrap.SetChild(ref value,
                                 locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));    
                             return value;
                         });
