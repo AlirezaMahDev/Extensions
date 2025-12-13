@@ -1,5 +1,7 @@
 <Solution>
   <Folder Name="/src/">
+    <File Path="src\Directory.Build.props" />
+    <File Path="src\Directory.Build.targets" />
     <Project Path="src\AlirezaMahDev.Extensions.Abstractions\AlirezaMahDev.Extensions.Abstractions.csproj" />
     <Project Path="src\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
   </Folder>
@@ -46,17 +48,19 @@
     <Project Path="src/AlirezaMahDev.Extensions.ProgressLogger/AlirezaMahDev.Extensions.ProgressLogger.csproj" />
   </Folder>
   <Folder Name="/tests/" />
-  <Folder Name="/tests/Brain/" />
-  <Folder Name="/tests/DataManager/" />
+  <Folder Name="/tests/Brain/">
+    <Project Path="tests/AlirezaMahDev.Extensions.Brain.Tests/AlirezaMahDev.Extensions.Brain.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tests/DataManager/">
+    <Project Path="tests/AlirezaMahDev.Extensions.DataManager.Tests/AlirezaMahDev.Extensions.DataManager.Tests.csproj" />
+  </Folder>
   <Folder Name="/_SolutionItems/">
-    <File Path="Directory.Build.props" />
-    <File Path="Directory.Build.targets" />
     <File Path="LICENSE.txt" />
     <File Path="nuget.config" />
     <File Path="README.md" />
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
-    <File Path=".gitmodules" />
   </Folder>
+  <Project Path="interactive/AlirezaMahDev.Extensions.Interactive/AlirezaMahDev.Extensions.Interactive.csproj" />
 </Solution>

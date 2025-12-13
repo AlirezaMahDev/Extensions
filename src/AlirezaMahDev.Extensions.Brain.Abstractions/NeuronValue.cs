@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
@@ -8,7 +9,9 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 public record struct NeuronValue<TData> :
     IDataValueDefault<NeuronValue<TData>>,
     IDataValue<NeuronValue<TData>>
-    where TData : unmanaged
+    where TData : unmanaged,
+    IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
+    ISubtractionOperators<TData, TData, TData>
 {
     public TData Data;
     public float Score;

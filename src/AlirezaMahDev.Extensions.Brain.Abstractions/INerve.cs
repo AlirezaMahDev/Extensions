@@ -1,24 +1,49 @@
+using System.Numerics;
+
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public interface INerve<TData, TLink>
-    where TData : unmanaged
-    where TLink : unmanaged
+    where TData : unmanaged,
+    IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
+    ISubtractionOperators<TData, TData, TData>
+    where TLink : unmanaged,
+    IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
+    ISubtractionOperators<TLink, TLink, TLink>
 {
     string Name { get; }
     DataLocation<DataPath> Location { get; }
-    IConnection<TData, TLink> Root { get; }
+    INeuron<TData, TLink> RootNeuron { get; }
 
-    void Learn(TLink link, ReadOnlySpan<TData> data);
+    void Learn(TLink link, params ReadOnlySpan<TData> data);
     // ValueTask LearnAsync(TLink link, ReadOnlySpan<TData> data, CancellationToken cancellationToken = default);
 
     void Sleep();
     // ValueTask SleepAsync(CancellationToken cancellationToken = default);
 
-    ThinkResult<TData, TLink> Think(TLink link, ReadOnlySpan<TData> readOnlySpan);
+    Think<TData, TLink>? Think(TLink link, params TData[] data);
+
+    ValueTask<Think<TData, TLink>?> ThinkAsync(TLink link,
+        CancellationToken cancellationToken = default,
+        params TData[] data);
     // ValueTask<TData?> ThinkAsync(TLink link, ReadOnlySpan<TData> data, CancellationToken cancellationToken = default);
 
     public void Save();
     public ValueTask SaveAsync(CancellationToken cancellationToken = default);
+}
+
+public static class NerveExtensions
+{
+    extension<TData, TLink>(INerve<TData, TLink> nerve)
+        where TData : unmanaged,
+        IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
+        ISubtractionOperators<TData, TData, TData>
+        where TLink : unmanaged,
+        IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
+        ISubtractionOperators<TLink, TLink, TLink>
+    {
+        public async ValueTask<Think<TData, TLink>?> ThinkAsync(TLink link, params TData[] data) =>
+            await nerve.ThinkAsync(link, CancellationToken.None, data);
+    }
 }

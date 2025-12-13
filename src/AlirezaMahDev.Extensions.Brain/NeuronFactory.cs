@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Numerics;
 
 using AlirezaMahDev.Extensions.Brain.Abstractions;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
@@ -6,64 +7,17 @@ using AlirezaMahDev.Extensions.ParameterInstance;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-class NeuronFactory<TData, TLink> : ParameterInstanceFactory<Neuron<TData, TLink>, NerveArgs<TData, TLink>>
-    where TData : unmanaged
-    where TLink : unmanaged
+class NeuronFactory<TData, TLink>(IServiceProvider provider, Nerve<TData, TLink> nerve)
+    : ParameterInstanceFactory<Neuron<TData, TLink>, NerveArgs<TData, TLink>>(provider)
+    where TData : unmanaged,
+    IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
+    ISubtractionOperators<TData, TData, TData>
+    where TLink : unmanaged,
+    IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
+    ISubtractionOperators<TLink, TLink, TLink>
 {
-    private readonly Nerve<TData, TLink> _nerve;
-    private readonly Lazy<ConcurrentDictionary<TData, Lazy<NerveArgs<TData, TLink>>>> _cache;
+    public DataLocation<DataPath> Location { get; } = nerve.Location.Wrap(x => x.Dictionary()).GetOrAdd(".neuron");
 
-    public DataLocation<DataPath> Location { get; }
-
-    public NeuronFactory(IServiceProvider provider,
-        Nerve<TData, TLink> nerve) : base(provider)
-    {
-        _nerve = nerve;
-        Location = nerve.Location.Wrap(x => x.Dictionary()).GetOrAdd(".neuron");
-
-        _cache = new(() =>
-                new(nerve.Root.Neuron
-                    .Select(x =>
-                        new KeyValuePair<TData, Lazy<NerveArgs<TData, TLink>>>(
-                            x.Neuron.RefData,
-                            new(() => new(nerve, x.Offset),
-                                LazyThreadSafetyMode.ExecutionAndPublication)
-                        )
-                    )
-                ),
-            LazyThreadSafetyMode.ExecutionAndPublication
-        );
-    }
-
-    public Neuron<TData, TLink> GetOrCreate(TData data)
-    {
-        return GetOrCreate(
-            _cache.Value.GetOrAdd(data,
-                    static (data, factory) =>
-                        new(() => new(
-                                factory._nerve,
-                                factory.Location.Access.Create(new NeuronValue<TData>
-                                    {
-                                        Data = data,
-                                        Connection = 0,
-                                        Score = 1,
-                                        Weight = 1
-                                    })
-                                    .Offset),
-                            LazyThreadSafetyMode.ExecutionAndPublication),
-                    this)
-                .Value);
-    }
-
-    public Neuron<TData, TLink> GetOrCreate(int id)
-    {
-        return GetOrCreate(new NerveArgs<TData, TLink>(_nerve, id));
-    }
-
-    public override Neuron<TData, TLink> GetOrCreate(NerveArgs<TData, TLink> parameter)
-    {
-        var result = base.GetOrCreate(parameter);
-        _cache.Value.GetOrAdd(result.RefData, _ => new(() => parameter, LazyThreadSafetyMode.ExecutionAndPublication));
-        return result;
-    }
+    public Neuron<TData, TLink> GetOrCreate(long offset) =>
+        GetOrCreate(new NerveArgs<TData, TLink>(nerve, offset));
 }

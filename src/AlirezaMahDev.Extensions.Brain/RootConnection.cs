@@ -1,10 +1,11 @@
 using System.Numerics;
-using System.Runtime.InteropServices;
+
+using AlirezaMahDev.Extensions.Brain.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-readonly record struct NerveArgs<TData,TLink>(Nerve<TData,TLink> Nerve, long Offset)
+class RootConnection<TData, TLink>(Connection<TData, TLink> connection)
+    : Connection<TData, TLink>(new(connection._nerve, connection.Offset))
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>
@@ -12,5 +13,5 @@ readonly record struct NerveArgs<TData,TLink>(Nerve<TData,TLink> Nerve, long Off
     IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
     ISubtractionOperators<TLink, TLink, TLink>
 {
-    public Nerve<TData,TLink> Nerve { get; } = Nerve;
+    public override INeuron<TData, TLink> Neuron { get; } = new RootNeuron<TData, TLink>(connection._neuron);
 }

@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
@@ -5,12 +6,15 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public record struct ConnectionValue<TLink>(long Next) :
+public record struct ConnectionValue<TLink> :
     IDataValueDefault<ConnectionValue<TLink>>,
     IDataValue<ConnectionValue<TLink>>
-    where TLink : unmanaged
+    where TLink : unmanaged,
+    IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
+    ISubtractionOperators<TLink, TLink, TLink>
 {
     public long Neuron;
+    public long Connection;
     public long Previous;
     public float Score;
     public uint Weight;
@@ -19,20 +23,10 @@ public record struct ConnectionValue<TLink>(long Next) :
     public static ConnectionValue<TLink> Default { get; } = new()
     {
         Neuron = -1L,
+        Connection = -1L,
         Previous = -1L,
         Score = 1f,
         Weight = 0u,
-        Next = -1L,
+        Link = default
     };
 }
-
-public record struct NearConnection<TData, TLink>(
-    TData Data,
-    TLink Link,
-    IConnection<TData, TLink> Connection)
-    where TData : unmanaged
-    where TLink : unmanaged;
-
-public record struct ThinkResult<TData, TLink>(NearConnection<TData, TLink>[] Connections, NearConnection<TData, TLink>? Next)
-    where TData : unmanaged
-    where TLink : unmanaged;

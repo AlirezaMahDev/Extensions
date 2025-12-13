@@ -1,10 +1,18 @@
+using System.Numerics;
+
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public interface IConnection<TData, TLink> : IEnumerable<IConnection<TData, TLink>>
-    where TData : unmanaged
-    where TLink : unmanaged
+public interface IConnection<TData, TLink> : IEnumerable<IConnection<TData, TLink>>,
+    IComparable<DataPairLink<TData, TLink>>,
+    IComparable<TLink>
+    where TData : unmanaged,
+    IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
+    ISubtractionOperators<TData, TData, TData>
+    where TLink : unmanaged,
+    IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
+    ISubtractionOperators<TLink, TLink, TLink>
 {
     DataLocation<ConnectionValue<TLink>> Location { get; }
     long Offset { get; }
