@@ -50,9 +50,8 @@ partial class NodeWorker<TNodeService, TNodeServiceOptions>(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         var config = (await _nodeService.InitializeAsync(stoppingToken).ConfigureAwait(false))?.ToString();
-        var workingDirectory = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!,
-            _options.Assembly.GetName().Name!);
-        _process.StartInfo = new("node", $"{_options.Path} {config}")
+        var workingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+        _process.StartInfo = new("node", $"{_options.Assembly.GetName().Name!}.js {config}")
         {
             WorkingDirectory = workingDirectory,
             RedirectStandardInput = true,

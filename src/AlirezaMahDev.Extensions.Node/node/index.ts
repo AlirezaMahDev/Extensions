@@ -14,11 +14,7 @@ export class DotnetWorkerBuilder<TConfig = any, TAppSettings = any> {
         const args = process.argv.splice(2).join(' ');
         this.config = args?.trim().length > 0 ? JSON.parse(args) : undefined;
         this.map.set("check", input => input);
-        try {
-            this.appsettings = JSON.parse(fs.readFileSync(`${__dirname}/../appsettings.json`).toString());
-        } catch {
-            this.appsettings = JSON.parse(fs.readFileSync(`${__dirname}/../Parto/appsettings.json`).toString());
-        }
+        this.appsettings = JSON.parse(fs.readFileSync(`${__dirname}/appsettings.json`).toString());
     }
 
     public static create<TConfig = any, TAppSettings = any>(): DotnetWorkerBuilder<TConfig, TAppSettings> {

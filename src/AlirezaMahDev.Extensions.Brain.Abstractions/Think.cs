@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Numerics;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
@@ -7,7 +8,8 @@ public record Think<TData, TLink>(
     TLink Link,
     IConnection<TData, TLink> Connection,
     Think<TData, TLink>? Previous)
-    : IComparable<Think<TData, TLink>>
+    : IComparable<Think<TData, TLink>>,
+        IEnumerable<Think<TData, TLink>>
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>
@@ -19,7 +21,7 @@ public record Think<TData, TLink>(
 
     public TLink DifferenceLink { get; private init; }
     public TData DifferenceData { get; private init; }
-    
+
     public TLink AllDifferenceLink { get; private init; }
     public TData AllDifferenceData { get; private init; }
 
@@ -31,7 +33,7 @@ public record Think<TData, TLink>(
         {
             differenceData = connection.Neuron.RefData - data;
         }
-        
+
         var differenceLink = link - connection.RefLink;
         if (differenceLink.CompareTo(default) < 0)
         {
@@ -63,4 +65,19 @@ public record Think<TData, TLink>(
 
         return 0;
     }
+
+    public IEnumerator<Think<TData, TLink>> GetEnumerator()
+    {
+        Stack<Think<TData, TLink>> stack = [];
+        var current = this;
+        while (current is not null)
+        {
+            stack.Push(current);
+            current = current.Previous;
+        }
+
+        return stack.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

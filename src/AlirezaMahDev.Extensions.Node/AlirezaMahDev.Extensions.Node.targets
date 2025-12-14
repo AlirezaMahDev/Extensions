@@ -1,0 +1,31 @@
+<Project>
+  <PropertyGroup>
+    <NodeInput>node/index.ts</NodeInput>
+    <NodeBundle>$(AssemblyName).js</NodeBundle>
+    <NodeOutput>$(BaseIntermediateOutputPath)$(Configuration)\$(TargetFramework)\$(NodeBundle)</NodeOutput>
+  </PropertyGroup>
+
+  <Target Condition="Exists('$(NodeInput)')"
+          BeforeTargets="PrepareForBuild"
+          Name="IncludeNode">
+
+    <Exec ConsoleToMsBuild="true"
+          IgnoreExitCode="false"
+          Command="npx esbuild &quot;$(NodeInput)&quot; --outfile=&quot;$(NodeOutput)&quot; --format=cjs --platform=node --target=esnext --bundle"/>
+
+    <ItemGroup>
+      <Content Include="$(NodeOutput)">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <Link>$(NodeBundle)</Link>
+        <Visible>false</Visible>
+      </Content>
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <Compile Remove="**\node_modules\**"/>
+    <Content Remove="**\node_modules\**"/>
+    <EmbeddedResource Remove="**\node_modules\**"/>
+    <None Remove="**\node_modules\**"/>
+  </ItemGroup>
+</Project>
