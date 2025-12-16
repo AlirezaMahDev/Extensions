@@ -1,20 +1,12 @@
-using Microsoft.Extensions.DependencyInjection;
-
-using AlirezaMahDev.Extensions.File.Json.Abstractions;
 using AlirezaMahDev.Extensions.File.Abstractions;
+using AlirezaMahDev.Extensions.File.Json.Abstractions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AlirezaMahDev.Extensions.File.Json;
 
 public static class JsonExtensions
 {
-    public static IJsonAccess<TEntity> AsJson<TEntity>(this IFileAccess fileAccess)
-        where TEntity : class
-    {
-        return fileAccess.Provider
-            .GetRequiredService<JsonAccessFactory<TEntity>>()
-            .GetOrCreate(fileAccess);
-    }
-
     extension(IFileBuilder builder)
     {
         public IJsonFileBuilder AddJson()
@@ -26,6 +18,17 @@ public static class JsonExtensions
         {
             action(AddJson(builder));
             return builder;
+        }
+    }
+    
+    extension(IFileAccess fileAccess)
+    {
+        public IJsonAccess<TEntity> AsJson<TEntity>()
+            where TEntity : class
+        {
+            return fileAccess.Provider
+                .GetRequiredService<JsonAccessFactory<TEntity>>()
+                .GetOrCreate(fileAccess);
         }
     }
 }

@@ -30,6 +30,7 @@ class DataAccess : IDisposable, IDataAccess
         {
             this.Create<DataPath>();
         }
+        Save();
     }
 
     public DataLocation<DataPath> GetRoot() =>
@@ -109,6 +110,7 @@ class DataAccess : IDisposable, IDataAccess
 
     public void Save()
     {
+        RandomAccess.FlushToDisk(_safeFileHandle);
         Parallel.ForEach(_cache.Where(x => !x.Value.CheckHash),
             (pair, _) =>
                 WriteMemory(pair.Key, pair.Value.Memory));
@@ -116,6 +118,7 @@ class DataAccess : IDisposable, IDataAccess
 
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
+        RandomAccess.FlushToDisk(_safeFileHandle);
         await Parallel.ForEachAsync(_cache.Where(x => !x.Value.CheckHash),
             cancellationToken,
             async ValueTask (pair, token) =>

@@ -1,8 +1,6 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 
-using AlirezaMahDev.Extensions.Brain.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

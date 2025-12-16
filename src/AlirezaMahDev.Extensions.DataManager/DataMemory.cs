@@ -13,6 +13,7 @@ class DataMemory : IMemoryOwner<byte>
     {
         _memoryOwner = MemoryPool<byte>.Shared.Rent(length);
         Memory = _memoryOwner.Memory[..length];
+        Memory.Span.Clear();
     }
 
     public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;

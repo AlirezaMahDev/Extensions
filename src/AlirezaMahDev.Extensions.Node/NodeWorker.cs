@@ -74,6 +74,8 @@ partial class NodeWorker<TNodeService, TNodeServiceOptions>(
             _process.StartInfo.Arguments
         }");
 
+        await Task.Yield();
+
         _process.Start();
 
         await Task.WhenAll(
