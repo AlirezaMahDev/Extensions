@@ -62,5 +62,4 @@
     <File Path=".gitattributes" />
     <File Path=".gitignore" />
   </Folder>
-  <Project Path="interactive/AlirezaMahDev.Extensions.Interactive/AlirezaMahDev.Extensions.Interactive.csproj" />
 </Solution>

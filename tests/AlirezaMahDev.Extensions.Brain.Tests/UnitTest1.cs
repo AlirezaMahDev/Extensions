@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 
 using AlirezaMahDev.Extensions.Brain.Abstractions;
-using AlirezaMahDev.Extensions.DataManager;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
