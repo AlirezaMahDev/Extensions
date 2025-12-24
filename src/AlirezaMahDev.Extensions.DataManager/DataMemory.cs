@@ -6,7 +6,6 @@ namespace AlirezaMahDev.Extensions.DataManager;
 class DataMemory : IMemoryOwner<byte>
 {
     private readonly IMemoryOwner<byte> _memoryOwner;
-    private int _usedCount;
     private UInt128 _hash;
 
     public DataMemory(int length)
@@ -15,9 +14,6 @@ class DataMemory : IMemoryOwner<byte>
         Memory = _memoryOwner.Memory[..length];
         Memory.Span.Clear();
     }
-
-    public DateTimeOffset CreatedAt { get; } = DateTimeOffset.UtcNow;
-    public int UsedCount => _usedCount;
 
     public bool CheckHash =>
         _hash == GenerateHash();
@@ -28,14 +24,8 @@ class DataMemory : IMemoryOwner<byte>
     private UInt128 GenerateHash() =>
         XxHash128.HashToUInt128(Memory.Span);
 
-    public Memory<byte> Memory
-    {
-        get
-        {
-            Interlocked.Increment(ref _usedCount);
-            return field;
-        }
-    }
+    public Memory<byte> Memory { get; }
 
-    public void Dispose() => _memoryOwner.Dispose();
+    public void Dispose() =>
+        _memoryOwner.Dispose();
 }

@@ -41,7 +41,8 @@ public static class DataLocationCollectionExtensions
     extension<TValue>(IDataValue<TValue> value)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public DataCollectionItem<TValue> CollectionItem(Expression<SelectValueFunc<TValue, long>> selectNextExpression) =>
+        public DataCollectionItem<TValue>
+            CollectionItem(Expression<SelectValueFunc<TValue, long>> selectNextExpression) =>
             new(selectNextExpression);
     }
 
@@ -89,15 +90,15 @@ public static class DataLocationCollectionExtensions
             return locationWrap.Add(dataLocation);
         }
 
-        public DataLocation<TItem> Add(Func<TItem, TItem> func)
+        public DataLocation<TItem> Add(UpdateDataLocationAction<TItem> action)
         {
-            var dataLocation = locationWrap.Location.Access.Create(func);
+            var dataLocation = locationWrap.Location.Access.Create(action);
             return locationWrap.Add(dataLocation);
         }
 
-        public DataLocation<TItem> Add(Func<TItem, TItem> func, TItem @default)
+        public DataLocation<TItem> Add(UpdateDataLocationAction<TItem> action, TItem @default)
         {
-            var dataLocation = locationWrap.Location.Access.Create(func, @default);
+            var dataLocation = locationWrap.Location.Access.Create(action, @default);
             return locationWrap.Add(dataLocation);
         }
 
@@ -114,33 +115,33 @@ public static class DataLocationCollectionExtensions
             return locationWrap.Add(dataLocation);
         }
 
-        public async ValueTask<DataLocation<TItem>> AddAsync(Func<TItem, TItem> func,
+        public async ValueTask<DataLocation<TItem>> AddAsync(UpdateDataLocationAction<TItem> action,
             CancellationToken cancellationToken = default)
         {
-            var dataLocation = await locationWrap.Location.Access.CreateAsync(func, cancellationToken);
+            var dataLocation = await locationWrap.Location.Access.CreateAsync(action, cancellationToken);
             return locationWrap.Add(dataLocation);
         }
 
-        public async ValueTask<DataLocation<TItem>> AddAsync(Func<TItem, TItem> func,
+        public async ValueTask<DataLocation<TItem>> AddAsync(UpdateDataLocationAction<TItem> action,
             TItem @default,
             CancellationToken cancellationToken = default)
         {
-            var dataLocation = await locationWrap.Location.Access.CreateAsync(func, @default, cancellationToken);
+            var dataLocation = await locationWrap.Location.Access.CreateAsync(action, @default, cancellationToken);
             return locationWrap.Add(dataLocation);
         }
 
-        public async ValueTask<DataLocation<TItem>> AddAsync(Func<TItem, CancellationToken, ValueTask<TItem>> func,
+        public async ValueTask<DataLocation<TItem>> AddAsync(UpdateDataLocationAsyncAction<TItem> action,
             CancellationToken cancellationToken = default)
         {
-            var dataLocation = await locationWrap.Location.Access.CreateAsync(func, cancellationToken);
+            var dataLocation = await locationWrap.Location.Access.CreateAsync(action, cancellationToken);
             return locationWrap.Add(dataLocation);
         }
 
-        public async ValueTask<DataLocation<TItem>> AddAsync(Func<TItem, CancellationToken, ValueTask<TItem>> func,
+        public async ValueTask<DataLocation<TItem>> AddAsync(UpdateDataLocationAsyncAction<TItem> action,
             TItem @default,
             CancellationToken cancellationToken = default)
         {
-            var dataLocation = await locationWrap.Location.Access.CreateAsync(func, @default, cancellationToken);
+            var dataLocation = await locationWrap.Location.Access.CreateAsync(action, @default, cancellationToken);
             return locationWrap.Add(dataLocation);
         }
     }
@@ -194,17 +195,16 @@ public static class DataLocationCollectionExtensions
 
         public DataLocation<TItem> Add(DataLocation<TItem> dataLocation)
         {
-            locationWrap.Location.Update(value =>
+            locationWrap.Location.Update(location =>
             {
-                var child = locationWrap.Wrap.GetChild(value);
-                dataLocation.Update(innerValue =>
+                var child = locationWrap.Wrap.GetChild(location.RefValue);
+
+                dataLocation.Update(innerDataLocation =>
                 {
-                    locationWrap.Wrap.ItemWrap.SetNext(ref innerValue, child);
-                    return innerValue;
+                    locationWrap.Wrap.ItemWrap.SetNext(ref innerDataLocation.RefValue, child);
                 });
 
-                locationWrap.Wrap.SetChild(ref value, dataLocation.Offset);
-                return value;
+                locationWrap.Wrap.SetChild(ref location.RefValue, dataLocation.Offset);
             });
             return dataLocation;
         }
@@ -218,20 +218,18 @@ public static class DataLocationCollectionExtensions
                 {
                     if (previous.HasValue)
                     {
-                        previous.Value.Update(value =>
+                        previous.Value.Update(location =>
                         {
-                            locationWrap.Wrap.ItemWrap.SetNext(ref value,
+                            locationWrap.Wrap.ItemWrap.SetNext(ref location.RefValue,
                                 locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));
-                            return value;
                         });
                     }
                     else
                     {
-                        locationWrap.Location.Update(value =>
+                        locationWrap.Location.Update(location =>
                         {
-                            locationWrap.Wrap.SetChild(ref value,
-                                locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));    
-                            return value;
+                            locationWrap.Wrap.SetChild(ref location.RefValue,
+                                locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));
                         });
                     }
 
@@ -256,20 +254,18 @@ public static class DataLocationCollectionExtensions
                 {
                     if (previous.HasValue)
                     {
-                        previous.Value.Update(value =>
+                        previous.Value.Update(location =>
                         {
-                            locationWrap.Wrap.ItemWrap.SetNext(ref value,
+                            locationWrap.Wrap.ItemWrap.SetNext(ref location.RefValue,
                                 locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));
-                            return value;
                         });
                     }
                     else
                     {
-                        locationWrap.Location.Update(value =>
+                        locationWrap.Location.Update(location =>
                         {
-                            locationWrap.Wrap.SetChild(ref value,
-                                locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));    
-                            return value;
+                            locationWrap.Wrap.SetChild(ref location.RefValue,
+                                locationWrap.Wrap.ItemWrap.GetNext(dataLocation.RefValue));
                         });
                     }
 

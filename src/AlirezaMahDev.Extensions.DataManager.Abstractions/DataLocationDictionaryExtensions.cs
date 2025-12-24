@@ -35,7 +35,7 @@ public static class DataLocationDictionaryExtensions
             return locationWrapCollection
                 .GetChildren()
                 .FirstOrDefault(x => x.RefValue.Key.Equals(key))
-                .WhenDefault(() => locationWrapCollection.Add(value => value with { Key = key }));
+                .WhenDefault(() => locationWrapCollection.Add(value => value.RefValue = value.RefValue with { Key = key }));
         }
 
         public async ValueTask<DataLocation<TItem>> GetOrAddAsync(TKey key,
@@ -47,7 +47,7 @@ public static class DataLocationDictionaryExtensions
                 .GetChildrenAsync(cancellationToken)
                 .FirstOrDefaultAsync(x => x.RefValue.Key.Equals(key), cancellationToken);
             return await dataLocation.WhenDefaultAsync(async token =>
-                    await locationWrapCollection.AddAsync(value => value with { Key = key }, cancellationToken: token),
+                    await locationWrapCollection.AddAsync(value => value.RefValue = value.RefValue with { Key = key }, cancellationToken: token),
                 cancellationToken: cancellationToken);
         }
     }

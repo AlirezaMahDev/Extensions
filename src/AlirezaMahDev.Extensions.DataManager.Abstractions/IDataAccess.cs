@@ -4,14 +4,16 @@ public interface IDataAccess
 {
     string Path { get; }
 
-    long AllocateOffset(int length);
-
     DataLocation<DataPath> GetRoot();
     ValueTask<DataLocation<DataPath>> GetRootAsync(CancellationToken cancellationToken = default);
 
     DataLocation<DataTrash> GetTrash();
     ValueTask<DataLocation<DataTrash>> GetTrashAsync(CancellationToken cancellationToken = default);
 
+    AllocateMemory AllocateMemory(int length);
+    ValueTask<AllocateMemory> AllocateMemoryAsync(int length,
+        CancellationToken cancellationToken = default);
+    
     Memory<byte> ReadMemory(long offset, int length);
 
     ValueTask<Memory<byte>> ReadMemoryAsync(long offset,

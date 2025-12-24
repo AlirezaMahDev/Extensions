@@ -18,17 +18,14 @@ public interface INerve<TData, TLink>
     IConnection<TData, TLink> RootConnection { get; }
 
     void Learn(TLink link, params ReadOnlySpan<TData> data);
-    // ValueTask LearnAsync(TLink link, ReadOnlySpan<TData> data, CancellationToken cancellationToken = default);
+    ValueTask LearnAsync(TLink link, ReadOnlyMemory<TData> data, CancellationToken cancellationToken = default);
 
     void Sleep();
     // ValueTask SleepAsync(CancellationToken cancellationToken = default);
 
     Think<TData, TLink>? Think(TLink link, params TData[] data);
-
-    ValueTask<Think<TData, TLink>?> ThinkAsync(TLink link,
-        CancellationToken cancellationToken = default,
-        params TData[] data);
-    // ValueTask<TData?> ThinkAsync(TLink link, ReadOnlySpan<TData> data, CancellationToken cancellationToken = default);
+    ValueTask<Think<TData, TLink>?> ThinkAsync(TLink link, ReadOnlyMemory<TData> data, CancellationToken cancellationToken = default);
+    ValueTask<Think<TData, TLink>?> ThinkAsync(TLink link, CancellationToken cancellationToken = default, params TData[] data);
 
     public void Save();
     public ValueTask SaveAsync(CancellationToken cancellationToken = default);

@@ -33,11 +33,16 @@ public class ParameterInstanceFactory<
     public virtual TInstance GetOrCreate(TParameter parameter)
     {
         return _instances.GetOrAdd(parameter,
-                static (parameter, provider) =>
-                    new(() => ActivatorUtilities.CreateInstance<TInstance>(provider, parameter),
+                static (parameter, factory) =>
+                    new(() => factory.InstanceFactory(factory._provider, parameter),
                         LazyThreadSafetyMode.ExecutionAndPublication),
-                _provider)
+                this)
             .Value;
+    }
+
+    protected virtual TInstance InstanceFactory(IServiceProvider provider, TParameter parameter)
+    {
+        return ActivatorUtilities.CreateInstance<TInstance>(provider, parameter);
     }
 
     public virtual bool TryRemove(TParameter parameter)

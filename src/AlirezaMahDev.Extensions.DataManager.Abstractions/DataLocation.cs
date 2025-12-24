@@ -12,14 +12,16 @@ public readonly struct DataLocation(IDataAccess access, long offset, Memory<byte
 
     public static DataLocation Create(IDataAccess access, int length)
     {
-        return Read(access, access.AllocateOffset(length), length);
+        var allocateMemory = access.AllocateMemory(length);
+        return new(access, allocateMemory.Offset, allocateMemory.Memory);
     }
 
     public static async ValueTask<DataLocation> CreateAsync(IDataAccess access,
         int length,
         CancellationToken cancellationToken = default)
     {
-        return await ReadAsync(access, access.AllocateOffset(length), length, cancellationToken);
+        var allocateMemory = await access.AllocateMemoryAsync(length, cancellationToken);
+        return new(access, allocateMemory.Offset, allocateMemory.Memory);
     }
 
     public static DataLocation Read(IDataAccess access, long offset, int length) =>
@@ -42,6 +44,31 @@ public readonly struct DataLocation(IDataAccess access, long offset, Memory<byte
         CancellationToken cancellationToken = default)
     {
         await access.WriteMemoryAsync(location.Offset, location.Memory, cancellationToken);
+    }
+
+    public bool Equals(DataLocation other)
+    {
+        return Offset == other.Offset && Length == other.Length;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is DataLocation location && Equals(location);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(Offset, Length);
+    }
+
+    public static bool operator ==(DataLocation left, DataLocation right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(DataLocation left, DataLocation right)
+    {
+        return !(left == right);
     }
 }
 
@@ -98,5 +125,30 @@ public readonly struct DataLocation<TValue>(DataLocation @base) : IDataLocation<
         CancellationToken cancellationToken = default)
     {
         await DataLocation.WriteAsync(access, location.Base, cancellationToken);
+    }
+
+    public bool Equals(DataLocation<TValue> other)
+    {
+        return Base.Equals(other.Base);
+    }
+    
+    public override bool Equals(object? obj)
+    {
+        return obj is DataLocation<TValue> location && Equals(location);
+    }
+
+    public override int GetHashCode()
+    {
+        return Base.GetHashCode();
+    }
+
+    public static bool operator ==(DataLocation<TValue> left, DataLocation<TValue> right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(DataLocation<TValue> left, DataLocation<TValue> right)
+    {
+        return !(left == right);
     }
 }

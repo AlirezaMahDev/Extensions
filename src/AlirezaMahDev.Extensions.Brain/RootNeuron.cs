@@ -5,7 +5,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-class RootNeuron<TData, TLink>(Neuron<TData, TLink> neuron) : Neuron<TData, TLink>(new(neuron._nerve, neuron.Offset))
+class RootNeuron<TData, TLink>(Neuron<TData, TLink> neuron) : Neuron<TData, TLink>(new(neuron._nerve, neuron.Location))
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>
@@ -16,34 +16,92 @@ class RootNeuron<TData, TLink>(Neuron<TData, TLink> neuron) : Neuron<TData, TLin
     public override IConnection<TData, TLink> GetOrAdd(TData data, TLink link, IConnection<TData, TLink>? connection) =>
         base.GetOrAdd(data, default, null);
 
+    public override async ValueTask<IConnection<TData, TLink>> GetOrAddAsync(TData data,
+        TLink link,
+        IConnection<TData, TLink>? connection,
+        CancellationToken cancellationToken = default) =>
+        await base.GetOrAddAsync(data, default, null, cancellationToken);
+
     protected override IConnection<TData, TLink> Add(TData data, TLink link, IConnection<TData, TLink>? previous)
     {
         using var scope = _lock.EnterScope();
 
-        if (_cache.TryGetValue(new(data, link, previous?.Offset ?? -1), out var item) && item.IsValueCreated)
-            return _nerve.ConnectionFactory.GetOrCreate(item.Value);
-
-        if (Connection?.FirstOrDefault(x =>
-                x.Neuron.RefData.Equals(data) && x.RefLink.Equals(link) && x.Previous?.Offset == previous?.Offset) is
-            { } connection)
+        var previousOffset = previous?.Offset ?? -1;
+        if (_dataCache.TryGetValue(new(data, link, previousOffset), out var connection))
             return connection;
 
-        var neuron = _nerve.NeuronFactory.GetOrCreate(new NerveArgs<TData, TLink>(_nerve,
-            _nerve.Location.Access
-                .Create(NeuronValue<TData>.Default with { Data = data })
-                .Offset));
+        connection = this.FirstOrDefault(x =>
+            x.GetNeuron().RefData.Equals(data) &&
+            x.RefLink.Equals(link) &&
+            x.RefValue.Previous == previousOffset);
 
-        var next = RefValue.Connection;
-        var connectionItem = _nerve.Location.Access
+        if (connection is not null)
+            return connection;
+
+        var neuronValue = _nerve.Location.Access
+            .Create(NeuronValue<TData>.Default with { Data = data });
+        var neuron = _nerve.NeuronFactory.GetOrCreate(neuronValue.Offset);
+
+        var connectionValue = _nerve.Location.Access
             .Create(ConnectionValue<TLink>.Default with
             {
                 Neuron = neuron.Offset,
-                Connection = next,
-                Previous = previous?.Offset ?? -1,
+                Next = RefValue.Connection,
+                Previous = previousOffset,
                 Link = link
             });
-        RefValue.Connection = connectionItem.Offset;
+        connection = _nerve.ConnectionFactory.GetOrCreate(connectionValue.Offset);
 
-        return _nerve.ConnectionFactory.GetOrCreate(connectionItem.Offset);
+        Update(location => location.RefValue.Connection = connectionValue.Offset);
+
+        return connection;
+    }
+
+    protected override async ValueTask<IConnection<TData, TLink>> AddAsync(TData data,
+        TLink link,
+        IConnection<TData, TLink>? previous,
+        CancellationToken cancellationToken = default)
+    {
+        _lock.Enter();
+        
+        try
+        {
+            var previousOffset = previous?.Offset ?? -1;
+            if (_dataCache.TryGetValue(new(data, link, previousOffset), out var connection))
+                return connection;
+
+            connection = await this.FirstOrDefaultAsync(async (x, token) =>
+                    (await x.GetNeuronAsync(token)).RefData.Equals(data) &&
+                    x.RefLink.Equals(link) &&
+                    x.RefValue.Previous == previousOffset,
+                cancellationToken);
+
+            if (connection is not null)
+                return connection;
+
+            var neuronValue = await _nerve.Location.Access
+                .CreateAsync(NeuronValue<TData>.Default with { Data = data }, cancellationToken);
+            var neuron = await _nerve.NeuronFactory
+                .GetOrCreateAsync(neuronValue.Offset, cancellationToken);
+
+            var connectionValue = await _nerve.Location.Access
+                .CreateAsync(ConnectionValue<TLink>.Default with
+                    {
+                        Neuron = neuron.Offset,
+                        Next = RefValue.Connection,
+                        Previous = previousOffset,
+                        Link = link,
+                    },
+                    cancellationToken);
+            connection = await _nerve.ConnectionFactory.GetOrCreateAsync(connectionValue.Offset, cancellationToken);
+
+            Update(location => location.RefValue.Connection = connectionValue.Offset);
+
+            return connection;
+        }
+        finally
+        {
+            _lock.Exit();
+        }
     }
 }

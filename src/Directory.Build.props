@@ -4,7 +4,7 @@
     <IsPackable>true</IsPackable>
     <RepositoryType>git</RepositoryType>
     <Version>0.0.1-alpha9</Version>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
     <Authors>AlirezaMahDev</Authors>
     <Copyright>Copyright (c) AlirezaMahDev 2025</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>

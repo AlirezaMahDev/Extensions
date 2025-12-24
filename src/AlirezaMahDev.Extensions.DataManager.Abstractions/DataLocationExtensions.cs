@@ -16,6 +16,13 @@ public static class DataLocationExtensions
         }
     }
 
+    extension(DataLocation location)
+    {
+        public DataLocation<TValue> As<TValue>()
+            where TValue : unmanaged, IDataValue<TValue> =>
+            new(location);
+    }
+
     extension<TValue>(DataLocation<TValue>)
         where TValue : unmanaged, IDataValue<TValue>, IDataValueDefault<TValue>
     {
@@ -34,21 +41,20 @@ public static class DataLocationExtensions
     extension<TValue>(DataLocation<TValue> location)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public DataLocation<TValue> Update(Func<TValue, TValue> func)
+        public DataLocation<TValue> Update(UpdateDataLocationAction<TValue> action)
         {
             location.Access.Lock(location.Offset);
-            location.RefValue = func(location.RefValue);
+            action(location);
             location.Access.UnLock(location.Offset);
             return location;
         }
 
         public async ValueTask<DataLocation<TValue>> UpdateAsync(
-            Func<TValue, CancellationToken, ValueTask<TValue>> func,
+            UpdateDataLocationAsyncAction<TValue> action,
             CancellationToken cancellationToken = default)
         {
             location.Access.Lock(location.Offset);
-            var newValue = await func(location.RefValue, cancellationToken).ConfigureAwait(true);
-            location.RefValue = newValue;
+            await action(location, cancellationToken);
             location.Access.UnLock(location.Offset);
             return location;
         }

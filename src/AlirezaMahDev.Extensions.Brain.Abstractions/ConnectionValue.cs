@@ -14,7 +14,9 @@ public record struct ConnectionValue<TLink> :
     ISubtractionOperators<TLink, TLink, TLink>
 {
     public long Neuron;
-    public long Connection;
+    public long SubConnection;
+    public long NextSubConnection;
+    public long Next;
     public long Previous;
     public float Score;
     public uint Weight;
@@ -23,7 +25,9 @@ public record struct ConnectionValue<TLink> :
     public static ConnectionValue<TLink> Default { get; } = new()
     {
         Neuron = -1L,
-        Connection = -1L,
+        SubConnection = -1L,
+        NextSubConnection = -1L,
+        Next = -1L,
         Previous = -1L,
         Score = 1f,
         Weight = 0u,

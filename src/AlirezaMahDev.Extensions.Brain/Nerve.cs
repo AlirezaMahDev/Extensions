@@ -7,7 +7,6 @@ using AlirezaMahDev.Extensions.DataManager;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
@@ -24,7 +23,6 @@ class Nerve<
     ISubtractionOperators<TLink, TLink, TLink>
 {
     private readonly IDataAccess _dataAccess;
-    private readonly ILogger<Nerve<TData, TLink>> _logger;
 
     public string Name { get; }
     public DataLocation<DataPath> Location { get; }
@@ -37,10 +35,8 @@ class Nerve<
 
     public Nerve(IServiceProvider serviceProvider,
         IDataManager dataManager,
-        string name,
-        ILogger<Nerve<TData, TLink>> logger)
+        string name)
     {
-        _logger = logger;
         Name = name;
         _dataAccess = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
         Location = _dataAccess.GetRoot().Wrap(x => x.Dictionary()).GetOrAdd(".nerve");
@@ -61,16 +57,31 @@ class Nerve<
 
     public void Learn(TLink link, params ReadOnlySpan<TData> data)
     {
-        using var enumerator = data.GetEnumerator();
-
         var connection = RootConnection;
-        Interlocked.Increment(ref connection.Neuron.RefValue.Weight);
-        Interlocked.Increment(ref connection.RefValue.Weight);
-        while (enumerator.MoveNext())
+        foreach (var current in data)
         {
-            connection = connection.Neuron.GetOrAdd(enumerator.Current, link, connection);
-            Interlocked.Increment(ref connection.Neuron.RefValue.Weight);
-            Interlocked.Increment(ref connection.RefValue.Weight);
+            var neuron = connection.GetNeuron();
+            connection = neuron.GetOrAdd(current, link, connection);
+            neuron = connection.GetNeuron();
+
+            Interlocked.Increment(ref neuron.Location.RefValue.Weight);
+            Interlocked.Increment(ref connection.Location.RefValue.Weight);
+        }
+    }
+
+    public async ValueTask LearnAsync(TLink link,
+        ReadOnlyMemory<TData> data,
+        CancellationToken cancellationToken = default)
+    {
+        var connection = RootConnection;
+        for (var i = 0; i < data.Length; i++)
+        {
+            var current = data.Span[i];
+            var neuron = await connection.GetNeuronAsync(cancellationToken);
+            connection = await neuron.GetOrAddAsync(current, link, connection, cancellationToken);
+            neuron = await connection.GetNeuronAsync(cancellationToken);
+            Interlocked.Increment(ref neuron.Location.RefValue.Weight);
+            Interlocked.Increment(ref connection.Location.RefValue.Weight);
         }
     }
 
@@ -105,7 +116,7 @@ class Nerve<
                     a.CompareTo(link).CompareTo(b.CompareTo(link))));
             if (next is null)
                 return;
-            result.Add(think.Append(next.Neuron.RefData, next.RefLink, next));
+            result.Add(think.Append(next.GetNeuron().RefData, next.RefLink, next));
         }
 
         if (!result.CanAdd(think))
@@ -113,7 +124,7 @@ class Nerve<
             return;
         }
 
-        TData data = input.Span[0];
+        var data = input.Span[0];
 
         var pain = new DataPairLink<TData, TLink>(data, link);
         var connection = think.Connection;
@@ -130,13 +141,13 @@ class Nerve<
     }
 
     public async ValueTask<Think<TData, TLink>?> ThinkAsync(TLink link,
-        CancellationToken cancellationToken = default,
-        params TData[] data)
+        ReadOnlyMemory<TData> data,
+        CancellationToken cancellationToken = default)
     {
         var result = new ThinkResult<TData, TLink>();
 
         await ThinkCoreAsync(link,
-            data.AsMemory(),
+            data,
             new(default, link, RootConnection, null),
             result,
             cancellationToken);
@@ -144,9 +155,14 @@ class Nerve<
         return result.Think;
     }
 
+    public async ValueTask<Think<TData, TLink>?> ThinkAsync(TLink link,
+        CancellationToken cancellationToken = default,
+        params TData[] data) =>
+        await ThinkAsync(link, data.AsMemory(), cancellationToken);
+
     private static async Task ThinkCoreAsync(
         TLink link,
-        Memory<TData> input,
+        ReadOnlyMemory<TData> input,
         Think<TData, TLink> think,
         ThinkResult<TData, TLink> result,
         CancellationToken cancellationToken = default)
@@ -163,7 +179,10 @@ class Nerve<
                     a.CompareTo(link).CompareTo(b.CompareTo(link))));
             if (next is null)
                 return;
-            result.Add(think.Append(next.Neuron.RefData, next.RefLink, next));
+            result.Add(await think.AppendAsync((await next.GetNeuronAsync(cancellationToken)).RefData,
+                next.RefLink,
+                next,
+                cancellationToken));
         }
 
         if (!result.CanAdd(think))
@@ -173,22 +192,22 @@ class Nerve<
 
         await Task.Yield();
 
-        TData data = input.Span[0];
+        var data = input.Span[0];
 
         var pain = new DataPairLink<TData, TLink>(data, link);
         var connection = think.Connection;
-        var span = connection.ToArray().AsSpan();
-        span.Sort((a, b) =>
+        var memory = connection.ToArray().AsMemory();
+        memory.Span.Sort((a, b) =>
             a.CompareTo(pain).CompareTo(b.CompareTo(pain)));
 
-        using var tasks = MemoryPool<Task>.Shared.Rent(span.Length);
+        using var tasks = MemoryPool<Task>.Shared.Rent(memory.Length);
         var taskCount = 0;
         var nextInput = input[1..];
 
-        for (int i = 0; i < span.Length; i++)
+        for (var i = 0; i < memory.Length; i++)
         {
-            var innerConnection = span[i];
-            var innerThink = think.Append(data, link, innerConnection);
+            var innerConnection = memory.Span[i];
+            var innerThink = await think.AppendAsync(data, link, innerConnection, cancellationToken);
             if (result.CanAdd(innerThink))
             {
                 tasks.Memory.Span[i] = ThinkCoreAsync(link, nextInput, innerThink, result, cancellationToken);

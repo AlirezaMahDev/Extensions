@@ -15,61 +15,104 @@ class Connection<TData, TLink> : IConnection<TData, TLink>
     IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
     ISubtractionOperators<TLink, TLink, TLink>
 {
-    private readonly Lock _lock = new();
-    protected internal readonly Neuron<TData, TLink> _neuron;
     protected internal readonly Nerve<TData, TLink> _nerve;
 
-    private IConnection<TData, TLink>[] Cache { get; set; } = [];
+    protected internal Neuron<TData, TLink>? _neuron;
+    private Connection<TData, TLink>? _previous;
+    private Connection<TData, TLink>? _next;
+    private Connection<TData, TLink>? _subConnection;
+    private Connection<TData, TLink>? _nextSubConnection;
+
+
     public virtual DataLocation<ConnectionValue<TLink>> Location { get; }
 
-    public Connection(NerveArgs<TData, TLink> args)
+    public Connection(ConnectionArgs<TData, TLink> args)
     {
         _nerve = args.Nerve;
-        Location = _nerve.Location.Access.Read<ConnectionValue<TLink>>(args.Offset);
-        _neuron = _nerve.NeuronFactory.GetOrCreate(args with { Offset = RefValue.Neuron });
+        Location = args.Location;
+        _neuron = _nerve.NeuronFactory.GetOrCreate(RefValue.Neuron);
     }
 
     public long Offset => Location.Offset;
-    public ref ConnectionValue<TLink> RefValue => ref Location.RefValue;
+    public ref readonly ConnectionValue<TLink> RefValue => ref Location.RefValue;
 
-    public ref TLink RefLink => ref RefValue.Link;
+    public ref readonly TLink RefLink => ref RefValue.Link;
 
-    public virtual INeuron<TData, TLink> Neuron => _neuron;
-
-    public IConnection<TData, TLink>? Previous => RefValue.Previous != -1
-        ? _nerve.ConnectionFactory.GetOrCreate(new NerveArgs<TData, TLink>(_nerve, RefValue.Previous))
-        : null;
-
-    public IConnection<TData, TLink>? Next => RefValue.Connection != -1
-        ? _nerve.ConnectionFactory.GetOrCreate(new NerveArgs<TData, TLink>(_nerve, RefValue.Connection))
-        : null;
-
-    public virtual IConnection<TData, TLink>[] ToArray()
+    public void Update(UpdateDataLocationAction<ConnectionValue<TLink>> action)
     {
-        long? cacheKey = Cache.Length > 0 ? Cache[0].Offset : null;
-        if (!cacheKey.HasValue || cacheKey.Value != Neuron.RefValue.Connection)
-        {
-            using var scope = _lock.EnterScope();
-            var refValueConnection = Neuron.RefValue.Connection;
-            if (!cacheKey.HasValue || cacheKey.Value != refValueConnection)
-            {
-                Cache =
-                [
-                    .. Neuron.GetConnections()
-                        .Where(x => x.RefValue.Previous == Offset)
-                        .Select(x => _nerve.ConnectionFactory
-                            .GetOrCreate(new NerveArgs<TData, TLink>(_nerve, x.Offset)))
-                ];
-            }
-        }
-
-        return Cache;
+        Location.Update(action);
+        CheckCache();
     }
 
-    public virtual IEnumerator<IConnection<TData, TLink>> GetEnumerator() =>
-        ToArray().AsEnumerable().GetEnumerator();
+    public async ValueTask UpdateAsync(UpdateDataLocationAsyncAction<ConnectionValue<TLink>> action,
+        CancellationToken cancellationToken = default)
+    {
+        await Location.UpdateAsync(action, cancellationToken);
+        CheckCache();
+    }
 
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    private void CheckCache()
+    {
+        if ((_previous?.Offset ?? -1L) != RefValue.Previous)
+            _previous = null;
+        if ((_next?.Offset ?? -1L) != RefValue.Next)
+            _next = null;
+        if ((_subConnection?.Offset ?? -1L) != RefValue.SubConnection)
+            _subConnection = null;
+        if ((_nextSubConnection?.Offset ?? -1L) != RefValue.NextSubConnection)
+            _nextSubConnection = null;
+    }
+
+    public virtual INeuron<TData, TLink> GetNeuron() =>
+        _neuron ??= _nerve.NeuronFactory.GetOrCreate(RefValue.Neuron);
+
+    public virtual async ValueTask<INeuron<TData, TLink>>
+        GetNeuronAsync(CancellationToken cancellationToken = default) =>
+        _neuron ??= await _nerve.NeuronFactory.GetOrCreateAsync(RefValue.Neuron, cancellationToken);
+
+    public IConnection<TData, TLink>? GetPrevious() =>
+        _previous ??= RefValue.Previous != -1
+            ? _nerve.ConnectionFactory.GetOrCreate(RefValue.Previous)
+            : null;
+
+    public async ValueTask<IConnection<TData, TLink>?>
+        GetPreviousAsync(CancellationToken cancellationToken = default) =>
+        _previous ??= RefValue.Previous != -1
+            ? await _nerve.ConnectionFactory.GetOrCreateAsync(RefValue.Previous, cancellationToken)
+            : null;
+
+    public IConnection<TData, TLink>? GetNext() =>
+        _next ??= RefValue.Next != -1
+            ? _nerve.ConnectionFactory.GetOrCreate(RefValue.Next)
+            : null;
+
+    public async ValueTask<IConnection<TData, TLink>?> GetNextAsync(CancellationToken cancellationToken = default) =>
+        _next ??= RefValue.Next != -1
+            ? await _nerve.ConnectionFactory.GetOrCreateAsync(RefValue.Next, cancellationToken)
+            : null;
+
+    public IConnection<TData, TLink>? GetSubConnection() =>
+        _subConnection ??= RefValue.SubConnection != -1
+            ? _nerve.ConnectionFactory.GetOrCreate(RefValue.SubConnection)
+            : null;
+
+    public async ValueTask<IConnection<TData, TLink>?> GetSubConnectionAsync(CancellationToken cancellationToken =
+        default) =>
+        _subConnection ??= RefValue.SubConnection != -1
+            ? await _nerve.ConnectionFactory.GetOrCreateAsync(RefValue.SubConnection, cancellationToken)
+            : null;
+
+    public IConnection<TData, TLink>? GetNextSubConnection() =>
+        _nextSubConnection ??= RefValue.NextSubConnection != -1
+            ? _nerve.ConnectionFactory.GetOrCreate(RefValue.NextSubConnection)
+            : null;
+
+    public async ValueTask<IConnection<TData, TLink>?> GetNextSubConnectionAsync(CancellationToken cancellationToken =
+        default) =>
+        _nextSubConnection ??= RefValue.NextSubConnection != -1
+            ? await _nerve.ConnectionFactory.GetOrCreateAsync(RefValue.NextSubConnection, cancellationToken)
+            : null;
+
 
     public int CompareTo(DataPairLink<TData, TLink> other)
     {
@@ -77,7 +120,7 @@ class Connection<TData, TLink> : IConnection<TData, TLink>
         if (link != 0)
             return link;
 
-        var data = Math.Abs(Comparer<TData>.Default.Compare(Neuron.RefData, other.Data));
+        var data = Math.Abs(Comparer<TData>.Default.Compare(GetNeuron().RefData, other.Data));
         if (data != 0)
             return data;
 
@@ -91,5 +134,29 @@ class Connection<TData, TLink> : IConnection<TData, TLink>
             return link;
 
         return 0;
+    }
+
+    public virtual IEnumerator<IConnection<TData, TLink>> GetEnumerator()
+    {
+        var current = GetSubConnection();
+        while (current is not null)
+        {
+            yield return current;
+            current = current.GetNextSubConnection();
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() =>
+        GetEnumerator();
+
+    public async IAsyncEnumerator<IConnection<TData, TLink>>
+        GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    {
+        var current = await GetSubConnectionAsync(cancellationToken);
+        while (current is not null)
+        {
+            yield return current;
+            current = await current.GetNextSubConnectionAsync(cancellationToken);
+        }
     }
 }

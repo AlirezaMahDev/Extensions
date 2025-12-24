@@ -4,7 +4,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public interface IConnection<TData, TLink> : IEnumerable<IConnection<TData, TLink>>,
+public interface IConnection<TData, TLink> : IEnumerable<IConnection<TData, TLink>>, IAsyncEnumerable<IConnection<TData, TLink>>,
     IComparable<DataPairLink<TData, TLink>>,
     IComparable<TLink>
     where TData : unmanaged,
@@ -15,11 +15,28 @@ public interface IConnection<TData, TLink> : IEnumerable<IConnection<TData, TLin
     ISubtractionOperators<TLink, TLink, TLink>
 {
     DataLocation<ConnectionValue<TLink>> Location { get; }
+
     long Offset { get; }
-    ref ConnectionValue<TLink> RefValue { get; }
-    ref TLink RefLink { get; }
-    INeuron<TData, TLink> Neuron { get; }
-    IConnection<TData, TLink>? Previous { get; }
-    IConnection<TData, TLink>? Next { get; }
-    IConnection<TData, TLink>[] ToArray();
+    ref readonly  ConnectionValue<TLink> RefValue { get; }
+    ref readonly  TLink RefLink { get; }
+
+    public void Update(UpdateDataLocationAction<ConnectionValue<TLink>> action);
+
+    public ValueTask UpdateAsync(UpdateDataLocationAsyncAction<ConnectionValue<TLink>> action,
+        CancellationToken cancellationToken = default);
+
+    INeuron<TData, TLink> GetNeuron();
+    ValueTask<INeuron<TData, TLink>> GetNeuronAsync(CancellationToken cancellationToken = default);
+
+    IConnection<TData, TLink>? GetPrevious();
+    ValueTask<IConnection<TData, TLink>?> GetPreviousAsync(CancellationToken cancellationToken = default);
+
+    IConnection<TData, TLink>? GetNext();
+    ValueTask<IConnection<TData, TLink>?> GetNextAsync(CancellationToken cancellationToken = default);
+    
+    IConnection<TData, TLink>? GetSubConnection();
+    ValueTask<IConnection<TData, TLink>?> GetSubConnectionAsync(CancellationToken cancellationToken = default);
+    
+    IConnection<TData, TLink>? GetNextSubConnection();
+    ValueTask<IConnection<TData, TLink>?> GetNextSubConnectionAsync(CancellationToken cancellationToken = default);
 }

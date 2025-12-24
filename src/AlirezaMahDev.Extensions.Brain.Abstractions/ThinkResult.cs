@@ -10,7 +10,6 @@ public class ThinkResult<TData, TLink>
     IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
     ISubtractionOperators<TLink, TLink, TLink>
 {
-    private Comparer<Think<TData, TLink>> Comparer { get; } = Comparer<Think<TData, TLink>>.Default;
     private readonly Lock _lock = new();
 
     public Think<TData, TLink>? Think { get; set; }

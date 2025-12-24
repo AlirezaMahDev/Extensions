@@ -9,7 +9,7 @@ public static class DataLocationDataTrashExtensions
         {
             dataLocation.Access.GetTrash()
                 .Wrap(x => x.Collection())
-                .Add(x => x with
+                .Add(x => x.RefValue = x.RefValue with
                 {
                     Offset = dataLocation.Offset,
                     Length = dataLocation.Length
@@ -22,7 +22,7 @@ public static class DataLocationDataTrashExtensions
         {
             await (await dataLocation.Access.GetTrashAsync(cancellationToken))
                 .Wrap(x => x.Collection())
-                .AddAsync(x => x with
+                .AddAsync(x => x.RefValue = x.RefValue with
                     {
                         Offset = dataLocation.Offset,
                         Length = dataLocation.Length

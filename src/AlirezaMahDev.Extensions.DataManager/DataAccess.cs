@@ -30,7 +30,13 @@ class DataAccess : IDisposable, IDataAccess
         {
             this.Create<DataPath>();
         }
+
         Save();
+    }
+
+    private long AllocateOffset(int length)
+    {
+        return Interlocked.Add(ref _length, length) - length;
     }
 
     public DataLocation<DataPath> GetRoot() =>
@@ -59,9 +65,27 @@ class DataAccess : IDisposable, IDataAccess
             .GetOrCreateDataAsync<DataPath, DataTrash>(cancellationToken);
     }
 
-    public long AllocateOffset(int length)
+    public AllocateMemory AllocateMemory(int length)
     {
-        return Interlocked.Add(ref _length, length) - length;
+        var offset = AllocateOffset(length);
+        var dataMemory = new DataMemory(length);
+        _cache.TryAdd(offset, dataMemory);
+        dataMemory.CreateHash();
+        return new(offset, dataMemory.Memory);
+    }
+
+    public ValueTask<AllocateMemory> AllocateMemoryAsync(int length, CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromCanceled<AllocateMemory>(cancellationToken);
+        }
+
+        var offset = AllocateOffset(length);
+        var dataMemory = new DataMemory(length);
+        _cache.TryAdd(offset, dataMemory);
+        dataMemory.CreateHash();
+        return ValueTask.FromResult(new AllocateMemory(offset, dataMemory.Memory));
     }
 
     public Memory<byte> ReadMemory(long offset, int length)
@@ -70,13 +94,15 @@ class DataAccess : IDisposable, IDataAccess
         {
             return dataMemory.Memory;
         }
+        
+        if (_cache.TryAdd(offset, dataMemory = new(length)))
+        {
+            RandomAccess.Read(_safeFileHandle, dataMemory.Memory.Span, offset);
+            dataMemory.CreateHash();
+            return dataMemory.Memory;
+        }
 
-        _cache.TryAdd(offset, dataMemory = new(length));
-
-        RandomAccess.Read(_safeFileHandle, dataMemory.Memory.Span, offset);
-
-        dataMemory.CreateHash();
-        return dataMemory.Memory;
+        return _cache[offset].Memory;
     }
 
     public async ValueTask<Memory<byte>> ReadMemoryAsync(long offset,
@@ -88,12 +114,14 @@ class DataAccess : IDisposable, IDataAccess
             return dataMemory.Memory;
         }
 
-        _cache.TryAdd(offset, dataMemory = new(length));
+        if (_cache.TryAdd(offset, dataMemory = new(length)))
+        {
+            await RandomAccess.ReadAsync(_safeFileHandle, dataMemory.Memory, offset, cancellationToken);
+            dataMemory.CreateHash();
+            return dataMemory.Memory;
+        }
 
-        await RandomAccess.ReadAsync(_safeFileHandle, dataMemory.Memory, offset, cancellationToken);
-
-        dataMemory.CreateHash();
-        return dataMemory.Memory;
+        return _cache[offset].Memory;
     }
 
     public void WriteMemory(long offset, Memory<byte> memory)
@@ -110,30 +138,36 @@ class DataAccess : IDisposable, IDataAccess
 
     public void Save()
     {
-        RandomAccess.FlushToDisk(_safeFileHandle);
-        Parallel.ForEach(_cache.Where(x => !x.Value.CheckHash),
+        Parallel.ForEach(_cache,
             (pair, _) =>
-                WriteMemory(pair.Key, pair.Value.Memory));
+            {
+                if (!pair.Value.CheckHash)
+                    WriteMemory(pair.Key, pair.Value.Memory);
+            });
+        RandomAccess.FlushToDisk(_safeFileHandle);
     }
 
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
-        RandomAccess.FlushToDisk(_safeFileHandle);
-        await Parallel.ForEachAsync(_cache.Where(x => !x.Value.CheckHash),
+        await Parallel.ForEachAsync(_cache,
             cancellationToken,
             async ValueTask (pair, token) =>
-                await WriteMemoryAsync(pair.Key, pair.Value.Memory, token));
+            {
+                if (!pair.Value.CheckHash)
+                    await WriteMemoryAsync(pair.Key, pair.Value.Memory, token);
+            });
+        RandomAccess.FlushToDisk(_safeFileHandle);
     }
 
     public void Lock(long offset)
     {
-        ref var lockLocation = ref _lock.GetOrAdd(offset, _ => new bool[] { false }).Span[0];
+        ref var lockLocation = ref _lock.GetOrAdd(offset, _ => (bool[])[false]).Span[0];
         while (!Interlocked.CompareExchange(ref lockLocation, true, false)) ;
     }
 
     public void UnLock(long offset)
     {
-        ref var lockLocation = ref _lock.GetOrAdd(offset, _ => new bool[] { false }).Span[0];
+        ref var lockLocation = ref _lock.GetOrAdd(offset, _ => (bool[])[false]).Span[0];
         while (Volatile.Read(ref lockLocation) && Interlocked.CompareExchange(ref lockLocation, false, true)) ;
     }
 

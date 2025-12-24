@@ -28,10 +28,35 @@ public record Think<TData, TLink>(
 
     public Think<TData, TLink> Append(TData data, TLink link, IConnection<TData, TLink> connection)
     {
-        var differenceData = data - connection.Neuron.RefData;
+        var differenceData = data - connection.GetNeuron().RefData;
         if (differenceData.CompareTo(default) < 0)
         {
-            differenceData = connection.Neuron.RefData - data;
+            differenceData = connection.GetNeuron().RefData - data;
+        }
+
+        var differenceLink = link - connection.RefLink;
+        if (differenceLink.CompareTo(default) < 0)
+        {
+            differenceLink = connection.RefLink - link;
+        }
+
+        return new(data, link, connection, this)
+        {
+            Count = Count + 1,
+            DifferenceData = differenceData,
+            DifferenceLink = differenceLink,
+            AllDifferenceData = AllDifferenceData + differenceData,
+            AllDifferenceLink = AllDifferenceLink + differenceLink
+        };
+    }
+
+
+    public async ValueTask<Think<TData, TLink>> AppendAsync(TData data, TLink link, IConnection<TData, TLink> connection, CancellationToken cancellationToken = default)
+    {
+        var differenceData = data - (await connection.GetNeuronAsync(cancellationToken)).RefData;
+        if (differenceData.CompareTo(default) < 0)
+        {
+            differenceData = (await connection.GetNeuronAsync(cancellationToken)).RefData - data;
         }
 
         var differenceLink = link - connection.RefLink;
@@ -55,11 +80,11 @@ public record Think<TData, TLink>(
         if (other is null)
             return 1;
 
-        int allDifferenceData = AllDifferenceData.CompareTo(other.AllDifferenceData);
+        var allDifferenceData = AllDifferenceData.CompareTo(other.AllDifferenceData);
         if (allDifferenceData != 0)
             return allDifferenceData;
 
-        int alDifferenceLink = AllDifferenceLink.CompareTo(other.AllDifferenceLink);
+        var alDifferenceLink = AllDifferenceLink.CompareTo(other.AllDifferenceLink);
         if (alDifferenceLink != 0)
             return alDifferenceLink;
 

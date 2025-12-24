@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 using Microsoft.Extensions.Logging;
 
 namespace AlirezaMahDev.Extensions.Progress;
@@ -8,7 +6,6 @@ public partial class ProgressLogger(ILogger? logger, Action<ProgressLoggerState>
     : Progress<ProgressLoggerState>(action ?? (_ => { })),IDisposable
 {
     private int _count;
-    private Stopwatch _stopwatch = Stopwatch.StartNew();
 
     public ProgressLoggerState State { get; private set; } = ProgressLoggerState.Empty;
 
