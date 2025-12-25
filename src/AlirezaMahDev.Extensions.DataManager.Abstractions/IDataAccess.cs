@@ -11,9 +11,10 @@ public interface IDataAccess
     ValueTask<DataLocation<DataTrash>> GetTrashAsync(CancellationToken cancellationToken = default);
 
     AllocateMemory AllocateMemory(int length);
+
     ValueTask<AllocateMemory> AllocateMemoryAsync(int length,
         CancellationToken cancellationToken = default);
-    
+
     Memory<byte> ReadMemory(long offset, int length);
 
     ValueTask<Memory<byte>> ReadMemoryAsync(long offset,
@@ -26,6 +27,9 @@ public interface IDataAccess
     void Save();
     Task SaveAsync(CancellationToken cancellationToken = default);
 
-    void Lock(long offset);
-    void UnLock(long offset);
+    // public void Flush();
+    // public ValueTask FlushAsync(CancellationToken cancellationToken = default);
+
+    LockScope LockScope(long offset);
+    Task<LockScope> LockScopeAsync(long offset, CancellationToken cancellationToken = default);
 }

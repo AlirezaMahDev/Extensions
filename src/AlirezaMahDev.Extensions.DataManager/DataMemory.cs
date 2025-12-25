@@ -5,6 +5,8 @@ namespace AlirezaMahDev.Extensions.DataManager;
 
 class DataMemory : IMemoryOwner<byte>
 {
+    public SemaphoreSlim SemaphoreSlim { get; } = new(1, 1);
+    
     private readonly IMemoryOwner<byte> _memoryOwner;
     private UInt128 _hash;
 
@@ -15,10 +17,10 @@ class DataMemory : IMemoryOwner<byte>
         Memory.Span.Clear();
     }
 
-    public bool CheckHash =>
-        _hash == GenerateHash();
+    public bool HasChanged =>
+        _hash != GenerateHash();
 
-    public void CreateHash() =>
+    public void CreateChangePoint() =>
         _hash = GenerateHash();
 
     private UInt128 GenerateHash() =>
@@ -26,6 +28,9 @@ class DataMemory : IMemoryOwner<byte>
 
     public Memory<byte> Memory { get; }
 
-    public void Dispose() =>
+    public void Dispose()
+    {
+        SemaphoreSlim.Dispose();
         _memoryOwner.Dispose();
+    }
 }

@@ -1,5 +1,6 @@
 using System.Numerics;
 
+using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
@@ -20,18 +21,30 @@ public interface INeuron<TData, TLink> : IEnumerable<IConnection<TData, TLink>>,
     ref readonly NeuronValue<TData> RefValue { get; }
     ref readonly TData RefData { get; }
 
-    public void Update(UpdateDataLocationAction<NeuronValue<TData>> action);
+    public void Lock(DataLocationAction<NeuronValue<TData>> action);
 
-    public ValueTask UpdateAsync(UpdateDataLocationAsyncAction<NeuronValue<TData>> action,
+    public ValueTask LockAsync(DataLocationAsyncAction<NeuronValue<TData>> action,
+        CancellationToken cancellationToken = default);
+
+    public TResult Lock<TResult>(DataLocationFunc<NeuronValue<TData>, TResult> func);
+
+    public ValueTask<TResult> LockAsync<TResult>(DataLocationAsyncFunc<NeuronValue<TData>, TResult> func,
         CancellationToken cancellationToken = default);
 
     IConnection<TData, TLink>? GetConnection();
     ValueTask<IConnection<TData, TLink>?> GetConnectionAsync(CancellationToken cancellationToken = default);
 
-    IConnection<TData, TLink> GetOrAdd(TData data, TLink link, IConnection<TData, TLink>? connection);
+    IConnection<TData, TLink>? Find(ReadOnlyMemoryValue<TData> data, ReadOnlyMemoryValue<TLink> link, IConnection<TData, TLink>? connection);
 
-    ValueTask<IConnection<TData, TLink>> GetOrAddAsync(TData data,
-        TLink link,
+    ValueTask<IConnection<TData, TLink>?> FindAsync(ReadOnlyMemoryValue<TData> data,
+        ReadOnlyMemoryValue<TLink> link,
+        IConnection<TData, TLink>? connection,
+        CancellationToken cancellationToken = default);
+
+    IConnection<TData, TLink> FindOrAdd(ReadOnlyMemoryValue<TData> data, ReadOnlyMemoryValue<TLink> link, IConnection<TData, TLink>? connection);
+
+    ValueTask<IConnection<TData, TLink>> FindOrAddAsync(ReadOnlyMemoryValue<TData> data,
+        ReadOnlyMemoryValue<TLink> link,
         IConnection<TData, TLink>? connection,
         CancellationToken cancellationToken = default);
 }

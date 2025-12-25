@@ -1,13 +1,14 @@
 using System.Collections;
 using System.Numerics;
 
+using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.Brain.Abstractions;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-class Connection<TData, TLink> : IConnection<TData, TLink>
+class Connection<TData, TLink>(ConnectionArgs<TData, TLink> args) : IConnection<TData, TLink>
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>
@@ -15,40 +16,50 @@ class Connection<TData, TLink> : IConnection<TData, TLink>
     IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
     ISubtractionOperators<TLink, TLink, TLink>
 {
-    protected internal readonly Nerve<TData, TLink> _nerve;
+    protected internal readonly Nerve<TData, TLink> _nerve = args.Nerve;
 
-    protected internal Neuron<TData, TLink>? _neuron;
+    private Neuron<TData, TLink>? _neuron;
+
     private Connection<TData, TLink>? _previous;
     private Connection<TData, TLink>? _next;
     private Connection<TData, TLink>? _subConnection;
     private Connection<TData, TLink>? _nextSubConnection;
 
+    private IConnection<TData, TLink>? _current;
 
-    public virtual DataLocation<ConnectionValue<TLink>> Location { get; }
-
-    public Connection(ConnectionArgs<TData, TLink> args)
-    {
-        _nerve = args.Nerve;
-        Location = args.Location;
-        _neuron = _nerve.NeuronFactory.GetOrCreate(RefValue.Neuron);
-    }
+    public virtual DataLocation<ConnectionValue<TLink>> Location { get; } = args.Location;
 
     public long Offset => Location.Offset;
     public ref readonly ConnectionValue<TLink> RefValue => ref Location.RefValue;
 
     public ref readonly TLink RefLink => ref RefValue.Link;
 
-    public void Update(UpdateDataLocationAction<ConnectionValue<TLink>> action)
+    public void Lock(DataLocationAction<ConnectionValue<TLink>> action)
     {
-        Location.Update(action);
+        Location.Lock(action);
         CheckCache();
     }
 
-    public async ValueTask UpdateAsync(UpdateDataLocationAsyncAction<ConnectionValue<TLink>> action,
+    public async ValueTask LockAsync(DataLocationAsyncAction<ConnectionValue<TLink>> action,
         CancellationToken cancellationToken = default)
     {
-        await Location.UpdateAsync(action, cancellationToken);
+        await Location.LockAsync(action, cancellationToken);
         CheckCache();
+    }
+
+    public TResult Lock<TResult>(DataLocationFunc<ConnectionValue<TLink>, TResult> func)
+    {
+        var result = Location.Lock(func);
+        CheckCache();
+        return result;
+    }
+
+    public ValueTask<TResult> LockAsync<TResult>(DataLocationAsyncFunc<ConnectionValue<TLink>, TResult> func,
+        CancellationToken cancellationToken = default)
+    {
+        var result = Location.LockAsync(func, cancellationToken);
+        CheckCache();
+        return result;
     }
 
     private void CheckCache()
@@ -113,6 +124,139 @@ class Connection<TData, TLink> : IConnection<TData, TLink>
             ? await _nerve.ConnectionFactory.GetOrCreateAsync(RefValue.NextSubConnection, cancellationToken)
             : null;
 
+    public IConnection<TData, TLink>? Find(INeuron<TData, TLink> neuron, ReadOnlyMemoryValue<TLink> link)
+    {
+        ReadOnlyMemoryValue<NerveCacheKey> cacheKey = NerveHelper.CreateCacheKey(GetNeuron(), neuron, link, this);
+        return FindCore(cacheKey, neuron, link);
+    }
+
+    private IConnection<TData, TLink>? FindCore(ReadOnlyMemoryValue<NerveCacheKey> cacheKey,
+        INeuron<TData, TLink> neuron,
+        ReadOnlyMemoryValue<TLink> link)
+    {
+        if (_nerve.Cache.TryGet<IConnection<TData, TLink>>(in cacheKey.Value, out var connection))
+            return connection;
+
+        var result = this.FirstOrDefault(x =>
+            x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value));
+
+        if (result is not null)
+            _nerve.Cache.Set(in cacheKey.Value, result);
+
+        return result;
+    }
+
+    public async ValueTask<IConnection<TData, TLink>?> FindAsync(INeuron<TData, TLink> neuron,
+        ReadOnlyMemoryValue<TLink> link,
+        CancellationToken cancellationToken = default)
+    {
+        ReadOnlyMemoryValue<NerveCacheKey> cacheKey =
+            NerveHelper.CreateCacheKey(await GetNeuronAsync(cancellationToken), neuron, link, this);
+        return await FindAsyncCore(cacheKey, neuron, link, cancellationToken);
+    }
+
+    private async ValueTask<IConnection<TData, TLink>?> FindAsyncCore(ReadOnlyMemoryValue<NerveCacheKey> cacheKey,
+        INeuron<TData, TLink> neuron,
+        ReadOnlyMemoryValue<TLink> link,
+        CancellationToken cancellationToken = default)
+    {
+        if (_nerve.Cache.TryGet<IConnection<TData, TLink>>(in cacheKey.Value, out var connection))
+            return connection;
+
+        var result = await this.FirstOrDefaultAsync(x =>
+                x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value),
+            cancellationToken: cancellationToken);
+
+        if (result is not null)
+            _nerve.Cache.Set(in cacheKey.Value, result);
+
+        return result;
+    }
+
+    public IConnection<TData, TLink> FindOrAdd(INeuron<TData, TLink> neuron, ReadOnlyMemoryValue<TLink> link)
+    {
+        ReadOnlyMemoryValue<NerveCacheKey> cacheKey = NerveHelper.CreateCacheKey(GetNeuron(), neuron, link, this);
+        return FindCore(cacheKey, neuron, link) ?? AddCore(cacheKey, neuron, link);
+    }
+
+    public async ValueTask<IConnection<TData, TLink>> FindOrAddAsync(INeuron<TData, TLink> neuron,
+        ReadOnlyMemoryValue<TLink> link,
+        CancellationToken cancellationToken = default)
+    {
+        ReadOnlyMemoryValue<NerveCacheKey> cacheKey =
+            NerveHelper.CreateCacheKey(await GetNeuronAsync(cancellationToken), neuron, link, this);
+        return await FindAsyncCore(cacheKey, neuron, link, cancellationToken) ??
+               await AddAsyncCore(cacheKey, neuron, link, cancellationToken);
+    }
+
+    protected virtual IConnection<TData, TLink> AddCore(ReadOnlyMemoryValue<NerveCacheKey> cacheKey,
+        INeuron<TData, TLink> neuron,
+        ReadOnlyMemoryValue<TLink> link)
+    {
+        return Lock(connectionDataLocation =>
+        {
+            if (FindCore(cacheKey, neuron, link) is { } connection)
+                return connection;
+
+            return GetNeuron()
+                .Lock(neuronDataLocation =>
+                {
+                    var connectionValue = _nerve.Location.Access
+                        .Create(ConnectionValue<TLink>.Default with
+                        {
+                            Previous = Offset,
+                            Neuron = neuron.Offset,
+                            Next = neuronDataLocation.RefValue.Connection,
+                            Link = link.Value,
+                            NextSubConnection = connectionDataLocation.RefValue.SubConnection
+                        });
+
+                    neuronDataLocation.RefValue.Connection = connectionValue.Offset;
+                    connectionDataLocation.RefValue.SubConnection = connectionValue.Offset;
+
+                    return _nerve.Cache.Set(
+                        in cacheKey.Value,
+                        _nerve.ConnectionFactory.GetOrCreate(connectionValue.Offset));
+                });
+        });
+    }
+
+    protected virtual async ValueTask<IConnection<TData, TLink>> AddAsyncCore(
+        ReadOnlyMemoryValue<NerveCacheKey> cacheKey,
+        INeuron<TData, TLink> neuron,
+        ReadOnlyMemoryValue<TLink> link,
+        CancellationToken cancellationToken = default)
+    {
+        return await LockAsync(async (connectionDataLocation, connectionCancellationToken) =>
+            {
+                if (await FindAsyncCore(cacheKey, neuron, link, connectionCancellationToken) is { } connection)
+                    return connection;
+
+                return await (await GetNeuronAsync(connectionCancellationToken))
+                    .LockAsync(async (neuronDataLocation, neuronCancellationToken) =>
+                        {
+                            var connectionValue = _nerve.Location.Access
+                                .Create(ConnectionValue<TLink>.Default with
+                                {
+                                    Previous = Offset,
+                                    Neuron = neuron.Offset,
+                                    Next = neuronDataLocation.RefValue.Connection,
+                                    Link = link.Value,
+                                    NextSubConnection = connectionDataLocation.RefValue.SubConnection
+                                });
+
+                            neuronDataLocation.RefValue.Connection = connectionValue.Offset;
+                            connectionDataLocation.RefValue.SubConnection = connectionValue.Offset;
+
+                            return _nerve.Cache.Set(
+                                cacheKey.Value,
+                                await _nerve.ConnectionFactory.GetOrCreateAsync(connectionValue.Offset,
+                                    neuronCancellationToken));
+                        },
+                        connectionCancellationToken);
+            },
+            cancellationToken);
+    }
 
     public int CompareTo(DataPairLink<TData, TLink> other)
     {
@@ -138,11 +282,18 @@ class Connection<TData, TLink> : IConnection<TData, TLink>
 
     public virtual IEnumerator<IConnection<TData, TLink>> GetEnumerator()
     {
-        var current = GetSubConnection();
-        while (current is not null)
+        _current ??= GetSubConnection();
+        while (_current is not null)
         {
-            yield return current;
-            current = current.GetNextSubConnection();
+            _nerve.Cache.Set(NerveHelper.CreateCacheKey(
+                        GetNeuron(),
+                        _current.GetNeuron(),
+                        _current.RefLink,
+                        this)
+                    .Value,
+                _current);
+            yield return _current;
+            _current = _current.GetNextSubConnection();
         }
     }
 
@@ -152,11 +303,18 @@ class Connection<TData, TLink> : IConnection<TData, TLink>
     public async IAsyncEnumerator<IConnection<TData, TLink>>
         GetAsyncEnumerator(CancellationToken cancellationToken = default)
     {
-        var current = await GetSubConnectionAsync(cancellationToken);
-        while (current is not null)
+        _current ??= await GetSubConnectionAsync(cancellationToken);
+        while (_current is not null)
         {
-            yield return current;
-            current = await current.GetNextSubConnectionAsync(cancellationToken);
+            _nerve.Cache.Set(NerveHelper.CreateCacheKey(
+                        await GetNeuronAsync(cancellationToken),
+                        await _current.GetNeuronAsync(cancellationToken),
+                        _current.RefLink,
+                        this)
+                    .Value,
+                _current);
+            yield return _current;
+            _current = await _current.GetNextSubConnectionAsync(cancellationToken);
         }
     }
 }

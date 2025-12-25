@@ -33,13 +33,13 @@ public static class DataAccessExtensions
             where TDataValue : unmanaged, IDataValue<TDataValue> =>
             DataLocation<TDataValue>.Create(access, @default);
 
-        public DataLocation<TDataValue> Create<TDataValue>(UpdateDataLocationAction<TDataValue> action)
+        public DataLocation<TDataValue> Create<TDataValue>(DataLocationAction<TDataValue> action)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue> =>
-            access.Create<TDataValue>().Update(action);
+            access.Create<TDataValue>().Lock(action);
 
-        public DataLocation<TDataValue> Create<TDataValue>(UpdateDataLocationAction<TDataValue> action, TDataValue @default)
+        public DataLocation<TDataValue> Create<TDataValue>(DataLocationAction<TDataValue> action, TDataValue @default)
             where TDataValue : unmanaged, IDataValue<TDataValue> =>
-            access.Create(@default).Update(action);
+            access.Create(@default).Lock(action);
 
         public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(
             CancellationToken cancellationToken = default)
@@ -51,40 +51,40 @@ public static class DataAccessExtensions
             where TDataValue : unmanaged, IDataValue<TDataValue> =>
             await DataLocation<TDataValue>.CreateAsync(access, @default, cancellationToken);
 
-        public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(UpdateDataLocationAction<TDataValue> action,
+        public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(DataLocationAction<TDataValue> action,
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {
             var dataLocation = await access.CreateAsync<TDataValue>( cancellationToken);
-            return dataLocation.Update(action);
+            return dataLocation.Lock(action);
         }
         
-        public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(UpdateDataLocationAction<TDataValue> action,
+        public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(DataLocationAction<TDataValue> action,
             TDataValue @default,
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue>
         {
             var dataLocation = await access.CreateAsync(@default, cancellationToken);
-            return dataLocation.Update(action);
+            return dataLocation.Lock(action);
         }
 
         public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(
-            UpdateDataLocationAsyncAction<TDataValue> action,
+            DataLocationAsyncAction<TDataValue> action,
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {
             var dataLocation = await access.CreateAsync<TDataValue>( cancellationToken);
-            return await dataLocation.UpdateAsync(action, cancellationToken);
+            return await dataLocation.LockAsync(action, cancellationToken);
         }
         
         public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(
-            UpdateDataLocationAsyncAction<TDataValue> action,
+            DataLocationAsyncAction<TDataValue> action,
             TDataValue @default,
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue>
         {
             var dataLocation = await access.CreateAsync(@default, cancellationToken);
-            return await dataLocation.UpdateAsync(action, cancellationToken);
+            return await dataLocation.LockAsync(action, cancellationToken);
         }
 
         public DataLocation<TDataValue> Read<TDataValue>(long offset)

@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\AlirezaMahDev.Extensions.Abstractions\AlirezaMahDev.Extensions.Abstractions.csproj" />
       <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager.Abstractions\AlirezaMahDev.Extensions.DataManager.Abstractions.csproj" />
     </ItemGroup>
 

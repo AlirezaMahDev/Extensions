@@ -13,7 +13,6 @@ class DataAccess : IDisposable, IDataAccess
     private bool _disposedValue;
 
     private readonly ConcurrentDictionary<long, DataMemory> _cache = [];
-    private readonly ConcurrentDictionary<long, Memory<bool>> _lock = [];
     private long _length;
 
     private readonly SafeFileHandle _safeFileHandle;
@@ -70,7 +69,7 @@ class DataAccess : IDisposable, IDataAccess
         var offset = AllocateOffset(length);
         var dataMemory = new DataMemory(length);
         _cache.TryAdd(offset, dataMemory);
-        dataMemory.CreateHash();
+        dataMemory.CreateChangePoint();
         return new(offset, dataMemory.Memory);
     }
 
@@ -84,7 +83,7 @@ class DataAccess : IDisposable, IDataAccess
         var offset = AllocateOffset(length);
         var dataMemory = new DataMemory(length);
         _cache.TryAdd(offset, dataMemory);
-        dataMemory.CreateHash();
+        dataMemory.CreateChangePoint();
         return ValueTask.FromResult(new AllocateMemory(offset, dataMemory.Memory));
     }
 
@@ -94,11 +93,11 @@ class DataAccess : IDisposable, IDataAccess
         {
             return dataMemory.Memory;
         }
-        
+
         if (_cache.TryAdd(offset, dataMemory = new(length)))
         {
             RandomAccess.Read(_safeFileHandle, dataMemory.Memory.Span, offset);
-            dataMemory.CreateHash();
+            dataMemory.CreateChangePoint();
             return dataMemory.Memory;
         }
 
@@ -117,7 +116,7 @@ class DataAccess : IDisposable, IDataAccess
         if (_cache.TryAdd(offset, dataMemory = new(length)))
         {
             await RandomAccess.ReadAsync(_safeFileHandle, dataMemory.Memory, offset, cancellationToken);
-            dataMemory.CreateHash();
+            dataMemory.CreateChangePoint();
             return dataMemory.Memory;
         }
 
@@ -141,8 +140,11 @@ class DataAccess : IDisposable, IDataAccess
         Parallel.ForEach(_cache,
             (pair, _) =>
             {
-                if (!pair.Value.CheckHash)
+                if (pair.Value.HasChanged)
+                {
                     WriteMemory(pair.Key, pair.Value.Memory);
+                    pair.Value.CreateChangePoint();
+                }
             });
         RandomAccess.FlushToDisk(_safeFileHandle);
     }
@@ -153,35 +155,30 @@ class DataAccess : IDisposable, IDataAccess
             cancellationToken,
             async ValueTask (pair, token) =>
             {
-                if (!pair.Value.CheckHash)
+                if (pair.Value.HasChanged)
+                {
                     await WriteMemoryAsync(pair.Key, pair.Value.Memory, token);
+                    pair.Value.CreateChangePoint();
+                }
             });
         RandomAccess.FlushToDisk(_safeFileHandle);
     }
 
-    public void Lock(long offset)
+    private SemaphoreSlim GetSemaphoreSlim(long offset) =>
+        _cache[offset].SemaphoreSlim;
+
+    public LockScope LockScope(long offset)
     {
-        ref var lockLocation = ref _lock.GetOrAdd(offset, _ => (bool[])[false]).Span[0];
-        while (!Interlocked.CompareExchange(ref lockLocation, true, false)) ;
+        var semaphoreSlim = GetSemaphoreSlim(offset);
+        semaphoreSlim.Wait();
+        return new(semaphoreSlim);
     }
 
-    public void UnLock(long offset)
+    public async Task<LockScope> LockScopeAsync(long offset, CancellationToken cancellationToken = default)
     {
-        ref var lockLocation = ref _lock.GetOrAdd(offset, _ => (bool[])[false]).Span[0];
-        while (Volatile.Read(ref lockLocation) && Interlocked.CompareExchange(ref lockLocation, false, true)) ;
-    }
-
-    public void Flush()
-    {
-        Save();
-        _cache.Clear();
-    }
-
-
-    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
-    {
-        await SaveAsync(cancellationToken);
-        _cache.Clear();
+        var semaphoreSlim = GetSemaphoreSlim(offset);
+        await semaphoreSlim.WaitAsync(cancellationToken);
+        return new(semaphoreSlim);
     }
 
     protected virtual void Dispose(bool disposing)
@@ -191,8 +188,13 @@ class DataAccess : IDisposable, IDataAccess
             if (disposing)
             {
                 _safeFileHandle.Dispose();
+                foreach (var keyValuePair in _cache)
+                {
+                    keyValuePair.Value.Dispose();
+                }
             }
 
+            _cache.Clear();
             _disposedValue = true;
         }
     }

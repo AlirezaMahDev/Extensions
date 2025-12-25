@@ -21,6 +21,12 @@ public static class DataLocationExtensions
         public DataLocation<TValue> As<TValue>()
             where TValue : unmanaged, IDataValue<TValue> =>
             new(location);
+
+        public LockScope LockScope() =>
+            location.Access.LockScope(location.Offset);
+
+        public async ValueTask<LockScope> LockScopeAsync(CancellationToken cancellationToken = default) =>
+            await location.Access.LockScopeAsync(location.Offset, cancellationToken);
     }
 
     extension<TValue>(DataLocation<TValue>)
@@ -41,22 +47,40 @@ public static class DataLocationExtensions
     extension<TValue>(DataLocation<TValue> location)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public DataLocation<TValue> Update(UpdateDataLocationAction<TValue> action)
+        public LockScope Lock() =>
+            location.Access.LockScope(location.Offset);
+
+        public async ValueTask<LockScope> LockAsync(CancellationToken cancellationToken = default) =>
+            await location.Access.LockScopeAsync(location.Offset, cancellationToken);
+
+        public DataLocation<TValue> Lock(DataLocationAction<TValue> action)
         {
-            location.Access.Lock(location.Offset);
+            using var lockScope = location.Lock();
             action(location);
-            location.Access.UnLock(location.Offset);
             return location;
         }
 
-        public async ValueTask<DataLocation<TValue>> UpdateAsync(
-            UpdateDataLocationAsyncAction<TValue> action,
+        public async ValueTask<DataLocation<TValue>> LockAsync(
+            DataLocationAsyncAction<TValue> action,
             CancellationToken cancellationToken = default)
         {
-            location.Access.Lock(location.Offset);
+            using var lockScope = await location.LockAsync(cancellationToken);
             await action(location, cancellationToken);
-            location.Access.UnLock(location.Offset);
             return location;
+        }
+
+        public TResult Lock<TResult>(DataLocationFunc<TValue, TResult> func)
+        {
+            using var lockScope = location.Lock();
+            return func(location);
+        }
+
+        public async ValueTask<TResult> LockAsync<TResult>(
+            DataLocationAsyncFunc<TValue, TResult> func,
+            CancellationToken cancellationToken = default)
+        {
+            using var lockScope = await location.LockAsync(cancellationToken);
+            return await func(location, cancellationToken);
         }
 
         public bool IsDefault => location.Base.Length != TValue.ValueSize || location.RefValue.Equals(default);
