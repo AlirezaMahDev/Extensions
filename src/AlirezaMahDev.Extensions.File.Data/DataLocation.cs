@@ -4,9 +4,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-using Microsoft.Extensions.Logging;
-
 using AlirezaMahDev.Extensions.File.Data.Abstractions;
+
+using Microsoft.Extensions.Logging;
 
 namespace AlirezaMahDev.Extensions.File.Data;
 

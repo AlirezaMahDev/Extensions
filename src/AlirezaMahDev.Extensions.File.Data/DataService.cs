@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Hosting;
-
 using AlirezaMahDev.Extensions.File.Abstractions;
 using AlirezaMahDev.Extensions.File.Data.Abstractions;
+
+using Microsoft.Extensions.Hosting;
 
 namespace AlirezaMahDev.Extensions.File.Data;
 

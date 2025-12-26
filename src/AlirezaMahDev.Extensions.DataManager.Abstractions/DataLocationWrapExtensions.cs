@@ -7,7 +7,7 @@ public static class DataLocationWrapExtensions
     {
         public DataLocationWrap<TValue, TWrap> Wrap(Func<TValue, TWrap> wrap) =>
             new(location, wrap(location.RefValue));
-        
+
         public DataLocationWrap<TValue, TWrap> Wrap(TWrap wrap) =>
             new(location, wrap);
     }
@@ -17,7 +17,7 @@ public static class DataLocationWrapExtensions
     {
         public DataLocationWrap<TValue, TInnerWrap> Wrap<TInnerWrap>(Func<TValue, TInnerWrap> wrap) =>
             locationWrap.Location.Wrap(wrap);
-        
+
         public DataLocationWrap<TValue, TInnerWrap> Wrap<TInnerWrap>(TInnerWrap wrap) =>
             locationWrap.Location.Wrap(wrap);
     }

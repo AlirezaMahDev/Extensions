@@ -48,7 +48,7 @@ public readonly unsafe struct String64 : IEquatable<String64>, IString
     {
         return ToString();
     }
-    
+
     public override string ToString()
     {
         return new string(Span).Trim();

@@ -16,7 +16,7 @@ class NeuronFactory<TData, TLink>(IServiceProvider provider, Nerve<TData, TLink>
     ISubtractionOperators<TLink, TLink, TLink>
 {
     public DataLocation<DataPath> Location { get; } = nerve.Location.Wrap(x => x.Dictionary()).GetOrAdd(".neuron");
-    
+
     public Neuron<TData, TLink> GetOrCreate(long offset) =>
         GetOrCreate(new NeuronArgs<TData, TLink>(nerve, Location.Access.Read<NeuronValue<TData>>(offset)));
 

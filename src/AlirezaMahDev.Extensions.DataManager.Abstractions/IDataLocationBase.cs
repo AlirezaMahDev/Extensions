@@ -20,7 +20,7 @@ public interface IDataLocation<TSelf, TValue> : IDataLocationBase<TSelf>
     where TValue : unmanaged, IDataValue<TValue>
 {
     ref TValue RefValue { get; }
-    
+
     static abstract TSelf Create(IDataAccess access, TValue @default);
     static abstract ValueTask<TSelf> CreateAsync(IDataAccess access,
         TValue @default,

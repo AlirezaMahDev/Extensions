@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 namespace AlirezaMahDev.Extensions.Progress;
 
 public partial class ProgressLogger(ILogger? logger, Action<ProgressLoggerState>? action = null, int length = -1)
-    : Progress<ProgressLoggerState>(action ?? (_ => { })),IDisposable
+    : Progress<ProgressLoggerState>(action ?? (_ => { })), IDisposable
 {
     private int _count;
 

@@ -9,7 +9,7 @@ public readonly struct DataBlockMemoryObject
 {
     public DataBlockMemory Memory { get; }
 
-    public DataBlockMemoryObject(DataBlockMemory memory,[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]  Type type)
+    public DataBlockMemoryObject(DataBlockMemory memory, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
     {
         Memory = memory;
         var blockValueType = typeof(DataBlockMemoryValue<>).MakeGenericType(type);

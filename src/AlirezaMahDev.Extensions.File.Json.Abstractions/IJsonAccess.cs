@@ -14,4 +14,3 @@ public interface IJsonAccess<[DynamicallyAccessedMembers(DynamicallyAccessedMemb
     void Save();
     ValueTask SaveAsync(CancellationToken cancellationToken = default);
 }
-

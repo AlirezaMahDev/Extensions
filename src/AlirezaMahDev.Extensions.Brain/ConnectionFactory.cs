@@ -22,7 +22,7 @@ class ConnectionFactory<TData, TLink>(
 
     public Connection<TData, TLink> GetOrCreate(long offset) =>
         GetOrCreate(new ConnectionArgs<TData, TLink>(nerve, Location.Access.Read<ConnectionValue<TLink>>(offset)));
-        
+
     public async ValueTask<Connection<TData, TLink>> GetOrCreateAsync(long offset, CancellationToken cancellationToken = default) =>
         GetOrCreate(new ConnectionArgs<TData, TLink>(nerve, await Location.Access.ReadAsync<ConnectionValue<TLink>>(offset, cancellationToken)));
 }

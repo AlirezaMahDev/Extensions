@@ -2,7 +2,7 @@ using AlirezaMahDev.Extensions.File.Data.Abstractions;
 
 namespace AlirezaMahDev.Extensions.File.Data.Table.Abstractions;
 
-public readonly struct TableRow<TEntity>(ITableRow row) : IDisposable,IDataBlockAccessorSave
+public readonly struct TableRow<TEntity>(ITableRow row) : IDisposable, IDataBlockAccessorSave
     where TEntity : class
 {
     private readonly DataLocationObject<TEntity> _dataLocationObject =

@@ -35,8 +35,7 @@ public static class DataLocationStorageExtensions
                 ? null
                 : TDataValue.ValueSize == locationWrap.Location.RefValue.Size
                     ? locationWrap.Location.Access.Read<TDataValue>(locationWrap.Location.RefValue.Data)
-                    : throw new InvalidDataException($"{typeof(TDataValue).Name} size must be {
-                        locationWrap.Location.RefValue.Size}");
+                    : throw new InvalidDataException($"{typeof(TDataValue).Name} size must be {locationWrap.Location.RefValue.Size}");
         }
 
         public async ValueTask<DataLocation<TDataValue>?> TryGetDataAsync<TDataValue>(
@@ -48,8 +47,7 @@ public static class DataLocationStorageExtensions
                 : TDataValue.ValueSize == locationWrap.Location.RefValue.Size
                     ? await locationWrap.Location.Access.ReadAsync<TDataValue>(locationWrap.Location.RefValue.Data,
                         cancellationToken)
-                    : throw new InvalidDataException($"{typeof(TDataValue).Name} size must be {
-                        locationWrap.Location.RefValue.Size}");
+                    : throw new InvalidDataException($"{typeof(TDataValue).Name} size must be {locationWrap.Location.RefValue.Size}");
         }
 
         public DataLocation CreateNewData(int length)

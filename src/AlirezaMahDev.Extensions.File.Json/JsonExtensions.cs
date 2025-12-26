@@ -20,7 +20,7 @@ public static class JsonExtensions
             return builder;
         }
     }
-    
+
     extension(IFileAccess fileAccess)
     {
         public IJsonAccess<TEntity> AsJson<TEntity>()

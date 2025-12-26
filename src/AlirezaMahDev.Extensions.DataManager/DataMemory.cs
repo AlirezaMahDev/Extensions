@@ -6,7 +6,7 @@ namespace AlirezaMahDev.Extensions.DataManager;
 class DataMemory : IMemoryOwner<byte>
 {
     public SemaphoreSlim SemaphoreSlim { get; } = new(1, 1);
-    
+
     private readonly IMemoryOwner<byte> _memoryOwner;
     private UInt128 _hash;
 

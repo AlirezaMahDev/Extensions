@@ -6,7 +6,7 @@ namespace AlirezaMahDev.Extensions.Node;
 public interface INodeService
 {
     Channel<NodeTaskRequest> Channel { get; }
-    
+
     ValueTask<JsonElement?> InitializeAsync(CancellationToken cancellationToken = default);
 
     Task InvokeVoidAsync(string name, CancellationToken cancellationToken = default);

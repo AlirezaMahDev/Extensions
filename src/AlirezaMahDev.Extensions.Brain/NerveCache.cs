@@ -32,7 +32,7 @@ class NerveCache()
         where TKey : unmanaged
         where TValue : class =>
             GetOrDefaultCore<TValue>(GenerateHash(in key));
-    
+
     public TValue? GetOrDefault<TValue>(in NerveCacheKey key)
         where TValue : class =>
             GetOrDefaultCore<TValue>(key.Hash);
@@ -45,7 +45,7 @@ class NerveCache()
         where TKey : unmanaged
         where TValue : class =>
             SetCore(GenerateHash(in key), value);
-    
+
     public TValue Set<TValue>(in NerveCacheKey key, TValue value)
         where TValue : class =>
             SetCore(key.Hash, value);

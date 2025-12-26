@@ -4,9 +4,9 @@ using AlirezaMahDev.Extensions.ParameterInstance;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-class NerveFactory<TData,TLink>(
+class NerveFactory<TData, TLink>(
     IServiceProvider provider)
-    : ParameterInstanceFactory<Nerve<TData,TLink>, string>(provider)
+    : ParameterInstanceFactory<Nerve<TData, TLink>, string>(provider)
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>

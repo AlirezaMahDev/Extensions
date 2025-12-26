@@ -1,9 +1,9 @@
 using System.Runtime.CompilerServices;
 
-using Microsoft.Extensions.DependencyInjection;
-
 using AlirezaMahDev.Extensions.File.Abstractions;
 using AlirezaMahDev.Extensions.File.Data.Abstractions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AlirezaMahDev.Extensions.File.Data;
 

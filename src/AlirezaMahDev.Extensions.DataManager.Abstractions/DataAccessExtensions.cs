@@ -55,10 +55,10 @@ public static class DataAccessExtensions
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {
-            var dataLocation = await access.CreateAsync<TDataValue>( cancellationToken);
+            var dataLocation = await access.CreateAsync<TDataValue>(cancellationToken);
             return dataLocation.Lock(action);
         }
-        
+
         public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(DataLocationAction<TDataValue> action,
             TDataValue @default,
             CancellationToken cancellationToken = default)
@@ -73,10 +73,10 @@ public static class DataAccessExtensions
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {
-            var dataLocation = await access.CreateAsync<TDataValue>( cancellationToken);
+            var dataLocation = await access.CreateAsync<TDataValue>(cancellationToken);
             return await dataLocation.LockAsync(action, cancellationToken);
         }
-        
+
         public async ValueTask<DataLocation<TDataValue>> CreateAsync<TDataValue>(
             DataLocationAsyncAction<TDataValue> action,
             TDataValue @default,

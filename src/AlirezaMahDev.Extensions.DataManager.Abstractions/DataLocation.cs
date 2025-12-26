@@ -131,7 +131,7 @@ public readonly struct DataLocation<TValue>(DataLocation @base) : IDataLocation<
     {
         return Base.Equals(other.Base);
     }
-    
+
     public override bool Equals(object? obj)
     {
         return obj is DataLocation<TValue> location && Equals(location);

@@ -23,10 +23,10 @@ public static class DataLocationDataTrashExtensions
             await (await dataLocation.Access.GetTrashAsync(cancellationToken))
                 .Wrap(x => x.Collection())
                 .AddAsync(x => x.RefValue = x.RefValue with
-                    {
-                        Offset = dataLocation.Offset,
-                        Length = dataLocation.Length
-                    },
+                {
+                    Offset = dataLocation.Offset,
+                    Length = dataLocation.Length
+                },
                     cancellationToken: cancellationToken);
         }
     }
