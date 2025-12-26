@@ -20,7 +20,7 @@ class RootNeuron<TData, TLink>(Neuron<TData, TLink> neuron)
         if (_nerve.Cache.TryGet<TData, INeuron<TData, TLink>>(in data.Value, out var neuron))
             return neuron;
 
-        var connection = this.FirstOrDefault(x => x.GetNeuron().RefData.Equals(data.Value));
+        var connection = GetUnloadedConnections().FirstOrDefault(x => x.GetNeuron().RefData.Equals(data.Value));
         if (connection is null)
             return null;
 
@@ -33,9 +33,10 @@ class RootNeuron<TData, TLink>(Neuron<TData, TLink> neuron)
         if (_nerve.Cache.TryGet<TData, INeuron<TData, TLink>>(in data.Value, out var neuron))
             return neuron;
 
-        var connection = await this.FirstOrDefaultAsync(async (x, token) =>
-                (await x.GetNeuronAsync(token)).RefData.Equals(data.Value),
-            cancellationToken);
+        var connection = await GetUnloadedConnectionsAsync(cancellationToken)
+            .FirstOrDefaultAsync(async (x, token) =>
+                    (await x.GetNeuronAsync(token)).RefData.Equals(data.Value),
+                cancellationToken);
         if (connection is null)
             return null;
 
@@ -80,10 +81,10 @@ class RootNeuron<TData, TLink>(Neuron<TData, TLink> neuron)
 
                 var connectionValue = await _nerve.Location.Access
                     .CreateAsync(ConnectionValue<TLink>.Default with
-                        {
-                            Neuron = neuron.Offset,
-                            Next = neuronDataLocation.RefValue.Connection
-                        },
+                    {
+                        Neuron = neuron.Offset,
+                        Next = neuronDataLocation.RefValue.Connection
+                    },
                         token);
 
                 neuronDataLocation.RefValue.Connection = connectionValue.Offset;

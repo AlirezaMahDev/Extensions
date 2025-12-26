@@ -2,9 +2,12 @@ namespace AlirezaMahDev.Extensions.File.Data.Stack.Abstractions;
 
 public static class StackItemsExtensins
 {
-    public static StackItems<TEntity> As<TEntity>(this IStackItems stackItems)
-        where TEntity : unmanaged
+    extension(IStackItems stackItems)
     {
-        return new(stackItems);
+        public StackItems<TEntity> As<TEntity>()
+        where TEntity : unmanaged
+        {
+            return new(stackItems);
+        }
     }
 }

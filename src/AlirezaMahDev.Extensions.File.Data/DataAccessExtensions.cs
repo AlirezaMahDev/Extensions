@@ -1,17 +1,20 @@
-using Microsoft.Extensions.DependencyInjection;
-
 using AlirezaMahDev.Extensions.File.Abstractions;
 using AlirezaMahDev.Extensions.File.Data.Abstractions;
+
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AlirezaMahDev.Extensions.File.Data;
 
 public static class DataAccessExtensions
 {
-    public static IDataAccess AsData(this IFileAccess fileAccess)
+    extension(IFileAccess fileAccess)
     {
-        return fileAccess.Provider
-            .GetRequiredService<DataAccessFactory>()
-            .GetOrCreate(fileAccess);
+        public IDataAccess AsData()
+        {
+            return fileAccess.Provider
+                .GetRequiredService<DataAccessFactory>()
+                .GetOrCreate(fileAccess);
+        }
     }
 
     extension(IFileBuilder builder)

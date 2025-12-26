@@ -2,9 +2,12 @@ namespace AlirezaMahDev.Extensions.File.Data.Abstractions;
 
 public static class DataBlockMemoryExtensions
 {
-    public static DataBlockMemory AsMemory(this IDataBlockAccessor dataBlockAccessor)
+    extension(IDataBlockAccessor dataBlockAccessor)
     {
-        return new(dataBlockAccessor);
+        public DataBlockMemory AsMemory()
+        {
+            return new(dataBlockAccessor);
+        }
     }
 
     extension(DataBlockMemory block)

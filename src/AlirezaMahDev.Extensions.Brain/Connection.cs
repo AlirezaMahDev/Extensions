@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.Brain.Abstractions;
@@ -26,6 +27,7 @@ class Connection<TData, TLink>(ConnectionArgs<TData, TLink> args) : IConnection<
     private Connection<TData, TLink>? _nextSubConnection;
 
     private IConnection<TData, TLink>? _current;
+    private bool _currentEnd;
 
     public virtual DataLocation<ConnectionValue<TLink>> Location { get; } = args.Location;
 
@@ -137,8 +139,9 @@ class Connection<TData, TLink>(ConnectionArgs<TData, TLink> args) : IConnection<
         if (_nerve.Cache.TryGet<IConnection<TData, TLink>>(in cacheKey.Value, out var connection))
             return connection;
 
-        var result = this.FirstOrDefault(x =>
-            x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value));
+        var result = GetUnloadedConnections()
+            .FirstOrDefault(x =>
+                x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value));
 
         if (result is not null)
             _nerve.Cache.Set(in cacheKey.Value, result);
@@ -163,9 +166,10 @@ class Connection<TData, TLink>(ConnectionArgs<TData, TLink> args) : IConnection<
         if (_nerve.Cache.TryGet<IConnection<TData, TLink>>(in cacheKey.Value, out var connection))
             return connection;
 
-        var result = await this.FirstOrDefaultAsync(x =>
-                x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value),
-            cancellationToken: cancellationToken);
+        var result = await GetUnloadedConnectionsAsync(cancellationToken)
+            .FirstOrDefaultAsync(x =>
+                    x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value),
+                cancellationToken: cancellationToken);
 
         if (result is not null)
             _nerve.Cache.Set(in cacheKey.Value, result);
@@ -282,6 +286,33 @@ class Connection<TData, TLink>(ConnectionArgs<TData, TLink> args) : IConnection<
 
     public virtual IEnumerator<IConnection<TData, TLink>> GetEnumerator()
     {
+        var current = GetSubConnection();
+        while (current is not null)
+        {
+            yield return current;
+            current = current.GetNextSubConnection();
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() =>
+        GetEnumerator();
+
+    public async IAsyncEnumerator<IConnection<TData, TLink>> GetAsyncEnumerator(CancellationToken cancellationToken =
+        default)
+    {
+        var current = await GetSubConnectionAsync(cancellationToken);
+        while (current is not null)
+        {
+            yield return current;
+            current = await current.GetNextSubConnectionAsync(cancellationToken);
+        }
+    }
+
+    protected virtual IEnumerable<IConnection<TData, TLink>> GetUnloadedConnections()
+    {
+        if (_currentEnd)
+            yield break;
+
         _current ??= GetSubConnection();
         while (_current is not null)
         {
@@ -295,14 +326,16 @@ class Connection<TData, TLink>(ConnectionArgs<TData, TLink> args) : IConnection<
             yield return _current;
             _current = _current.GetNextSubConnection();
         }
+
+        _currentEnd = true;
     }
 
-    IEnumerator IEnumerable.GetEnumerator() =>
-        GetEnumerator();
-
-    public async IAsyncEnumerator<IConnection<TData, TLink>>
-        GetAsyncEnumerator(CancellationToken cancellationToken = default)
+    protected virtual async IAsyncEnumerable<IConnection<TData, TLink>> GetUnloadedConnectionsAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        if (_currentEnd)
+            yield break;
+
         _current ??= await GetSubConnectionAsync(cancellationToken);
         while (_current is not null)
         {
@@ -316,5 +349,7 @@ class Connection<TData, TLink>(ConnectionArgs<TData, TLink> args) : IConnection<
             yield return _current;
             _current = await _current.GetNextSubConnectionAsync(cancellationToken);
         }
+
+        _currentEnd = true;
     }
 }

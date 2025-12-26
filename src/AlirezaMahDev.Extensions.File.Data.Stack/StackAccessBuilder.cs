@@ -11,8 +11,8 @@ internal class StackAccessBuilder : IStackAccessBuilder
     public StackAccessBuilder(IDataAccessBuilder dataAccessBuilder)
     {
         DataAccessBuilder = dataAccessBuilder;
-        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<StackAccessFactory>();
-        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<StackItemFactory>();
-        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<StackItemsFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddSingletonParameterInstanceFactory<StackAccessFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddSingletonParameterInstanceFactory<StackItemFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddSingletonParameterInstanceFactory<StackItemsFactory>();
     }
 }

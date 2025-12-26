@@ -11,10 +11,10 @@ internal class CollectionAccessBuilder : ICollectionAccessBuilder
     public CollectionAccessBuilder(IDataAccessBuilder dataAccessBuilder)
     {
         DataAccessBuilder = dataAccessBuilder;
-        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<CollectionAccessFactory>();
-        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<CollectionObjectFactory>();
-        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<CollectionObjectsFactory>();
-        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<CollectionPropertiesFactory>();
-        dataAccessBuilder.FileBuilder.Services.AddParameterInstanceFactory<CollectionPropertyFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddSingletonParameterInstanceFactory<CollectionAccessFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddSingletonParameterInstanceFactory<CollectionObjectFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddSingletonParameterInstanceFactory<CollectionObjectsFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddSingletonParameterInstanceFactory<CollectionPropertiesFactory>();
+        dataAccessBuilder.FileBuilder.Services.AddSingletonParameterInstanceFactory<CollectionPropertyFactory>();
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.Brain.Abstractions;
@@ -17,6 +18,7 @@ class Neuron<TData, TLink>(NeuronArgs<TData, TLink> args) : INeuron<TData, TLink
 {
     private Connection<TData, TLink>? _connection;
     private IConnection<TData, TLink>? _current;
+    private bool _currentEnd;
 
     protected internal readonly Nerve<TData, TLink> _nerve = args.Nerve;
 
@@ -96,8 +98,9 @@ class Neuron<TData, TLink>(NeuronArgs<TData, TLink> args) : INeuron<TData, TLink
         }
         else
         {
-            result = this.FirstOrDefault(x =>
-                x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value) && x.RefValue.Previous == -1);
+            result = GetUnloadedConnections()
+                .FirstOrDefault(x =>
+                    x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value) && x.RefValue.Previous == -1);
 
             if (result is not null)
                 _nerve.Cache.Set(in cacheKey.Value, result);
@@ -134,9 +137,10 @@ class Neuron<TData, TLink>(NeuronArgs<TData, TLink> args) : INeuron<TData, TLink
         }
         else
         {
-            result = await this.FirstOrDefaultAsync(x =>
-                    x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value) && x.RefValue.Previous == -1,
-                cancellationToken: cancellationToken);
+            result = await GetUnloadedConnectionsAsync(cancellationToken)
+                .FirstOrDefaultAsync(x =>
+                        x.RefValue.Neuron == neuron.Offset && x.RefLink.Equals(link.Value) && x.RefValue.Previous == -1,
+                    cancellationToken: cancellationToken);
 
             if (result is not null)
                 _nerve.Cache.Set(in cacheKey.Value, result);
@@ -218,11 +222,11 @@ class Neuron<TData, TLink>(NeuronArgs<TData, TLink> args) : INeuron<TData, TLink
 
                 var connectionValue = await _nerve.Location.Access
                     .CreateAsync(ConnectionValue<TLink>.Default with
-                        {
-                            Neuron = neuron.Offset,
-                            Next = neuronDataLocation.RefValue.Connection,
-                            Link = link.Value,
-                        },
+                    {
+                        Neuron = neuron.Offset,
+                        Next = neuronDataLocation.RefValue.Connection,
+                        Link = link.Value,
+                    },
                         neuronCancellationToken);
 
                 neuronDataLocation.RefValue.Connection = connectionValue.Offset;
@@ -236,6 +240,33 @@ class Neuron<TData, TLink>(NeuronArgs<TData, TLink> args) : INeuron<TData, TLink
 
     public virtual IEnumerator<IConnection<TData, TLink>> GetEnumerator()
     {
+        var current = GetConnection();
+        while (current is not null)
+        {
+            yield return current;
+            current = current.GetNext();
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator() =>
+        GetEnumerator();
+
+    public async IAsyncEnumerator<IConnection<TData, TLink>> GetAsyncEnumerator(
+        CancellationToken cancellationToken = default)
+    {
+        var current = await GetConnectionAsync(cancellationToken);
+        while (current is not null)
+        {
+            yield return current;
+            current = await current.GetNextAsync(cancellationToken);
+        }
+    }
+
+    protected virtual IEnumerable<IConnection<TData, TLink>> GetUnloadedConnections()
+    {
+        if (_currentEnd)
+            yield break;
+
         _current ??= GetConnection();
         while (_current is not null)
         {
@@ -248,14 +279,16 @@ class Neuron<TData, TLink>(NeuronArgs<TData, TLink> args) : INeuron<TData, TLink
             yield return _current;
             _current = _current.GetNext();
         }
+
+        _currentEnd = true;
     }
 
-    IEnumerator IEnumerable.GetEnumerator() =>
-        GetEnumerator();
-
-    public async IAsyncEnumerator<IConnection<TData, TLink>> GetAsyncEnumerator(
-        CancellationToken cancellationToken = default)
+    protected virtual async IAsyncEnumerable<IConnection<TData, TLink>> GetUnloadedConnectionsAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        if (_currentEnd)
+            yield break;
+
         _current ??= await GetConnectionAsync(cancellationToken);
         while (_current is not null)
         {
@@ -268,5 +301,7 @@ class Neuron<TData, TLink>(NeuronArgs<TData, TLink> args) : INeuron<TData, TLink
             yield return _current;
             _current = await _current.GetNextAsync(cancellationToken);
         }
+
+        _currentEnd = true;
     }
 }

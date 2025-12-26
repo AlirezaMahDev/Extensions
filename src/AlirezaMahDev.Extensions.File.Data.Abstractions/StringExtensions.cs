@@ -2,13 +2,19 @@ namespace AlirezaMahDev.Extensions.File.Data.Abstractions;
 
 public static class StringExtensions
 {
-    public static Type ToType(this String256 string256)
+    extension(String256 string256)
     {
-        return Type.GetType(string256)!;
+        public Type ToType()
+        {
+            return Type.GetType(string256)!;
+        }
     }
 
-    public static String256 ToString256(this Type type)
+    extension(Type type)
     {
-        return type.FullName!;
+        public String256 ToString256()
+        {
+            return type.FullName!;
+        }
     }
 }

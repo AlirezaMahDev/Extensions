@@ -2,9 +2,12 @@ namespace AlirezaMahDev.Extensions.File.Data.Collection.Abstractions;
 
 public static class CollectionObjectsExtensions
 {
-    public static CollectionObjects<TEntity> As<TEntity>(this ICollectionObjects collectionObjects)
-        where TEntity : class
+    extension(ICollectionObjects collectionObjects)
     {
-        return new(collectionObjects);
+        public CollectionObjects<TEntity> As<TEntity>()
+        where TEntity : class
+        {
+            return new(collectionObjects);
+        }
     }
 }

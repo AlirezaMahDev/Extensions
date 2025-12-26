@@ -2,9 +2,12 @@ namespace AlirezaMahDev.Extensions.File.Data.Table.Abstractions;
 
 public static class TableRowsExtensions
 {
-    public static TableRows<TEntity> As<TEntity>(this ITableRows tableColumns)
-        where TEntity : class
+    extension(ITableRows tableColumns)
     {
-        return new(tableColumns);
+        public TableRows<TEntity> As<TEntity>()
+        where TEntity : class
+        {
+            return new(tableColumns);
+        }
     }
 }

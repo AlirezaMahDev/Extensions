@@ -13,6 +13,6 @@ public class BrainBuilder
     {
         services.AddDataManager();
         services.TryAddSingleton<IBrainService, BrainService>();
-        services.AddParameterInstanceFactory(typeof(NerveFactory<,>));
+        services.AddSingletonParameterInstanceFactory(typeof(NerveFactory<,>));
     }
 }

@@ -13,7 +13,7 @@ internal class FileBuilder : BuilderBase<FileOptions>, IFileBuilder
     public FileBuilder(IServiceCollection services) : base(services)
     {
         services.TryAddSingleton<IFileService, FileService>();
-        services.AddParameterInstanceFactory<FileAccessFactory>();
+        services.AddSingletonParameterInstanceFactory<FileAccessFactory>();
 
         OptionsBuilder.PostConfigure(options =>
         {
