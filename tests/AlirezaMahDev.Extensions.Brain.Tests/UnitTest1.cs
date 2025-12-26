@@ -19,39 +19,39 @@ public class UnitTest1(ITestOutputHelper helper)
         var host = builder.Build();
         var brainService = host.Services.GetRequiredService<IBrainService>();
         var nerve = brainService.GetOrAddTemp<int, double>();
-        
+
         var stopwatch = Stopwatch.StartNew();
-        nerve.Learn(CalculateSlope(2, 4, 6, 8), 2, 4, 6, 8);
+        nerve.Learn(CalculateSlope(2, 4, 6, 8), new([2, 4, 6, 8]));
         helper.WriteLine($"learn1:{stopwatch.Elapsed}");
-        
+
         stopwatch.Restart();
-        nerve.Learn(CalculateSlope(1, 3, 5, 7), 1, 3, 5, 7);
+        nerve.Learn(CalculateSlope(1, 3, 5, 7), new([1, 3, 5, 7]));
         helper.WriteLine($"learn2:{stopwatch.Elapsed}");
-        
+
         stopwatch.Restart();
         nerve.Save();
         helper.WriteLine($"save:{stopwatch.Elapsed}");
-        
+
         stopwatch.Restart();
-        var think1 = nerve.Think(CalculateSlope(1, 3, 5), 1, 3, 5);
+        var think1 = nerve.Think(CalculateSlope(1, 3, 5), new([1, 3, 5]));
         helper.WriteLine($"think1:{stopwatch.Elapsed}");
 
-        Assert.Equal(7,think1?.Data);
-        
+        Assert.Equal(7, think1?.Data);
+
         stopwatch.Restart();
-        var think2 = nerve.Think(CalculateSlope(2, 4, 6), 2, 4, 6);
+        var think2 = nerve.Think(CalculateSlope(2, 4, 6), new([2, 4, 6]));
         helper.WriteLine($"think2:{stopwatch.Elapsed}");
-        
-        Assert.Equal(8,think2?.Data);
-        
+
+        Assert.Equal(8, think2?.Data);
+
         stopwatch.Restart();
-        var think3 = nerve.Think(CalculateSlope(1, 4, 6), 1, 4, 6);
+        var think3 = nerve.Think(CalculateSlope(1, 4, 6), new([1, 4, 6]));
         helper.WriteLine($"think3:{stopwatch.Elapsed}");
-        
+
         Assert.Equal(8, think3?.Data);
     }
-    
-    
+
+
     [Fact]
     public async Task Test1Async()
     {
@@ -60,35 +60,35 @@ public class UnitTest1(ITestOutputHelper helper)
         var host = builder.Build();
         var brainService = host.Services.GetRequiredService<IBrainService>();
         var nerve = brainService.GetOrAddTemp<int, double>();
-        
+
         var stopwatch = Stopwatch.StartNew();
-        nerve.Learn(CalculateSlope(2, 4, 6, 8), 2, 4, 6, 8);
+        await nerve.LearnAsync(CalculateSlope(2, 4, 6, 8), new([2, 4, 6, 8]));
         helper.WriteLine($"learn1:{stopwatch.Elapsed}");
-        
+
         stopwatch.Restart();
-        nerve.Learn(CalculateSlope(1, 3, 5, 7), 1, 3, 5, 7);
+        await nerve.LearnAsync(CalculateSlope(1, 3, 5, 7), new([1, 3, 5, 7]));
         helper.WriteLine($"learn2:{stopwatch.Elapsed}");
-        
+
         stopwatch.Restart();
         await nerve.SaveAsync();
         helper.WriteLine($"save:{stopwatch.Elapsed}");
-        
+
         stopwatch.Restart();
-        var think1 = await nerve.ThinkAsync(CalculateSlope(1, 3, 5), 1, 3, 5);
+        var think1 = await nerve.ThinkAsync(CalculateSlope(1, 3, 5), new([1, 3, 5]));
         helper.WriteLine($"think1:{stopwatch.Elapsed}");
 
-        Assert.Equal(7,think1?.Data);
-        
+        Assert.Equal(7, think1?.Data);
+
         stopwatch.Restart();
-        var think2 = nerve.Think(CalculateSlope(2, 4, 6), 2, 4, 6);
+        var think2 = await nerve.ThinkAsync(CalculateSlope(2, 4, 6), new([2, 4, 6]));
         helper.WriteLine($"think2:{stopwatch.Elapsed}");
-        
-        Assert.Equal(8,think2?.Data);
-        
+
+        Assert.Equal(8, think2?.Data);
+
         stopwatch.Restart();
-        var think3 = nerve.Think(CalculateSlope(1, 4, 6), 1, 4, 6);
+        var think3 = await nerve.ThinkAsync(CalculateSlope(1, 4, 6), new([1, 4, 6]));
         helper.WriteLine($"think3:{stopwatch.Elapsed}");
-        
+
         Assert.Equal(8, think3?.Data);
     }
 
