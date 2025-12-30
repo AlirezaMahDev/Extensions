@@ -19,11 +19,11 @@ class DataManager(IOptions<DataManagerOptions> options) : IDisposable, IDataMana
                 static (key, arg) => new(() =>
                     {
                         var optionsValue = arg._options.Value;
-                        var path = Path.Combine(optionsValue.DirectoryPath,
-                            string.Format(optionsValue.FileFormat, key));
-                        var directory = Path.GetDirectoryName(path)!;
-                        if (!Directory.Exists(directory))
-                            Directory.CreateDirectory(directory);
+                        var path = Path.Combine(optionsValue.DirectoryPath, key);
+
+                        if (!Directory.Exists(path))
+                            Directory.CreateDirectory(path);
+
                         return new(path);
                     },
                     LazyThreadSafetyMode.ExecutionAndPublication),

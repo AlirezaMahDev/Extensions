@@ -54,7 +54,10 @@ public static class DataLocationStorageExtensions
         {
             var dataLocation = locationWrap.TryGetData();
             dataLocation?.Access.GetTrash().Add(dataLocation.Value);
-            return locationWrap.Location.Access.Create(length);
+            var newDataLocation = locationWrap.Location.Access.Create(length);
+            locationWrap.Location.RefValue.Data = newDataLocation.Offset;
+            locationWrap.Location.RefValue.Size = newDataLocation.Length;
+            return newDataLocation;
         }
 
         public async ValueTask<DataLocation> CreateNewDataAsync(int length,
@@ -64,7 +67,10 @@ public static class DataLocationStorageExtensions
             if (dataLocation.HasValue)
                 await (await dataLocation.Value.Access.GetTrashAsync(cancellationToken))
                     .AddAsync(dataLocation.Value, cancellationToken);
-            return await locationWrap.Location.Access.CreateAsync(length, cancellationToken: cancellationToken);
+            var newDataLocation = await locationWrap.Location.Access.CreateAsync(length, cancellationToken: cancellationToken);
+            locationWrap.Location.RefValue.Data = newDataLocation.Offset;
+            locationWrap.Location.RefValue.Size = newDataLocation.Length;
+            return newDataLocation;
         }
 
         public DataLocation<TDataValue> CreateNewData<TDataValue>()
@@ -72,7 +78,10 @@ public static class DataLocationStorageExtensions
         {
             var dataLocation = locationWrap.TryGetData();
             dataLocation?.Access.GetTrash().Add(dataLocation.Value);
-            return locationWrap.Location.Access.Create<TDataValue>();
+            var newDataLocation = locationWrap.Location.Access.Create<TDataValue>();
+            locationWrap.Location.RefValue.Data = newDataLocation.Offset;
+            locationWrap.Location.RefValue.Size = newDataLocation.Length;
+            return newDataLocation;
         }
 
         public DataLocation<TDataValue> CreateNewData<TDataValue>(TDataValue @default)
@@ -80,7 +89,10 @@ public static class DataLocationStorageExtensions
         {
             var dataLocation = locationWrap.TryGetData();
             dataLocation?.Access.GetTrash().Add(dataLocation.Value);
-            return locationWrap.Location.Access.Create(@default);
+            var newDataLocation = locationWrap.Location.Access.Create(@default);
+            locationWrap.Location.RefValue.Data = newDataLocation.Offset;
+            locationWrap.Location.RefValue.Size = newDataLocation.Length;
+            return newDataLocation;
         }
 
         public async ValueTask<DataLocation<TDataValue>> CreateNewDataAsync<TDataValue>(
@@ -91,7 +103,10 @@ public static class DataLocationStorageExtensions
             if (dataLocation.HasValue)
                 await (await dataLocation.Value.Access.GetTrashAsync(cancellationToken))
                     .AddAsync(dataLocation.Value, cancellationToken);
-            return await locationWrap.Location.Access.CreateAsync<TDataValue>(cancellationToken);
+            var newDataLocation = await locationWrap.Location.Access.CreateAsync<TDataValue>(cancellationToken);
+            locationWrap.Location.RefValue.Data = newDataLocation.Offset;
+            locationWrap.Location.RefValue.Size = newDataLocation.Length;
+            return newDataLocation;
         }
 
         public async ValueTask<DataLocation<TDataValue>> CreateNewDataAsync<TDataValue>(
@@ -103,7 +118,10 @@ public static class DataLocationStorageExtensions
             if (dataLocation.HasValue)
                 await (await dataLocation.Value.Access.GetTrashAsync(cancellationToken))
                     .AddAsync(dataLocation.Value, cancellationToken);
-            return await locationWrap.Location.Access.CreateAsync(@default, cancellationToken);
+            var newDataLocation = await locationWrap.Location.Access.CreateAsync(@default, cancellationToken);
+            locationWrap.Location.RefValue.Data = newDataLocation.Offset;
+            locationWrap.Location.RefValue.Size = newDataLocation.Length;
+            return newDataLocation;
         }
 
         public DataLocation GetOrCreateData(int length)

@@ -66,12 +66,12 @@ public readonly unsafe struct String256 : IEquatable<String256>, IString<String2
 
     public bool Equals(String256 other)
     {
-        return Span.SequenceEqual(other);
+        return Span.SequenceEqual(other.Span);
     }
 
     public override bool Equals(object? obj)
     {
-        return obj is IString<String256> other && Span.SequenceEqual(other.Span);
+        return obj is String256 other && Span.SequenceEqual(other.Span);
     }
 
     public static bool operator ==(String256 left, String256 right)

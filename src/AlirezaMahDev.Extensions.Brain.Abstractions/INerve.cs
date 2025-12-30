@@ -34,6 +34,6 @@ public interface INerve<TData, TLink>
         ReadOnlyMemory<TData> data,
         CancellationToken cancellationToken = default);
 
-    public void Save();
-    public ValueTask SaveAsync(CancellationToken cancellationToken = default);
+    public void Flush();
+    public ValueTask FlushAsync(CancellationToken cancellationToken = default);
 }

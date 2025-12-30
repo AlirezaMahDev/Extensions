@@ -67,12 +67,12 @@ public readonly unsafe struct String64 : IEquatable<String64>, IString<String64>
 
     public bool Equals(String64 other)
     {
-        return Span.SequenceEqual(other);
+        return Span.SequenceEqual(other.Span);
     }
 
     public override bool Equals(object? obj)
     {
-        return obj is IString<String64> other && Span.SequenceEqual(other.Span);
+        return obj is String64 other && Span.SequenceEqual(other.Span);
     }
 
     public static bool operator ==(String64 left, String64 right)

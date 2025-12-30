@@ -2,18 +2,14 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public static class DataLocationExtensions
 {
-    extension<TSelf>(TSelf location)
-        where TSelf : IDataLocationBase<TSelf>
+    extension<T>(T location)
+    where T : IDataLocationBase<T>
     {
-        public void Save()
-        {
-            TSelf.Write(location.Access, location);
-        }
+        public DataLockOffsetDisposable Lock() =>
+            location.Access.Lock(location.Offset);
 
-        public async ValueTask SaveAsync(CancellationToken cancellationToken = default)
-        {
-            await TSelf.WriteAsync(location.Access, location, cancellationToken);
-        }
+        public async ValueTask<DataLockOffsetDisposable> LockAsync(CancellationToken cancellationToken = default) =>
+            await location.Access.LockAsync(location.Offset, cancellationToken);
     }
 
     extension(DataLocation location)
@@ -21,12 +17,6 @@ public static class DataLocationExtensions
         public DataLocation<TValue> As<TValue>()
             where TValue : unmanaged, IDataValue<TValue> =>
             new(location);
-
-        public LockScope LockScope() =>
-            location.Access.LockScope(location.Offset);
-
-        public async ValueTask<LockScope> LockScopeAsync(CancellationToken cancellationToken = default) =>
-            await location.Access.LockScopeAsync(location.Offset, cancellationToken);
     }
 
     extension<TValue>(DataLocation<TValue>)
@@ -47,12 +37,6 @@ public static class DataLocationExtensions
     extension<TValue>(DataLocation<TValue> location)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public LockScope Lock() =>
-            location.Access.LockScope(location.Offset);
-
-        public async ValueTask<LockScope> LockAsync(CancellationToken cancellationToken = default) =>
-            await location.Access.LockScopeAsync(location.Offset, cancellationToken);
-
         public DataLocation<TValue> Lock(DataLocationAction<TValue> action)
         {
             using var lockScope = location.Lock();
@@ -83,7 +67,8 @@ public static class DataLocationExtensions
             return await func(location, cancellationToken);
         }
 
-        public bool IsDefault => location.Base.Length != TValue.ValueSize || location.RefValue.Equals(default);
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        public bool IsDefault => location.Access is null || location.Length != TValue.ValueSize || location.RefValue.Equals(default);
 
         public DataLocation<TValue> WhenDefault(Func<DataLocation<TValue>> func) =>
             location.IsDefault ? func() : location;

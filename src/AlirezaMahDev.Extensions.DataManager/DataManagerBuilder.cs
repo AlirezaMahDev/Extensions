@@ -19,8 +19,7 @@ public class DataManagerBuilder : BuilderBase
         {
             var options = provider.GetRequiredService<IOptions<DataManagerOptions>>().Value;
             return provider.GetRequiredService<IDataManager>()
-                .Open(Path.Combine(options.DirectoryPath,
-                    string.Format(options.FileFormat, options.DefaultName)));
+                .Open(Path.Combine(options.DirectoryPath, options.DefaultName));
         });
         return this;
     }
@@ -32,8 +31,7 @@ public class DataManagerBuilder : BuilderBase
             {
                 var options = provider.GetRequiredService<IOptions<DataManagerOptions>>().Value;
                 return provider.GetRequiredService<IDataManager>()
-                    .Open(Path.Combine(options.DirectoryPath,
-                        string.Format(options.FileFormat, key)));
+                    .Open(Path.Combine(options.DirectoryPath, key));
             });
         return this;
     }

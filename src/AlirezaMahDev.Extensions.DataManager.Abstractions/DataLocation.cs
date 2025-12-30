@@ -5,10 +5,10 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 public readonly struct DataLocation(IDataAccess access, long offset, Memory<byte> memory) : IDataLocation<DataLocation>
 {
     public long Offset => offset;
-    public int Length => memory.Length;
-
     public IDataAccess Access => access;
+
     public Memory<byte> Memory => memory;
+    public int Length => Memory.Length;
 
     public static DataLocation Create(IDataAccess access, int length)
     {
@@ -32,19 +32,6 @@ public readonly struct DataLocation(IDataAccess access, long offset, Memory<byte
         int length,
         CancellationToken cancellationToken) =>
         new(access, offset, await access.ReadMemoryAsync(offset, length, cancellationToken));
-
-
-    public static void Write(IDataAccess access, DataLocation location)
-    {
-        access.WriteMemory(location.Offset, location.Memory);
-    }
-
-    public static async ValueTask WriteAsync(IDataAccess access,
-        DataLocation location,
-        CancellationToken cancellationToken = default)
-    {
-        await access.WriteMemoryAsync(location.Offset, location.Memory, cancellationToken);
-    }
 
     public bool Equals(DataLocation other)
     {
@@ -76,8 +63,10 @@ public readonly struct DataLocation<TValue>(DataLocation @base) : IDataLocation<
     where TValue : unmanaged, IDataValue<TValue>
 {
     public DataLocation Base => @base;
+
     public long Offset => Base.Offset;
     public int Length => Base.Length;
+
     public IDataAccess Access => Base.Access;
     public Memory<byte> Memory => Base.Memory;
 
@@ -113,18 +102,6 @@ public readonly struct DataLocation<TValue>(DataLocation @base) : IDataLocation<
         CancellationToken cancellationToken)
     {
         return new(await DataLocation.ReadAsync(access, offset, TValue.ValueSize, cancellationToken));
-    }
-
-    public static void Write(IDataAccess access, DataLocation<TValue> location)
-    {
-        DataLocation.Write(access, location.Base);
-    }
-
-    public static async ValueTask WriteAsync(IDataAccess access,
-        DataLocation<TValue> location,
-        CancellationToken cancellationToken = default)
-    {
-        await DataLocation.WriteAsync(access, location.Base, cancellationToken);
     }
 
     public bool Equals(DataLocation<TValue> other)

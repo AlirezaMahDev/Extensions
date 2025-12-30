@@ -66,12 +66,12 @@ public readonly unsafe struct String16 : IEquatable<String16>, IString<String16>
 
     public bool Equals(String16 other)
     {
-        return Span.SequenceEqual(other);
+        return Span.SequenceEqual(other.Span);
     }
 
     public override bool Equals(object? obj)
     {
-        return obj is IString<String16> other && Span.SequenceEqual(other.Span);
+        return obj is String16 other && Span.SequenceEqual(other.Span);
     }
 
     public static bool operator ==(String16 left, String16 right)

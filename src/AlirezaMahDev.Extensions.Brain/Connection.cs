@@ -79,8 +79,7 @@ class Connection<TData, TLink>(ConnectionArgs<TData, TLink> args) : IConnection<
     public virtual INeuron<TData, TLink> GetNeuron() =>
         _neuron ??= _nerve.NeuronFactory.GetOrCreate(RefValue.Neuron);
 
-    public virtual async ValueTask<INeuron<TData, TLink>>
-        GetNeuronAsync(CancellationToken cancellationToken = default) =>
+    public virtual async ValueTask<INeuron<TData, TLink>> GetNeuronAsync(CancellationToken cancellationToken = default) =>
         _neuron ??= await _nerve.NeuronFactory.GetOrCreateAsync(RefValue.Neuron, cancellationToken);
 
     public IConnection<TData, TLink>? GetPrevious() =>

@@ -1,3 +1,3 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public readonly record struct AllocateMemory(long Offset, Memory<byte> Memory);
+public record struct AllocateMemory<T>(long Offset, Memory<T> Memory);

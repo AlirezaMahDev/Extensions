@@ -19,12 +19,6 @@ public static class DataAccessExtensions
             ReadAsync(long offset, int length, CancellationToken cancellationToken = default) =>
             await DataLocation.ReadAsync(access, offset, length, cancellationToken);
 
-        public void Write(DataLocation location) =>
-            DataLocation.Write(access, location);
-
-        public async ValueTask WriteAsync(DataLocation location, CancellationToken cancellationToken = default) =>
-            await DataLocation.WriteAsync(access, location, cancellationToken);
-
         public DataLocation<TDataValue> Create<TDataValue>()
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue> =>
             DataLocation<TDataValue>.Create(access);
@@ -95,14 +89,5 @@ public static class DataAccessExtensions
             CancellationToken cancellationToken = default)
             where TDataValue : unmanaged, IDataValue<TDataValue> =>
             await DataLocation<TDataValue>.ReadAsync(access, offset, cancellationToken);
-
-        public void Write<TDataValue>(DataLocation<TDataValue> location)
-            where TDataValue : unmanaged, IDataValue<TDataValue> =>
-            DataLocation<TDataValue>.Write(access, location);
-
-        public async ValueTask WriteAsync<TDataValue>(DataLocation<TDataValue> location,
-            CancellationToken cancellationToken = default)
-            where TDataValue : unmanaged, IDataValue<TDataValue> =>
-            await DataLocation<TDataValue>.WriteAsync(access, location, cancellationToken);
     }
 }

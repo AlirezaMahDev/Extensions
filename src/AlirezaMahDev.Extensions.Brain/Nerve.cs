@@ -227,13 +227,13 @@ TLink> : INerve<TData, TLink>
         await Task.WhenAll(tasks.Memory.Span[..taskCount]);
     }
 
-    public void Save()
+    public void Flush()
     {
-        _dataAccess.Save();
+        _dataAccess.Flush();
     }
 
-    public async ValueTask SaveAsync(CancellationToken cancellationToken = default)
+    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
-        await _dataAccess.SaveAsync(cancellationToken);
+        await _dataAccess.FlushAsync(cancellationToken);
     }
 }

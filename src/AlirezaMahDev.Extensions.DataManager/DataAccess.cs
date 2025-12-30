@@ -1,8 +1,4 @@
-using System.Collections.Concurrent;
-
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
-
-using Microsoft.Win32.SafeHandles;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
@@ -11,38 +7,58 @@ class DataAccess : IDisposable, IDataAccess
     public string Path { get; }
 
     private bool _disposedValue;
+    private readonly DataMap _map;
+    private readonly DataLock _lock = new();
+    private readonly DataLocation<DataAccessValue> _value;
 
-    private readonly ConcurrentDictionary<long, DataMemory> _cache = [];
-    private long _length;
-
-    private readonly SafeFileHandle _safeFileHandle;
+    public ref long LastOffset => ref _value.RefValue.LastOffset;
 
     public DataAccess(string path)
     {
         Path = path;
-        _safeFileHandle = File.OpenHandle(Path,
-            FileMode.OpenOrCreate,
-            FileAccess.ReadWrite,
-            FileShare.None);
-        _length = RandomAccess.GetLength(_safeFileHandle);
-        if (_length == 0)
+
+        _map = new(System.IO.Path.Combine(Path, DataDefaults.FileFormat));
+        _value = this.Read<DataAccessValue>(0);
+
+        if (LastOffset == 0)
         {
+            LastOffset = _value.Length;
             this.Create<DataPath>();
         }
 
-        Save();
+        Flush();
     }
 
     private long AllocateOffset(int length)
     {
-        return Interlocked.Add(ref _length, length) - length;
+        if (length > DataDefaults.PartSize)
+            throw new Exception($"length > {DataDefaults.PartSize}");
+
+        long offset;
+        long lastOffset;
+        do
+        {
+            offset = LastOffset;
+            lastOffset = LastOffset;
+
+            if (DataHelper.PartIndex(offset) != DataHelper.PartIndex(offset + length - 1))
+                offset += DataDefaults.PartSize - (offset % DataDefaults.PartSize);
+            if (DataHelper.FileId(offset) != DataHelper.FileId(offset + length - 1))
+                offset += DataDefaults.FileSize - (offset % DataDefaults.FileSize);
+
+        } while (Interlocked.CompareExchange(ref LastOffset, offset + length, lastOffset) != lastOffset);
+
+        return offset;
     }
 
+    private DataPart AccessPart(long offset) =>
+        _map.File(offset).Part(offset);
+
     public DataLocation<DataPath> GetRoot() =>
-        this.Read<DataPath>(0);
+        this.Read<DataPath>(_value.Length);
 
     public async ValueTask<DataLocation<DataPath>> GetRootAsync(CancellationToken cancellationToken = default) =>
-        await this.ReadAsync<DataPath>(0, cancellationToken);
+        await this.ReadAsync<DataPath>(_value.Length, cancellationToken);
 
 
     public DataLocation<DataTrash> GetTrash()
@@ -64,121 +80,60 @@ class DataAccess : IDisposable, IDataAccess
             .GetOrCreateDataAsync<DataPath, DataTrash>(cancellationToken);
     }
 
-    public AllocateMemory AllocateMemory(int length)
+    public AllocateMemory<byte> AllocateMemory(int length)
     {
         var offset = AllocateOffset(length);
-        var dataMemory = new DataMemory(length);
-        _cache.TryAdd(offset, dataMemory);
-        dataMemory.CreateChangePoint();
-        return new(offset, dataMemory.Memory);
+
+        var part = AccessPart(offset);
+        var partOffset = DataHelper.PartOffset(offset);
+        var memory = part.Memory[partOffset..(partOffset + length)];
+
+        return new(offset, memory);
     }
 
-    public ValueTask<AllocateMemory> AllocateMemoryAsync(int length, CancellationToken cancellationToken = default)
+    public ValueTask<AllocateMemory<byte>> AllocateMemoryAsync(int length, CancellationToken cancellationToken = default)
     {
-        if (cancellationToken.IsCancellationRequested)
-        {
-            return ValueTask.FromCanceled<AllocateMemory>(cancellationToken);
-        }
-
-        var offset = AllocateOffset(length);
-        var dataMemory = new DataMemory(length);
-        _cache.TryAdd(offset, dataMemory);
-        dataMemory.CreateChangePoint();
-        return ValueTask.FromResult(new AllocateMemory(offset, dataMemory.Memory));
+        return cancellationToken.IsCancellationRequested
+            ? ValueTask.FromCanceled<AllocateMemory<byte>>(cancellationToken)
+            : ValueTask.FromResult(AllocateMemory(length));
     }
 
     public Memory<byte> ReadMemory(long offset, int length)
     {
-        if (_cache.TryGetValue(offset, out var dataMemory))
-        {
-            return dataMemory.Memory;
-        }
+        var part = AccessPart(offset);
+        var partOffset = DataHelper.PartOffset(offset);
+        var memory = part.Memory[partOffset..(partOffset + length)];
 
-        if (_cache.TryAdd(offset, dataMemory = new(length)))
-        {
-            RandomAccess.Read(_safeFileHandle, dataMemory.Memory.Span, offset);
-            dataMemory.CreateChangePoint();
-            return dataMemory.Memory;
-        }
-
-        return _cache[offset].Memory;
+        return memory;
     }
 
-    public async ValueTask<Memory<byte>> ReadMemoryAsync(long offset,
+    public ValueTask<Memory<byte>> ReadMemoryAsync(long offset,
         int length,
         CancellationToken cancellationToken = default)
     {
-        if (_cache.TryGetValue(offset, out var dataMemory))
-        {
-            return dataMemory.Memory;
-        }
-
-        if (_cache.TryAdd(offset, dataMemory = new(length)))
-        {
-            await RandomAccess.ReadAsync(_safeFileHandle, dataMemory.Memory, offset, cancellationToken);
-            dataMemory.CreateChangePoint();
-            return dataMemory.Memory;
-        }
-
-        return _cache[offset].Memory;
+        return cancellationToken.IsCancellationRequested
+            ? ValueTask.FromCanceled<Memory<byte>>(cancellationToken)
+            : ValueTask.FromResult(ReadMemory(offset, length));
     }
 
-    public void WriteMemory(long offset, Memory<byte> memory)
+    public void Flush()
     {
-        RandomAccess.Write(_safeFileHandle, memory.Span, offset);
+        _map.Flush();
     }
 
-    public async ValueTask WriteMemoryAsync(long offset,
-        Memory<byte> memory,
-        CancellationToken cancellationToken = default)
+    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
-        await RandomAccess.WriteAsync(_safeFileHandle, memory, offset, cancellationToken);
+        await _map.FlushAsync(cancellationToken);
     }
 
-    public void Save()
+    public DataLockOffsetDisposable Lock(long offset)
     {
-        Parallel.ForEach(_cache,
-            (pair, _) =>
-            {
-                if (pair.Value.HasChanged)
-                {
-                    WriteMemory(pair.Key, pair.Value.Memory);
-                    pair.Value.CreateChangePoint();
-                }
-            });
-        RandomAccess.FlushToDisk(_safeFileHandle);
+        return _lock.GetOrAdd(offset).Lock();
     }
 
-    public async Task SaveAsync(CancellationToken cancellationToken = default)
+    public async Task<DataLockOffsetDisposable> LockAsync(long offset, CancellationToken cancellationToken = default)
     {
-        await Parallel.ForEachAsync(_cache,
-            cancellationToken,
-            async ValueTask (pair, token) =>
-            {
-                if (pair.Value.HasChanged)
-                {
-                    await WriteMemoryAsync(pair.Key, pair.Value.Memory, token);
-                    pair.Value.CreateChangePoint();
-                }
-            });
-        RandomAccess.FlushToDisk(_safeFileHandle);
-    }
-
-    private SemaphoreSlim GetSemaphoreSlim(long offset) =>
-        _cache[offset].SemaphoreSlim;
-
-    public LockScope LockScope(long offset)
-    {
-        var semaphoreSlim = GetSemaphoreSlim(offset);
-        semaphoreSlim.Wait();
-        return new(semaphoreSlim);
-    }
-
-    public async Task<LockScope> LockScopeAsync(long offset, CancellationToken cancellationToken = default)
-    {
-        var semaphoreSlim = GetSemaphoreSlim(offset);
-        await semaphoreSlim.WaitAsync(cancellationToken);
-        return new(semaphoreSlim);
+        return await _lock.GetOrAdd(offset).LockAsync(cancellationToken);
     }
 
     protected virtual void Dispose(bool disposing)
@@ -187,14 +142,9 @@ class DataAccess : IDisposable, IDataAccess
         {
             if (disposing)
             {
-                _safeFileHandle.Dispose();
-                foreach (var keyValuePair in _cache)
-                {
-                    keyValuePair.Value.Dispose();
-                }
+                _map.Dispose();
             }
 
-            _cache.Clear();
             _disposedValue = true;
         }
     }

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-class NerveCache()
+class NerveCache
 {
     private readonly ConcurrentDictionary<UInt128, object> _cache = [];
 

@@ -14,7 +14,6 @@ public readonly struct MemoryValue<T>
         Memory = memory;
     }
 
-
     public ref T Value => ref Memory.Span[0];
 
     public static implicit operator MemoryValue<T>(T value) => new(value);
