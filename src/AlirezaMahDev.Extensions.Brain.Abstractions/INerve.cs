@@ -13,10 +13,18 @@ public interface INerve<TData, TLink>
     IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
     ISubtractionOperators<TLink, TLink, TLink>
 {
+    INerveCache Cache { get; }
+    IDataAccess Access { get; }
+    
     string Name { get; }
     DataLocation<DataPath> Location { get; }
-    IRootNeuron<TData, TLink> RootNeuron { get; }
-    IConnection<TData, TLink> RootConnection { get; }
+    DataLocation<DataPath> ConnectionLocation { get; }
+    DataLocation<DataPath> NeuronLocation { get; }
+    
+    Neuron<TData, TLink> Neuron { get; }
+    NeuronWrap<TData, TLink> NeuronWrap { get; }
+    Connection<TData, TLink> Connection { get; }
+    ConnectionWrap<TData, TLink> ConnectionWrap { get; }
 
     void Learn(ReadOnlyMemoryValue<TLink> link, ReadOnlyMemory<TData> data);
 
@@ -35,5 +43,4 @@ public interface INerve<TData, TLink>
         CancellationToken cancellationToken = default);
 
     public void Flush();
-    public ValueTask FlushAsync(CancellationToken cancellationToken = default);
 }

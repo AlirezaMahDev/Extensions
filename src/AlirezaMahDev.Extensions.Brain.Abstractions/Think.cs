@@ -6,7 +6,7 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 public record Think<TData, TLink>(
     TData Data,
     TLink Link,
-    IConnection<TData, TLink> Connection,
+    ConnectionWrap<TData, TLink> Connection,
     Think<TData, TLink>? Previous)
     : IComparable<Think<TData, TLink>>,
         IEnumerable<Think<TData, TLink>>
@@ -26,12 +26,12 @@ public record Think<TData, TLink>(
     public TData AllDifferenceData { get; private init; }
 
 
-    public Think<TData, TLink> Append(TData data, TLink link, IConnection<TData, TLink> connection)
+    public Think<TData, TLink> Append(TData data, TLink link, ConnectionWrap<TData, TLink> connection)
     {
-        var differenceData = data - connection.GetNeuron().RefData;
+        var differenceData = data - connection.NeuronWrap.RefData;
         if (differenceData.CompareTo(default) < 0)
         {
-            differenceData = connection.GetNeuron().RefData - data;
+            differenceData = connection.NeuronWrap.RefData - data;
         }
 
         var differenceLink = link - connection.RefLink;
@@ -51,21 +51,21 @@ public record Think<TData, TLink>(
     }
 
 
-    public async ValueTask<Think<TData, TLink>> AppendAsync(TData data, TLink link, IConnection<TData, TLink> connection, CancellationToken cancellationToken = default)
+    public async ValueTask<Think<TData, TLink>> AppendAsync(TData data, TLink link, ConnectionWrap<TData, TLink> connectionWrap, CancellationToken cancellationToken = default)
     {
-        var differenceData = data - (await connection.GetNeuronAsync(cancellationToken)).RefData;
+        var differenceData = data - connectionWrap.NeuronWrap.RefData;
         if (differenceData.CompareTo(default) < 0)
         {
-            differenceData = (await connection.GetNeuronAsync(cancellationToken)).RefData - data;
+            differenceData = connectionWrap.NeuronWrap.RefData - data;
         }
 
-        var differenceLink = link - connection.RefLink;
+        var differenceLink = link - connectionWrap.RefLink;
         if (differenceLink.CompareTo(default) < 0)
         {
-            differenceLink = connection.RefLink - link;
+            differenceLink = connectionWrap.RefLink - link;
         }
 
-        return new(data, link, connection, this)
+        return new(data, link, connectionWrap, this)
         {
             Count = Count + 1,
             DifferenceData = differenceData,

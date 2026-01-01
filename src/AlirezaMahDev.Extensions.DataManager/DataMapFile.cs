@@ -3,12 +3,12 @@ using System.IO.MemoryMappedFiles;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-class DataFile(MemoryMappedFile file) : IDisposable
+class DataMapFile(MemoryMappedFile file) : IDisposable
 {
     private bool _disposedValue;
-    private readonly ConcurrentDictionary<long, Lazy<DataPart>> _parts = [];
+    private readonly ConcurrentDictionary<long, Lazy<DataMapFilePart>> _parts = [];
 
-    public DataPart Part(long offset) =>
+    public DataMapFilePart Part(long offset) =>
         _parts.GetOrAdd(DataHelper.PartIndex(offset), static (id, file) =>
                 new(() =>
                     new(file.CreateViewAccessor(id, DataDefaults.PartSize, MemoryMappedFileAccess.ReadWrite)),

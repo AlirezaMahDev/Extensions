@@ -3,13 +3,13 @@ using System.IO.MemoryMappedFiles;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-unsafe class DataPart : MemoryManager<byte>
+unsafe class DataMapFilePart : MemoryManager<byte>
 {
     private readonly MemoryMappedViewAccessor _accessor;
     private readonly byte* _pointer;
     private int _pinCount;
 
-    public DataPart(MemoryMappedViewAccessor accessor)
+    public DataMapFilePart(MemoryMappedViewAccessor accessor)
     {
         _accessor = accessor;
 
@@ -32,7 +32,6 @@ unsafe class DataPart : MemoryManager<byte>
     {
         Interlocked.Decrement(ref _pinCount);
     }
-
 
     public void Flush()
     {

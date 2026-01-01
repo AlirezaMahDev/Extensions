@@ -7,15 +7,13 @@ using AlirezaMahDev.Extensions.Brain.Abstractions;
 using AlirezaMahDev.Extensions.DataManager;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-using Microsoft.Extensions.DependencyInjection;
-
 namespace AlirezaMahDev.Extensions.Brain;
 
 class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-TData,
+    TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-TLink> : INerve<TData, TLink>
+    TLink> : INerve<TData, TLink>
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>
@@ -23,53 +21,51 @@ TLink> : INerve<TData, TLink>
     IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
     ISubtractionOperators<TLink, TLink, TLink>
 {
-    private readonly IDataAccess _dataAccess;
-
-    public NerveCache Cache { get; }
+    public IDataAccess Access { get; }
+    public INerveCache Cache { get; }
 
     public string Name { get; }
     public DataLocation<DataPath> Location { get; }
+    public DataLocation<DataPath> ConnectionLocation { get; }
+    public DataLocation<DataPath> NeuronLocation { get; }
+    public Neuron<TData, TLink> Neuron { get; }
+    public NeuronWrap<TData, TLink> NeuronWrap {get;}
+    public Connection<TData, TLink> Connection { get; }
+    public ConnectionWrap<TData, TLink> ConnectionWrap {get;}
 
-    public NeuronFactory<TData, TLink> NeuronFactory { get; }
-    public ConnectionFactory<TData, TLink> ConnectionFactory { get; }
-
-    public IRootNeuron<TData, TLink> RootNeuron { get; }
-    public IConnection<TData, TLink> RootConnection { get; }
-
-    public Nerve(IServiceProvider serviceProvider,
-        IDataManager dataManager,
-        string name)
+    public Nerve(IDataManager dataManager, string name)
     {
-        Cache = new();
+        Cache = new NerveCache();
 
         Name = name;
-        _dataAccess = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
-        Location = _dataAccess.GetRoot().Wrap(x => x.Dictionary()).GetOrAdd(".nerve");
+        Access = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
+        Location = Access.Root.Wrap(Access, x => x.Dictionary()).GetOrAdd(".nerve");
+        ConnectionLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".connection");
+        NeuronLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".neuron");
 
-        NeuronFactory = ActivatorUtilities.CreateInstance<NeuronFactory<TData, TLink>>(serviceProvider, this);
-        ConnectionFactory = ActivatorUtilities.CreateInstance<ConnectionFactory<TData, TLink>>(serviceProvider, this);
-
-        var neuron = NeuronFactory.Location
-            .Wrap(x => x.Storage())
+        var neuron = NeuronLocation
+            .Wrap(Access, x => x.Storage())
             .GetOrCreateData(NeuronValue<TData>.Default);
-        var connection = ConnectionFactory.Location
-            .Wrap(x => x.Storage())
+        var connection = ConnectionLocation
+            .Wrap(Access, x => x.Storage())
             .GetOrCreateData(ConnectionValue<TLink>.Default with { Neuron = neuron.Offset });
 
-        RootNeuron = new RootNeuron<TData, TLink>(NeuronFactory.GetOrCreate(neuron.Offset));
-        RootConnection = new RootConnection<TData, TLink>(ConnectionFactory.GetOrCreate(connection.Offset));
+        Neuron = new(neuron.Offset);
+        NeuronWrap = Neuron.Wrap(this);
+        Connection = new(connection.Offset);
+        ConnectionWrap = Connection.Wrap(this);
     }
 
     public void Learn(ReadOnlyMemoryValue<TLink> link, ReadOnlyMemory<TData> data)
     {
-        var connection = RootConnection;
+        var connection = Connection.Wrap(this);
         foreach (var current in data.Span)
         {
-            var neuron = connection.GetNeuron();
-            connection = neuron.FindOrAdd(current, link, connection);
-            neuron = connection.GetNeuron();
+            var neuron = connection.Neuron;
+            connection = neuron.Wrap(this).FindOrAdd(current, link, connection.Cell).Wrap(this);
+            neuron = connection.Neuron;
 
-            Interlocked.Increment(ref neuron.Location.RefValue.Weight);
+            Interlocked.Increment(ref neuron.Wrap(this).Location.RefValue.Weight);
             Interlocked.Increment(ref connection.Location.RefValue.Weight);
         }
     }
@@ -78,15 +74,18 @@ TLink> : INerve<TData, TLink>
         ReadOnlyMemory<TData> data,
         CancellationToken cancellationToken = default)
     {
-        var connection = RootConnection;
+        var connection = ConnectionWrap;
         for (var i = 0; i < data.Length; i++)
         {
             var current = data.Span[i];
-            var neuron = await connection.GetNeuronAsync(cancellationToken);
-            connection = await neuron.FindOrAddAsync(current, link, connection, cancellationToken);
-            neuron = await connection.GetNeuronAsync(cancellationToken);
-            Interlocked.Increment(ref neuron.Location.RefValue.Weight);
-            Interlocked.Increment(ref connection.Location.RefValue.Weight);
+            var connectionWrap = connection;
+            var neuron = connectionWrap.NeuronWrap;
+            connection = (await neuron.FindOrAddAsync(current, link, connection.Cell, cancellationToken)).Wrap(this);
+            connectionWrap = connection;
+            neuron = connectionWrap.NeuronWrap;
+            var neuronWrap = neuron;
+            Interlocked.Increment(ref neuronWrap.Location.RefValue.Weight);
+            Interlocked.Increment(ref connectionWrap.Location.RefValue.Weight);
         }
     }
 
@@ -106,14 +105,14 @@ TLink> : INerve<TData, TLink>
 
         ThinkCore(link,
             data,
-            new(default, link.Value, RootConnection, null),
+            new(default, link.Value, Connection.Wrap(this), null),
             result
         );
 
         return result.Think;
     }
 
-    private static void ThinkCore(
+    private void ThinkCore(
         ReadOnlyMemoryValue<TLink> link,
         ReadOnlyMemory<TData> input,
         Think<TData, TLink> think,
@@ -121,12 +120,16 @@ TLink> : INerve<TData, TLink>
     {
         if (input.IsEmpty)
         {
-            var next = think.Connection
-                .Min(Comparer<IConnection<TData, TLink>>.Create((a, b) =>
-                    a.CompareTo(link.Value).CompareTo(b.CompareTo(link.Value))));
-            if (next is null)
+            var next = think.Connection.GetSubConnections()
+                .Min(Comparer<Connection<TData, TLink>>.Create((a, b) =>
+                    a.Wrap(this).CompareTo(link.Value).CompareTo(b.Wrap(this).CompareTo(link.Value))))
+                .NullWhenDefault();
+            if (!next.HasValue)
                 return;
-            result.Add(think.Append(next.GetNeuron().RefData, next.RefLink, next));
+            var connectionWrap = next.Value.Wrap(this);
+            result.Add(think.Append(connectionWrap.Neuron.Wrap(this).RefData,
+                connectionWrap.RefLink,
+                connectionWrap));
         }
 
         if (!result.CanAdd(think))
@@ -138,14 +141,14 @@ TLink> : INerve<TData, TLink>
 
         var pain = new DataPairLink<TData, TLink>(data, link.Value);
         var connection = think.Connection;
-        var array = connection.ToArray();
+        var array = connection.GetSubConnections().ToArray();
         array.Sort((a, b) =>
-            a.CompareTo(pain).CompareTo(b.CompareTo(pain)));
+            a.Wrap(this).CompareTo(pain).CompareTo(b.Wrap(this).CompareTo(pain)));
 
         var nextInput = input[1..];
 
         Parallel.ForEach(array
-                .Select(innerConnection => think.Append(data, link.Value, innerConnection))
+                .Select(innerConnection => think.Append(data, link.Value, innerConnection.Wrap(this)))
                 .TakeWhile(result.CanAdd),
             innerThink => ThinkCore(link, nextInput, innerThink, result));
     }
@@ -158,14 +161,14 @@ TLink> : INerve<TData, TLink>
 
         await ThinkCoreAsync(link,
             data,
-            new(default, link.Value, RootConnection, null),
+            new(default, link.Value, Connection.Wrap(this), null),
             result,
             cancellationToken);
 
         return result.Think;
     }
 
-    private static async Task ThinkCoreAsync(
+    private async Task ThinkCoreAsync(
         ReadOnlyMemoryValue<TLink> link,
         ReadOnlyMemory<TData> input,
         Think<TData, TLink> think,
@@ -179,14 +182,16 @@ TLink> : INerve<TData, TLink>
 
         if (input.IsEmpty)
         {
-            var next = think.Connection
-                .Min(Comparer<IConnection<TData, TLink>>.Create((a, b) =>
-                    a.CompareTo(link.Value).CompareTo(b.CompareTo(link.Value))));
-            if (next is null)
+            var next = think.Connection.GetSubConnections()
+                .Min(Comparer<Connection<TData, TLink>>.Create((a, b) =>
+                    a.Wrap(this).CompareTo(link.Value).CompareTo(b.Wrap(this).CompareTo(link.Value))))
+                .NullWhenDefault();
+            if (!next.HasValue)
                 return;
-            result.Add(await think.AppendAsync((await next.GetNeuronAsync(cancellationToken)).RefData,
-                next.RefLink,
-                next,
+            var nextWrap = next.Value.Wrap(this);
+            result.Add(await think.AppendAsync(nextWrap.Neuron.Wrap(this).RefData,
+                nextWrap.RefLink,
+                nextWrap,
                 cancellationToken));
         }
 
@@ -201,9 +206,9 @@ TLink> : INerve<TData, TLink>
 
         var pain = new DataPairLink<TData, TLink>(data, link.Value);
         var connection = think.Connection;
-        var memory = connection.ToArray().AsMemory();
+        var memory = connection.GetSubConnections().ToArray().AsMemory();
         memory.Span.Sort((a, b) =>
-            a.CompareTo(pain).CompareTo(b.CompareTo(pain)));
+            a.Wrap(this).CompareTo(pain).CompareTo(b.Wrap(this).CompareTo(pain)));
 
         using var tasks = MemoryPool<Task>.Shared.Rent(memory.Length);
         var taskCount = 0;
@@ -212,7 +217,7 @@ TLink> : INerve<TData, TLink>
         for (var i = 0; i < memory.Length; i++)
         {
             var innerConnection = memory.Span[i];
-            var innerThink = await think.AppendAsync(data, link.Value, innerConnection, cancellationToken);
+            var innerThink = await think.AppendAsync(data, link.Value, innerConnection.Wrap(this), cancellationToken);
             if (result.CanAdd(innerThink))
             {
                 tasks.Memory.Span[i] = ThinkCoreAsync(link, nextInput, innerThink, result, cancellationToken);
@@ -229,11 +234,6 @@ TLink> : INerve<TData, TLink>
 
     public void Flush()
     {
-        _dataAccess.Flush();
-    }
-
-    public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
-    {
-        await _dataAccess.FlushAsync(cancellationToken);
+        Access.Flush();
     }
 }

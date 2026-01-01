@@ -1,9 +1,8 @@
 using System.Numerics;
 
-namespace AlirezaMahDev.Extensions.Brain;
+namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-class RootConnection<TData, TLink>(Connection<TData, TLink> connection)
-    : Connection<TData, TLink>(new(connection._nerve, connection.Location))
+public readonly record struct Neuron<TData, TLink>(long Offset) : ICell
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>

@@ -7,9 +7,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.IO.Hashing" Version="10.0.0" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager.Abstractions\AlirezaMahDev.Extensions.DataManager.Abstractions.csproj" />

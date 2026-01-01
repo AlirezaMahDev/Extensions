@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public readonly struct DataCollectionItem<TValue>(
+public readonly struct DataCollectionItemWrap<TValue>(
     Expression<SelectValueFunc<TValue, long>> selectNextExpression)
     where TValue : unmanaged, IDataValue<TValue>
 {

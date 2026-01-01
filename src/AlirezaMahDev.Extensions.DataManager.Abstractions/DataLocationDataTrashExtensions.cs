@@ -4,30 +4,31 @@ public static class DataLocationDataTrashExtensions
 {
     extension(DataLocation<DataTrash> location)
     {
-        public void Add<TDataLocation>(TDataLocation dataLocation)
+        public void Add<TDataLocation>(IDataAccess access, TDataLocation dataLocation)
             where TDataLocation : IDataLocationBase<TDataLocation>
         {
-            dataLocation.Access.GetTrash()
-                .Wrap(x => x.Collection())
-                .Add(x => x.RefValue = x.RefValue with
+            location
+                .Wrap(access, x => x.Collection())
+                .Add(access.Create(new DataTrashItem
                 {
                     Offset = dataLocation.Offset,
                     Length = dataLocation.Length
-                });
+                }));
         }
 
-        public async ValueTask AddAsync<TDataLocation>(TDataLocation dataLocation,
+        public async ValueTask AddAsync<TDataLocation>(IDataAccess access,
+            TDataLocation dataLocation,
             CancellationToken cancellationToken = default)
             where TDataLocation : IDataLocationBase<TDataLocation>
         {
-            await (await dataLocation.Access.GetTrashAsync(cancellationToken))
-                .Wrap(x => x.Collection())
-                .AddAsync(x => x.RefValue = x.RefValue with
-                {
-                    Offset = dataLocation.Offset,
-                    Length = dataLocation.Length
-                },
-                    cancellationToken: cancellationToken);
+            await location
+                .Wrap(access, x => x.Collection())
+                .AddAsync(access.Create(new DataTrashItem
+                    {
+                        Offset = dataLocation.Offset,
+                        Length = dataLocation.Length
+                    }),
+                    cancellationToken);
         }
     }
 }

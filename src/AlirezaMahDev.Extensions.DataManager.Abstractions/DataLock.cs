@@ -4,22 +4,45 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public class DataLock : IDisposable
 {
+    private readonly ReaderWriterLockSlim _readerWriterLockSlim = new();
     private readonly ConcurrentDictionary<long, DataLockOffset> _locks = new();
     private bool _disposedValue;
 
     public DataLockOffset GetOrAdd(long offset)
     {
-        return _locks.GetOrAdd(offset,
-            static (innerOffset, arg) =>
-                new(arg, innerOffset),
-            this);
+        _readerWriterLockSlim.EnterReadLock();
+        try
+        {
+            return _locks.GetOrAdd(offset,
+                static (innerOffset, arg) =>
+                    new(arg, innerOffset),
+                this);
+        }
+        finally
+        {
+            _readerWriterLockSlim.ExitReadLock();
+        }
     }
 
     public void Remove(long offset)
     {
-        if (_locks.TryRemove(offset, out var dataLockOffset))
+        if (_locks.TryGetValue(offset, out var dataLockOffset) && dataLockOffset.CurrentCount == 0)
         {
-            dataLockOffset.Dispose();
+            _readerWriterLockSlim.EnterWriteLock();
+            try
+            {
+                if (_locks.TryGetValue(offset, out dataLockOffset) && dataLockOffset.CurrentCount == 0)
+                {
+                    if (_locks.TryRemove(offset, out dataLockOffset))
+                    {
+                        dataLockOffset.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                _readerWriterLockSlim.ExitWriteLock();
+            }
         }
     }
 
@@ -29,6 +52,7 @@ public class DataLock : IDisposable
         {
             if (disposing)
             {
+                _readerWriterLockSlim.Dispose();
                 foreach (var dataLockOffset in _locks.Values)
                 {
                     dataLockOffset.Dispose();

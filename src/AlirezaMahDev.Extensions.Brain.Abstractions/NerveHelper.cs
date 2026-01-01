@@ -1,9 +1,8 @@
 using System.Numerics;
 
 using AlirezaMahDev.Extensions.Abstractions;
-using AlirezaMahDev.Extensions.Brain.Abstractions;
 
-namespace AlirezaMahDev.Extensions.Brain;
+namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 static class NerveHelper
 {
@@ -14,10 +13,10 @@ static class NerveHelper
         NerveCacheKey.Create(in data.Value);
 
     public static ReadOnlyMemoryValue<NerveCacheKey> CreateCacheKey<TData, TLink>(
-            in INeuron<TData, TLink> from,
-            in INeuron<TData, TLink> to,
+            in Neuron<TData, TLink> from,
+            in Neuron<TData, TLink> to,
             in ReadOnlyMemoryValue<TLink> link,
-            in IConnection<TData, TLink>? connection)
+            in Connection<TData, TLink>? connection)
         where TData : unmanaged,
         IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
         ISubtractionOperators<TData, TData, TData>

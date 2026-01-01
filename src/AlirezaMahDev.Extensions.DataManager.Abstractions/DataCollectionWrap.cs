@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public readonly struct DataCollection<TValue, TItem>(
+public readonly struct DataCollectionWrap<TValue, TItem>(
     Expression<SelectValueFunc<TValue, long>> selectChildExpression,
     Expression<SelectValueFunc<TItem, long>> selectNextExpression)
     where TValue : unmanaged, IDataValue<TValue>
@@ -11,5 +11,5 @@ public readonly struct DataCollection<TValue, TItem>(
     public SelectValueFunc<TValue, long> GetChild { get; } = selectChildExpression.Compile();
 
     public SetValueAction<TValue, long> SetChild { get; } = selectChildExpression.BuildSetter();
-    public DataCollectionItem<TItem> ItemWrap { get; } = new(selectNextExpression);
+    public DataCollectionItemWrap<TItem> ItemWrap { get; } = new(selectNextExpression);
 }

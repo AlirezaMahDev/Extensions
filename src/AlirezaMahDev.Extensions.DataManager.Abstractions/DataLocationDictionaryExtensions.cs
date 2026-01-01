@@ -23,109 +23,107 @@ public static class DataLocationDictionaryExtensions
         public IDataCollectionItem<TValue> CollectionItem() => null!;
     }
 
-    extension<TValue, TItem, TKey>(DataLocationWrap<TValue, IDataDictionary<TValue, TItem, TKey>> locationWrap)
+    extension<TValue, TItem, TKey>(DataWrap<TValue, IDataDictionary<TValue, TItem, TKey>> wrap)
         where TValue : unmanaged, IDataDictionary<TValue, TItem, TKey>
         where TItem : unmanaged, IDataDictionaryItem<TItem, TKey>, IDataValueDefault<TItem>
         where TKey : unmanaged, IEquatable<TKey>
     {
         public DataLocation<TItem> GetOrAdd(TKey key)
         {
-            var locationWrapCollection = locationWrap
+            var locationWrapCollection = wrap
                 .Wrap(x => x.Collection());
             return locationWrapCollection
                 .GetChildren()
-                .FirstOrDefault(x => x.RefValue.Key.Equals(key))
-                .WhenDefault(() => locationWrapCollection.Add(value => value.RefValue = value.RefValue with { Key = key }));
+                .FirstOrDefault(x => x.GetRefValue(wrap.Access).Key.Equals(key))
+                .WhenDefault(() =>
+                    locationWrapCollection.Add(wrap.Access.Create(TItem.Default with { Key = key })));
         }
 
         public async ValueTask<DataLocation<TItem>> GetOrAddAsync(TKey key,
             CancellationToken cancellationToken = default)
         {
-            var locationWrapCollection = locationWrap
+            var locationWrapCollection = wrap
                 .Wrap(x => x.Collection());
             var dataLocation = await locationWrapCollection
-                .GetChildrenAsync(cancellationToken)
-                .FirstOrDefaultAsync(x => x.RefValue.Key.Equals(key), cancellationToken);
+                .GetChildren()
+                .ToAsyncEnumerable()
+                .FirstOrDefaultAsync(x => x.GetRefValue(wrap.Access).Key.Equals(key), cancellationToken);
             return await dataLocation.WhenDefaultAsync(async token =>
-                    await locationWrapCollection.AddAsync(value => value.RefValue = value.RefValue with { Key = key }, cancellationToken: token),
+                    await locationWrapCollection.AddAsync(wrap.Access.Create(TItem.Default with { Key = key }),
+                        cancellationToken: token),
                 cancellationToken: cancellationToken);
         }
     }
 
-    extension<TValue, TItem, TKey>(DataLocationWrap<TValue, IDataDictionary<TValue, TItem, TKey>> locationWrap)
+    extension<TValue, TItem, TKey>(DataWrap<TValue, IDataDictionary<TValue, TItem, TKey>> wrap)
         where TValue : unmanaged, IDataDictionary<TValue, TItem, TKey>
         where TItem : unmanaged, IDataDictionaryItem<TItem, TKey>
         where TKey : unmanaged, IEquatable<TKey>
     {
         public DataLocation<TItem>? TryGet(TKey key)
         {
-            return locationWrap
+            return wrap
                 .Wrap(x => x.Collection())
                 .GetChildren()
-                .FirstOrDefault(x => x.RefValue.Key.Equals(key))
+                .FirstOrDefault(x => x.GetRefValue(wrap.Access).Key.Equals(key))
                 .NullWhenDefault();
         }
 
         public async ValueTask<DataLocation<TItem>?> TryGetAsync(TKey key,
             CancellationToken cancellationToken = default)
         {
-            var dataLocation = await locationWrap
+            var dataLocation = await wrap
                 .Wrap(x => x.Collection())
-                .GetChildrenAsync(cancellationToken)
-                .FirstOrDefaultAsync(x => x.RefValue.Key.Equals(key), cancellationToken);
+                .GetChildren()
+                .ToAsyncEnumerable()
+                .FirstOrDefaultAsync(x => x.GetRefValue(wrap.Access).Key.Equals(key), cancellationToken);
             return dataLocation.NullWhenDefault();
         }
 
         public void Clear()
         {
-            locationWrap
+            wrap
                 .Wrap(x => x.Collection())
                 .Clear();
         }
 
         public async ValueTask ClearAsync(CancellationToken cancellationToken = default)
         {
-            await locationWrap
+            await wrap
                 .Wrap(x => x.Collection())
                 .ClearAsync(cancellationToken);
         }
 
         public DataLocation<TItem>? Remove(TKey key)
         {
-            var locationWrapCollection = locationWrap
+            var locationWrapCollection = wrap
                 .Wrap(x => x.Collection());
             return locationWrapCollection
                 .GetChildren()
-                .FirstOrDefault(x => x.RefValue.Key.Equals(key))
+                .FirstOrDefault(x => x.GetRefValue(wrap.Access).Key.Equals(key))
                 .WhenNotDefault(x => locationWrapCollection.Remove(x));
         }
 
         public async ValueTask<DataLocation<TItem>?> RemoveAsync(TKey key,
             CancellationToken cancellationToken = default)
         {
-            var locationWrapCollection = locationWrap
+            var locationWrapCollection = wrap
                 .Wrap(x => x.Collection());
             var dataLocation = await locationWrapCollection
-                .GetChildrenAsync(cancellationToken: cancellationToken)
-                .FirstOrDefaultAsync(x => x.RefValue.Key.Equals(key), cancellationToken: cancellationToken);
+                .GetChildren()
+                .ToAsyncEnumerable()
+                .FirstOrDefaultAsync(x => x.GetRefValue(wrap.Access).Key.Equals(key),
+                    cancellationToken: cancellationToken);
             return await dataLocation.WhenNotDefaultAsync(
                 async (x, token) => await locationWrapCollection.RemoveAsync(x, token),
                 cancellationToken);
         }
 
-
         public IEnumerable<DataLocation<TItem>> GetChildren()
         {
-            return locationWrap
+            return wrap
                 .Wrap(x => x.Collection())
                 .GetChildren();
-        }
-
-        public IAsyncEnumerable<DataLocation<TItem>> GetChildrenAsync(CancellationToken cancellationToken = default)
-        {
-            return locationWrap
-                .Wrap(x => x.Collection())
-                .GetChildrenAsync(cancellationToken: cancellationToken);
         }
     }
 }

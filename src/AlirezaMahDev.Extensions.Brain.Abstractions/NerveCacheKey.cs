@@ -2,16 +2,11 @@ using System.IO.Hashing;
 
 using AlirezaMahDev.Extensions.Abstractions;
 
-namespace AlirezaMahDev.Extensions.Brain;
+namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-readonly struct NerveCacheKey
+public readonly struct NerveCacheKey(params ReadOnlySpan<byte> bytes)
 {
-    public UInt128 Hash { get; }
-
-    public NerveCacheKey(params ReadOnlySpan<byte> bytes)
-    {
-        Hash = XxHash128.HashToUInt128(bytes);
-    }
+    public UInt128 Hash { get; } = XxHash128.HashToUInt128(bytes);
 
     public static NerveCacheKey Create<T1>(in T1 t1)
         where T1 : unmanaged =>

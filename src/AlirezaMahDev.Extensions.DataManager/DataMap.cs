@@ -6,17 +6,18 @@ namespace AlirezaMahDev.Extensions.DataManager;
 class DataMap(string path) : IDisposable
 {
     private bool _disposedValue;
-    private readonly ConcurrentDictionary<long, Lazy<DataFile>> _files = [];
+    private readonly ConcurrentDictionary<long, Lazy<DataMapFile>> _files = [];
 
-    public DataFile File(long offset) =>
+    public DataMapFile File(long offset) =>
         _files.GetOrAdd(DataHelper.FileId(offset), static (id, path) =>
-            new(() => new(MemoryMappedFile.CreateFromFile(
-                string.Format(path, id),
-                FileMode.OpenOrCreate,
-                null,
-                DataDefaults.FileSize,
-                MemoryMappedFileAccess.ReadWrite)),
-                LazyThreadSafetyMode.ExecutionAndPublication)
+            new(() =>
+                new(MemoryMappedFile.CreateFromFile(
+                    string.Format(path, id),
+                    FileMode.OpenOrCreate,
+                    null,
+                    DataDefaults.FileSize,
+                    MemoryMappedFileAccess.ReadWrite)
+                ), LazyThreadSafetyMode.ExecutionAndPublication)
            , path)
         .Value;
 
@@ -46,7 +47,6 @@ class DataMap(string path) : IDisposable
                 {
                     dataFile.Value.Dispose();
                 }
-
             }
 
             _files.Clear();
