@@ -1,11 +1,14 @@
-using System.Collections;
+using System.Diagnostics;
 using System.Numerics;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public readonly record struct ConnectionWrap<TData, TLink>(INerve<TData, TLink> Nerve, Connection<TData, TLink> Cell)
+[DebuggerTypeProxy(typeof(ConnectionWrapDebugView<,>))]
+public readonly record struct ConnectionWrap<TData, TLink>(
+    INerve<TData, TLink> Nerve,
+    Connection<TData, TLink> Cell)
     : ICellWrap<Connection<TData, TLink>, ConnectionValue<TLink>, TData, TLink>,
         IComparable<DataPairLink<TData, TLink>>
     where TData : unmanaged,
@@ -15,6 +18,11 @@ public readonly record struct ConnectionWrap<TData, TLink>(INerve<TData, TLink> 
     IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
     ISubtractionOperators<TLink, TLink, TLink>
 {
+    public override string ToString()
+    {
+        return $"{Cell} {RefValue}";
+    }
+
     public DataWrap<ConnectionValue<TLink>> Location => new(Nerve.Access, new(Cell.Offset));
     public ref readonly ConnectionValue<TLink> RefValue => ref Location.RefValue;
     public ref readonly TLink RefLink => ref Location.RefValue.Link;
@@ -26,6 +34,7 @@ public readonly record struct ConnectionWrap<TData, TLink>(INerve<TData, TLink> 
         RefValue.Previous != -1
             ? new(RefValue.Previous)
             : null;
+
     public ConnectionWrap<TData, TLink>? PreviousWrap =>
         RefValue.Previous != -1
             ? new(Nerve, new(RefValue.Previous))

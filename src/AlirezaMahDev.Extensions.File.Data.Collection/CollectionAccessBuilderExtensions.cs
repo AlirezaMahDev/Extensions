@@ -14,7 +14,7 @@ public static class CollectionAccessBuilderExtensions
 
         public IDataAccessBuilder AddCollection(Action<ICollectionAccessBuilder> action)
         {
-            action(AddCollection(databaseBuilder));
+            action(databaseBuilder.AddCollection());
             return databaseBuilder;
         }
     }

@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public readonly struct ReadOnlyMemoryValue<T>

@@ -16,7 +16,7 @@ public static class JsonExtensions
 
         public IFileBuilder AddJson(Action<IJsonFileBuilder> action)
         {
-            action(AddJson(builder));
+            action(builder.AddJson());
             return builder;
         }
     }

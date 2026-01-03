@@ -56,6 +56,7 @@ class DataAccess : IDisposable, IDataAccess
         _map.File(offset).Part(offset);
 
     public DataLocation<DataPath> Root { get; }
+    public DataWrap<DataPath> RootWrap => Root.Wrap(this);
 
     public DataLocation<DataTrash> GetTrash()
     {

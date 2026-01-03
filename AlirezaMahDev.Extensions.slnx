@@ -44,8 +44,8 @@
     <Project Path="src/AlirezaMahDev.Extensions.PersianTimestamp/AlirezaMahDev.Extensions.PersianTimestamp.csproj" />
   </Folder>
   <Folder Name="/src/ProgressLogger/">
-    <Project Path="src/AlirezaMahDev.Extensions.ProgressLogger.Abstractions/AlirezaMahDev.Extensions.ProgressLogger.Abstractions.csproj" />
-    <Project Path="src/AlirezaMahDev.Extensions.ProgressLogger/AlirezaMahDev.Extensions.ProgressLogger.csproj" />
+    <Project Path="src/AlirezaMahDev.Extensions.Progress.Abstractions/AlirezaMahDev.Extensions.Progress.Abstractions.csproj" />
+    <Project Path="src/AlirezaMahDev.Extensions.Progress/AlirezaMahDev.Extensions.Progress.csproj" />
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/Brain/">

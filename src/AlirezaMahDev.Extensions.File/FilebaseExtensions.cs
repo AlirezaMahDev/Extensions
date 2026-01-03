@@ -15,7 +15,7 @@ public static class FilebaseExtensions
 
         public IServiceCollection AddFileService(Action<IFileBuilder> action)
         {
-            action(AddFileService(services));
+            action(services.AddFileService());
             return services;
         }
     }

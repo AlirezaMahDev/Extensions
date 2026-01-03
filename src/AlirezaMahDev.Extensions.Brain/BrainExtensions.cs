@@ -13,7 +13,7 @@ public static class BrainExtensions
 
         public IServiceCollection AddBrain(Action<BrainBuilder> action)
         {
-            action(AddBrain(services));
+            action(services.AddBrain());
             return services;
         }
     }

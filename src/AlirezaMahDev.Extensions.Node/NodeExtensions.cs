@@ -13,7 +13,7 @@ public static class NodeExtensions
 
         public IServiceCollection AddNode(Action<NodeBuilder> action)
         {
-            action(AddNode(services));
+            action(services.AddNode());
             return services;
         }
     }

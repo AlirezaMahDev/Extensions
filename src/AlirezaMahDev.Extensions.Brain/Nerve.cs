@@ -11,9 +11,9 @@ namespace AlirezaMahDev.Extensions.Brain;
 
 class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TData,
+TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TLink> : INerve<TData, TLink>
+TLink> : INerve<TData, TLink>
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>
@@ -22,20 +22,20 @@ class Nerve<
     ISubtractionOperators<TLink, TLink, TLink>
 {
     public IDataAccess Access { get; }
-    public INerveCache Cache { get; }
+    public INerveCache<TData, TLink> Cache { get; }
 
     public string Name { get; }
     public DataLocation<DataPath> Location { get; }
     public DataLocation<DataPath> ConnectionLocation { get; }
     public DataLocation<DataPath> NeuronLocation { get; }
     public Neuron<TData, TLink> Neuron { get; }
-    public NeuronWrap<TData, TLink> NeuronWrap {get;}
+    public NeuronWrap<TData, TLink> NeuronWrap { get; }
     public Connection<TData, TLink> Connection { get; }
-    public ConnectionWrap<TData, TLink> ConnectionWrap {get;}
+    public ConnectionWrap<TData, TLink> ConnectionWrap { get; }
 
     public Nerve(IDataManager dataManager, string name)
     {
-        Cache = new NerveCache();
+        Cache = new NerveCache<TData, TLink>();
 
         Name = name;
         Access = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
@@ -58,15 +58,14 @@ class Nerve<
 
     public void Learn(ReadOnlyMemoryValue<TLink> link, ReadOnlyMemory<TData> data)
     {
-        var connection = Connection.Wrap(this);
-        foreach (var current in data.Span)
+        var connectionWrap = ConnectionWrap;
+        for (var i = 0; i < data.Length; i++)
         {
-            var neuron = connection.Neuron;
-            connection = neuron.Wrap(this).FindOrAdd(current, link, connection.Cell).Wrap(this);
-            neuron = connection.Neuron;
-
-            Interlocked.Increment(ref neuron.Wrap(this).Location.RefValue.Weight);
-            Interlocked.Increment(ref connection.Location.RefValue.Weight);
+            var neuron = this.FindOrAddNeuron(data.Span[i]);
+            var connection = connectionWrap.FindOrAdd(neuron, link.Value);
+            connectionWrap = connection.Wrap(this);
+            Interlocked.Increment(ref connectionWrap.Location.RefValue.Weight);
+            Interlocked.Increment(ref connectionWrap.NeuronWrap.Location.RefValue.Weight);
         }
     }
 
@@ -74,18 +73,14 @@ class Nerve<
         ReadOnlyMemory<TData> data,
         CancellationToken cancellationToken = default)
     {
-        var connection = ConnectionWrap;
+        var connectionWrap = ConnectionWrap;
         for (var i = 0; i < data.Length; i++)
         {
-            var current = data.Span[i];
-            var connectionWrap = connection;
-            var neuron = connectionWrap.NeuronWrap;
-            connection = (await neuron.FindOrAddAsync(current, link, connection.Cell, cancellationToken)).Wrap(this);
-            connectionWrap = connection;
-            neuron = connectionWrap.NeuronWrap;
-            var neuronWrap = neuron;
-            Interlocked.Increment(ref neuronWrap.Location.RefValue.Weight);
+            var neuron = await this.FindOrAddNeuronAsync(data.Span[i], cancellationToken);
+            var connection = await connectionWrap.FindOrAddAsync(neuron, link, cancellationToken);
+            connectionWrap = connection.Wrap(this);
             Interlocked.Increment(ref connectionWrap.Location.RefValue.Weight);
+            Interlocked.Increment(ref connectionWrap.NeuronWrap.Location.RefValue.Weight);
         }
     }
 
@@ -141,14 +136,14 @@ class Nerve<
 
         var pain = new DataPairLink<TData, TLink>(data, link.Value);
         var connection = think.Connection;
-        var array = connection.GetSubConnections().ToArray();
+        var array = connection.GetSubConnectionsWrap().ToArray();
         array.Sort((a, b) =>
-            a.Wrap(this).CompareTo(pain).CompareTo(b.Wrap(this).CompareTo(pain)));
+            a.CompareTo(pain).CompareTo(b.CompareTo(pain)));
 
         var nextInput = input[1..];
 
         Parallel.ForEach(array
-                .Select(innerConnection => think.Append(data, link.Value, innerConnection.Wrap(this)))
+                .Select(innerConnection => think.Append(data, link.Value, innerConnection))
                 .TakeWhile(result.CanAdd),
             innerThink => ThinkCore(link, nextInput, innerThink, result));
     }

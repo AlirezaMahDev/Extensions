@@ -14,7 +14,7 @@ public static class TableAccessBuilderExtensions
 
         public IDataAccessBuilder AddTable(Action<ITableAccessBuilder> action)
         {
-            action(AddTable(databaseBuilder));
+            action(databaseBuilder.AddTable());
             return databaseBuilder;
         }
     }

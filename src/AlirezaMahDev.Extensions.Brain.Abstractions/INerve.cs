@@ -13,7 +13,7 @@ public interface INerve<TData, TLink>
     IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
     ISubtractionOperators<TLink, TLink, TLink>
 {
-    INerveCache Cache { get; }
+    INerveCache<TData, TLink> Cache { get; }
     IDataAccess Access { get; }
     
     string Name { get; }

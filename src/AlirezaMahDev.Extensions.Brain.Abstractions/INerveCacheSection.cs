@@ -23,4 +23,9 @@ public interface INerveCacheSection
 
     long GetOrAdd<TKey>(in TKey key, Func<UInt128, long> factory)
         where TKey : unmanaged;
+
+    long GetOrAdd(in NerveCacheKey key, long value);
+
+    long GetOrAdd<TKey>(in TKey key, long value)
+        where TKey : unmanaged;
 }

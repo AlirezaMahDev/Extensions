@@ -14,7 +14,7 @@ public static class StackAccessBuilderExtensions
 
         public IDataAccessBuilder AddStack(Action<IStackAccessBuilder> action)
         {
-            action(AddStack(databaseBuilder));
+            action(databaseBuilder.AddStack());
             return databaseBuilder;
         }
     }

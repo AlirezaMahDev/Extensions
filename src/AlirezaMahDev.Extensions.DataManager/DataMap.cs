@@ -11,13 +11,18 @@ class DataMap(string path) : IDisposable
     public DataMapFile File(long offset) =>
         _files.GetOrAdd(DataHelper.FileId(offset), static (id, path) =>
             new(() =>
-                new(MemoryMappedFile.CreateFromFile(
+            {
+                var directoryPath = Path.GetDirectoryName(path)!;
+                if (!Directory.Exists(directoryPath))
+                    Directory.CreateDirectory(directoryPath);
+                return new(MemoryMappedFile.CreateFromFile(
                     string.Format(path, id),
                     FileMode.OpenOrCreate,
                     null,
                     DataDefaults.FileSize,
                     MemoryMappedFileAccess.ReadWrite)
-                ), LazyThreadSafetyMode.ExecutionAndPublication)
+                );
+            }, LazyThreadSafetyMode.ExecutionAndPublication)
            , path)
         .Value;
 

@@ -36,7 +36,8 @@ class NerveCacheSection : INerveCacheSection
         where TKey : unmanaged =>
         SetCore(GenerateHash(in key), value);
 
-    public long Set(in NerveCacheKey key, long value) => SetCore(key.Hash, value);
+    public long Set(in NerveCacheKey key, long value) =>
+        SetCore(key.Hash, value);
 
     private long SetCore(in UInt128 key, long value) =>
         _cache[key] = value;
@@ -48,6 +49,14 @@ class NerveCacheSection : INerveCacheSection
     public long GetOrAdd(in NerveCacheKey key, Func<UInt128, long> factory) =>
         GetOrAddCore(key.Hash, factory);
 
+    public long GetOrAdd<TKey>(in TKey key, long value)
+        where TKey : unmanaged =>
+        GetOrAddCore(GenerateHash(in key), value);
+    public long GetOrAdd(in NerveCacheKey key, long value) =>
+        GetOrAddCore(key.Hash, value);
+
     private long GetOrAddCore(in UInt128 key, Func<UInt128, long> factory) =>
         _cache.GetOrAdd(key, factory);
+    private long GetOrAddCore(in UInt128 key, long value) =>
+        _cache.GetOrAdd(key, value);
 }

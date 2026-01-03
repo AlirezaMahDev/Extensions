@@ -5,6 +5,7 @@ public interface IDataAccess
     string Path { get; }
 
     DataLocation<DataPath> Root { get; }
+    DataWrap<DataPath> RootWrap { get; }
 
     DataLocation<DataTrash> GetTrash();
     ValueTask<DataLocation<DataTrash>> GetTrashAsync(CancellationToken cancellationToken = default);

@@ -17,12 +17,12 @@ public class UnitTest1(ITestOutputHelper helper)
         var host = builder.Build();
         var dataManager = host.Services.GetRequiredService<IDataManager>();
         using var tempDataAccess = dataManager.OpenTemp();
-        var locationWrap = tempDataAccess.GetRoot().Wrap(x => x.TreeDictionary());
+        var locationWrap = tempDataAccess.RootWrap.Wrap(x => x.TreeDictionary());
         locationWrap.GetOrAdd("t1");
-        tempDataAccess.Save();
+        tempDataAccess.Flush();
         foreach (var location in locationWrap.GetChildren())
         {
-            helper.WriteLine(location.RefValue.Key.ToString());
+            helper.WriteLine(location.Wrap(tempDataAccess).RefValue.Key.ToString());
         }
     }
 }

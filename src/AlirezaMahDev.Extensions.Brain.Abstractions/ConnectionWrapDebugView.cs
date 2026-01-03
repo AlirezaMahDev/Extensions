@@ -1,8 +1,9 @@
+using System.Collections;
 using System.Numerics;
 
-namespace AlirezaMahDev.Extensions.Brain;
+namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-class NeuronFactory<TData, TLink>(Nerve<TData, TLink> nerve)
+public class ConnectionWrapDebugView<TData, TLink>(ConnectionWrap<TData, TLink> wrap)
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>
@@ -10,4 +11,7 @@ class NeuronFactory<TData, TLink>(Nerve<TData, TLink> nerve)
     IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
     ISubtractionOperators<TLink, TLink, TLink>
 {
+    public ConnectionWrap<TData, TLink> Wrap { get; } = wrap;
+    public IEnumerable<ConnectionWrap<TData, TLink>> SubConnectionsWrap =>
+        Wrap.GetSubConnectionsWrap();
 }

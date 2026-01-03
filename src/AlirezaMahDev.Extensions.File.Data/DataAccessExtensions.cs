@@ -26,7 +26,7 @@ public static class DataAccessExtensions
 
         public IFileBuilder AddData(Action<IDataAccessBuilder> action)
         {
-            action(AddData(builder));
+            action(builder.AddData());
             return builder;
         }
     }

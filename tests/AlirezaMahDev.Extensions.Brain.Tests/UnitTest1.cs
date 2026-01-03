@@ -16,7 +16,7 @@ public class UnitTest1(ITestOutputHelper helper)
     {
         var builder = Host.CreateApplicationBuilder();
         builder.Services.AddBrain();
-        var host = builder.Build();
+        using var host = builder.Build();
         var brainService = host.Services.GetRequiredService<IBrainService>();
         var nerve = brainService.GetOrAddTemp<int, double>();
 
@@ -29,7 +29,7 @@ public class UnitTest1(ITestOutputHelper helper)
         helper.WriteLine($"learn2:{stopwatch.Elapsed}");
 
         stopwatch.Restart();
-        nerve.Save();
+        nerve.Flush();
         helper.WriteLine($"save:{stopwatch.Elapsed}");
 
         stopwatch.Restart();
@@ -57,7 +57,7 @@ public class UnitTest1(ITestOutputHelper helper)
     {
         var builder = Host.CreateApplicationBuilder();
         builder.Services.AddBrain();
-        var host = builder.Build();
+        using var host = builder.Build();
         var brainService = host.Services.GetRequiredService<IBrainService>();
         var nerve = brainService.GetOrAddTemp<int, double>();
 
@@ -70,7 +70,7 @@ public class UnitTest1(ITestOutputHelper helper)
         helper.WriteLine($"learn2:{stopwatch.Elapsed}");
 
         stopwatch.Restart();
-        await nerve.SaveAsync();
+        nerve.Flush();
         helper.WriteLine($"save:{stopwatch.Elapsed}");
 
         stopwatch.Restart();
