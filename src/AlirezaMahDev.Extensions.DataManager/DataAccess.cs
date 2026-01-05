@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.DataManager;
@@ -8,7 +10,6 @@ class DataAccess : IDisposable, IDataAccess
 
     private bool _disposedValue;
     private readonly DataMap _map;
-    private readonly DataLock _lock = new();
     private readonly DataLocation<DataAccessValue> _value;
 
     public ref long LastOffset => ref _value.GetRefValue(this).LastOffset;
@@ -18,20 +19,21 @@ class DataAccess : IDisposable, IDataAccess
         Path = path;
 
         _map = new(System.IO.Path.Combine(Path, DataDefaults.FileFormat));
-        _value = new(0);
+        _value = new(DataOffset.Create(0, sizeof(long)));
 
         if (LastOffset == 0)
         {
-            LastOffset = _value.Length;
+            LastOffset = _value.Offset.Length;
             this.Create<DataPath>();
         }
 
         Flush();
 
-        Root = new(_value.Length);
+        Root = new(DataOffset.Create(_value.Offset.Length, Unsafe.SizeOf<DataPath>()));
+        RootWrap = Root.Wrap(this);
     }
 
-    private long AllocateOffset(int length)
+    private DataOffset AllocateOffset(int length)
     {
         if (length > DataDefaults.PartSize)
             throw new($"length > {DataDefaults.PartSize}");
@@ -49,14 +51,14 @@ class DataAccess : IDisposable, IDataAccess
                 offset += DataDefaults.FileSize - (offset % DataDefaults.FileSize);
         } while (Interlocked.CompareExchange(ref LastOffset, offset + length, lastOffset) != lastOffset);
 
-        return offset;
+        return DataOffset.Create(offset, length);
     }
 
-    private DataMapFilePart AccessPart(long offset) =>
-        _map.File(offset).Part(offset);
+    private DataMapFilePart AccessPart(in DataOffset offset) =>
+        _map.File(in offset).Part(in offset);
 
     public DataLocation<DataPath> Root { get; }
-    public DataWrap<DataPath> RootWrap => Root.Wrap(this);
+    public DataWrap<DataPath> RootWrap { get; }
 
     public DataLocation<DataTrash> GetTrash()
     {
@@ -80,37 +82,17 @@ class DataAccess : IDisposable, IDataAccess
     public AllocateMemory<byte> AllocateMemory(int length)
     {
         var offset = AllocateOffset(length);
-
-        var part = AccessPart(offset);
-        var partOffset = DataHelper.PartOffset(offset);
-        var memory = part.Memory.Slice(partOffset, length);
-
-        return new(offset, memory);
+        return new(offset, AccessPart(offset).Memory.Slice(offset.Offset, offset.Length));
     }
 
-    public Memory<byte> ReadMemory(long offset, int length)
+    public Memory<byte> ReadMemory(DataOffset offset)
     {
-        var part = AccessPart(offset);
-        var partOffset = DataHelper.PartOffset(offset);
-        var memory = part.Memory.Slice(partOffset, length);
-
-        return memory;
+        return AccessPart(offset).Memory.Slice(offset.Offset, offset.Length);
     }
 
     public void Flush()
     {
         _map.Flush();
-    }
-
-    public DataLockOffsetDisposable Lock(long offset)
-    {
-        return _lock.GetOrAdd(offset).Lock();
-    }
-
-    public async Task<DataLockOffsetDisposable> LockAsync(long offset,
-        CancellationToken cancellationToken = default)
-    {
-        return await _lock.GetOrAdd(offset).LockAsync(cancellationToken);
     }
 
     protected virtual void Dispose(bool disposing)

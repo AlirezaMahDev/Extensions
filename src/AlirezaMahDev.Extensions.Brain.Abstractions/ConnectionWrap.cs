@@ -31,44 +31,34 @@ public readonly record struct ConnectionWrap<TData, TLink>(
     public NeuronWrap<TData, TLink> NeuronWrap => Neuron.Wrap(Nerve);
 
     public Connection<TData, TLink>? Previous =>
-        RefValue.Previous != -1
-            ? new(RefValue.Previous)
-            : null;
+        RefValue.Previous.IsNull
+            ? null
+            : new(RefValue.Previous);
 
     public ConnectionWrap<TData, TLink>? PreviousWrap =>
-        RefValue.Previous != -1
-            ? new(Nerve, new(RefValue.Previous))
-            : null;
+        RefValue.Previous.IsNull
+            ? null
+            : new(Nerve, new(RefValue.Previous));
 
     public Connection<TData, TLink>? Next =>
-        RefValue.Next != -1
-            ? new(RefValue.Next)
-            : null;
+        RefValue.Next.IsNull
+            ? null
+            : new(RefValue.Next);
 
     public ConnectionWrap<TData, TLink>? NextWrap =>
-        RefValue.Next != -1
-            ? new(Nerve, new(RefValue.Next))
-            : null;
+        RefValue.Next.IsNull
+            ? null
+            : new(Nerve, new(RefValue.Next));
 
-    public Connection<TData, TLink>? SubConnection =>
-        RefValue.SubConnection != -1
-            ? new(RefValue.SubConnection)
-            : null;
+    public Connection<TData, TLink>? Child =>
+        RefValue.Child.IsNull
+            ? null
+            : new(RefValue.Child);
 
-    public ConnectionWrap<TData, TLink>? SubConnectionWrap =>
-        RefValue.SubConnection != -1
-            ? new(Nerve, new(RefValue.SubConnection))
-            : null;
-
-    public Connection<TData, TLink>? NextSubConnection =>
-        RefValue.NextSubConnection != -1
-            ? new(RefValue.NextSubConnection)
-            : null;
-
-    public ConnectionWrap<TData, TLink>? NextSubConnectionWrap =>
-        RefValue.NextSubConnection != -1
-            ? new(Nerve, new(RefValue.NextSubConnection))
-            : null;
+    public ConnectionWrap<TData, TLink>? ChildWrap =>
+        RefValue.Child.IsNull
+            ? null
+            : new(Nerve, new(RefValue.Child));
 
     public int CompareTo(DataPairLink<TData, TLink> other)
     {
@@ -76,7 +66,7 @@ public readonly record struct ConnectionWrap<TData, TLink>(
         if (link != 0)
             return link;
 
-        var data = Math.Abs(Comparer<TData>.Default.Compare(Neuron.Wrap(Nerve).RefData, other.Data));
+        var data = Math.Abs(Comparer<TData>.Default.Compare(NeuronWrap.RefData, other.Data));
         if (data != 0)
             return data;
 
@@ -92,23 +82,23 @@ public readonly record struct ConnectionWrap<TData, TLink>(
         return 0;
     }
 
-    public IEnumerable<Connection<TData, TLink>> GetSubConnections()
+    public IEnumerable<Connection<TData, TLink>> GetConnections()
     {
-        var current = SubConnection;
+        var current = Child;
         while (current.HasValue)
         {
             yield return current.Value;
-            current = current.Value.Wrap(Nerve).NextSubConnection;
+            current = current.Value.Wrap(Nerve).Next;
         }
     }
 
-    public IEnumerable<ConnectionWrap<TData, TLink>> GetSubConnectionsWrap()
+    public IEnumerable<ConnectionWrap<TData, TLink>> GetConnectionsWrap()
     {
-        var current = SubConnectionWrap;
+        var current = ChildWrap;
         while (current.HasValue)
         {
             yield return current.Value;
-            current = current.Value.NextSubConnectionWrap;
+            current = current.Value.NextWrap;
         }
     }
 }

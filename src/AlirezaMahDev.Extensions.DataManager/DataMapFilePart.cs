@@ -1,6 +1,8 @@
 using System.Buffers;
 using System.IO.MemoryMappedFiles;
 
+using AlirezaMahDev.Extensions.DataManager.Abstractions;
+
 namespace AlirezaMahDev.Extensions.DataManager;
 
 unsafe class DataMapFilePart : MemoryManager<byte>

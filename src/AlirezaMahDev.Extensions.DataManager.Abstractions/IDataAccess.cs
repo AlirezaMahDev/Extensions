@@ -11,9 +11,6 @@ public interface IDataAccess
     ValueTask<DataLocation<DataTrash>> GetTrashAsync(CancellationToken cancellationToken = default);
 
     AllocateMemory<byte> AllocateMemory(int length);
-    Memory<byte> ReadMemory(long offset, int length);
+    Memory<byte> ReadMemory(DataOffset offset);
     void Flush();
-
-    DataLockOffsetDisposable Lock(long offset);
-    Task<DataLockOffsetDisposable> LockAsync(long offset, CancellationToken cancellationToken = default);
 }

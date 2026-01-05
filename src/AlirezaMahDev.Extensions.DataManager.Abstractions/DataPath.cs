@@ -1,19 +1,21 @@
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public record struct DataPath(String64 Key, int Size, long Next, long Child, long Data, long Index)
+public record struct DataPath(String64 Key, int Size, DataOffset Next, DataOffset Child, DataOffset Data, DataOffset Index)
     : IDataDictionaryTree<DataPath, String64>, IDataValueDefault<DataPath>, IDataStorage<DataPath>, IDataIndex<DataPath>
 {
     public String64 RefKey = Key;
     public int RefSize = Size;
-    public long RefNext = Next;
-    public long RefChild = Child;
-    public long RefData = Data;
-    public long RefIndex = Index;
-
-    public static DataPath Default { get; } = new(default, -1, -1L, -1L, -1L, -1L);
+    
+    public DataOffset RefNext = Next;
+    public DataOffset RefChild = Child;
+    public DataOffset RefData = Data;
+    public DataOffset RefIndex = Index;
+    
+    public static DataPath Default { get; } = new(default, -1, DataOffset.Null, DataOffset.Null, DataOffset.Null, DataOffset.Null);
 
     public String64 Key
     {
@@ -27,27 +29,30 @@ public record struct DataPath(String64 Key, int Size, long Next, long Child, lon
         set => RefSize = value;
     }
 
-    public long Next
+    public DataOffset Next
     {
         readonly get => RefNext;
         set => RefNext = value;
     }
 
-    public long Child
+    public DataOffset Child
     {
         readonly get => RefChild;
         set => RefChild = value;
     }
 
-    public long Data
+    public DataOffset Data
     {
         readonly get => RefData;
         set => RefData = value;
     }
 
-    public long Index
+    public DataOffset Index
     {
         readonly get => RefIndex;
         set => RefIndex = value;
     }
+    
+    public int RefLock;
+    public ref int Lock => ref Unsafe.AsRef(in this).RefLock;
 }

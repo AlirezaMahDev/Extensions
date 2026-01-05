@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
 using AlirezaMahDev.Extensions.Abstractions;
@@ -29,13 +28,13 @@ public static class NerveExtensions
 
             var localData = data;
             var connection = nerve.NeuronWrap
-                .GetUnloadedConnections()
-                .FirstOrDefault(x => x.Wrap(nerve).Neuron.Wrap(nerve).RefData.Equals(localData))
+                .GetUnloadedConnectionsWrap()
+                .FirstOrDefault(x => x.Neuron.Wrap(nerve).RefData.Equals(localData))
                 .NullWhenDefault();
             if (!connection.HasValue)
                 return null;
 
-            offset = connection.Value.Wrap(nerve).RefValue.Neuron;
+            offset = connection.Value.RefValue.Neuron;
             nerve.Cache.TrySetNeuronCacheCore(in cacheKey, offset.Value);
             return new(offset.Value);
         }
@@ -43,6 +42,11 @@ public static class NerveExtensions
         public Neuron<TData, TLink> FindOrAddNeuron(ReadOnlyMemoryValue<TData> data)
         {
             var cacheKey = nerve.Cache.CreateNeuronCacheKey(in data.Value);
+            return nerve.FindNeuronCore(in cacheKey, in data.Value) ?? nerve.AddNeuronCore(cacheKey, data);
+        }
+
+        private Neuron<TData, TLink> AddNeuronCore(NerveCacheKey cacheKey, ReadOnlyMemoryValue<TData> data)
+        {
             return nerve.Neuron.Wrap(nerve)
                 .Lock(neuronDataLocation =>
                 {
@@ -70,6 +74,14 @@ public static class NerveExtensions
             CancellationToken cancellationToken = default)
         {
             var cacheKey = nerve.Cache.CreateNeuronCacheKey(in data.Value);
+            return nerve.FindNeuronCore(in cacheKey, in data.Value) ??
+                   await nerve.AddNeuronAsyncCore(cacheKey, data, cancellationToken);
+        }
+
+        private async ValueTask<Neuron<TData, TLink>> AddNeuronAsyncCore(NerveCacheKey cacheKey,
+            ReadOnlyMemoryValue<TData> data,
+            CancellationToken cancellationToken)
+        {
             return await nerve.Neuron.Wrap(nerve)
                 .LockAsync(neuronDataLocation =>
                     {

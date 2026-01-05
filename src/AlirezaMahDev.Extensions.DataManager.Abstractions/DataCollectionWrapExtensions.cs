@@ -9,8 +9,8 @@ public static class DataCollectionWrapExtensions
         where TItem : unmanaged, IDataValue<TItem>
     {
         public DataCollectionWrap<TValue, TItem> Collection(
-            Expression<SelectValueFunc<TValue, long>> selectChildExpression,
-            Expression<SelectValueFunc<TItem, long>> selectNextExpression) =>
+            Expression<SelectValueFunc<TValue, DataOffset>> selectChildExpression,
+            Expression<SelectValueFunc<TItem, DataOffset>> selectNextExpression) =>
             new(selectChildExpression, selectNextExpression);
     }
 
@@ -19,7 +19,7 @@ public static class DataCollectionWrapExtensions
         where TItem : unmanaged, IDataValue<TItem>
     {
         public DataCollectionWrap<TValue, TItem> Collection(
-            Expression<SelectValueFunc<TItem, long>> selectNextExpression) =>
+            Expression<SelectValueFunc<TItem, DataOffset>> selectNextExpression) =>
             new(x => x.Child, selectNextExpression);
     }
 
@@ -41,7 +41,7 @@ public static class DataCollectionWrapExtensions
         where TValue : unmanaged, IDataValue<TValue>
     {
         public DataCollectionItemWrap<TValue>
-            CollectionItem(Expression<SelectValueFunc<TValue, long>> selectNextExpression) =>
+            CollectionItem(Expression<SelectValueFunc<TValue, DataOffset>> selectNextExpression) =>
             new(selectNextExpression);
     }
 
@@ -58,20 +58,20 @@ public static class DataCollectionWrapExtensions
         public DataLocation<TValue>? GetNext()
         {
             var next = wrap.Wrap.SelectNext(wrap.Location.GetRefValue(wrap.Access));
-            return next == -1
+            return next.IsNull
                 ? null
                 : new DataLocation<TValue>(next);
         }
     }
 
     extension<TValue, TItem>(DataWrap<TValue, DataCollectionWrap<TValue, TItem>> wrap)
-        where TValue : unmanaged, IDataValue<TValue>
-        where TItem : unmanaged, IDataValue<TItem>
+        where TValue : unmanaged, IDataLock<TValue>
+        where TItem : unmanaged, IDataLock<TItem>
     {
         public DataLocation<TItem>? GetChild()
         {
             var child = wrap.Wrap.GetChild(wrap.Location.GetRefValue(wrap.Access));
-            return child == -1
+            return child.IsNull
                 ? null
                 : new DataLocation<TItem>(child);
         }
@@ -130,7 +130,7 @@ public static class DataCollectionWrapExtensions
             return dataLocation;
         }
 
-        public DataLocation<TItem>? Remove(long offset)
+        public DataLocation<TItem>? Remove(DataOffset offset)
         {
             DataLocation<TItem>? previous = null;
             foreach (var dataLocation in wrap.GetChildren())
@@ -166,7 +166,7 @@ public static class DataCollectionWrapExtensions
             return null;
         }
 
-        public async ValueTask<DataLocation<TItem>?> RemoveAsync(long offset,
+        public async ValueTask<DataLocation<TItem>?> RemoveAsync(DataOffset offset,
             CancellationToken cancellationToken = default)
         {
             DataLocation<TItem>? previous = null;

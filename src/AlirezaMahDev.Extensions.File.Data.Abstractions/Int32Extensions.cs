@@ -14,7 +14,7 @@ public static class Int32Extensions
 
         public String64[] ToPathBinary()
         {
-            return i.ToString().Select(x => (String64)x.ToString()).ToArray();
+            return [.. i.ToString().Select(x => (String64)x.ToString())];
         }
     }
 }

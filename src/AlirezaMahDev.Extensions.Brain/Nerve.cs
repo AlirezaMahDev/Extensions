@@ -100,7 +100,7 @@ TLink> : INerve<TData, TLink>
 
         ThinkCore(link,
             data,
-            new(default, link.Value, Connection.Wrap(this), null),
+            new(default, link.Value, ConnectionWrap, null),
             result
         );
 
@@ -115,14 +115,14 @@ TLink> : INerve<TData, TLink>
     {
         if (input.IsEmpty)
         {
-            var next = think.Connection.GetSubConnections()
-                .Min(Comparer<Connection<TData, TLink>>.Create((a, b) =>
-                    a.Wrap(this).CompareTo(link.Value).CompareTo(b.Wrap(this).CompareTo(link.Value))))
+            var next = think.Connection.GetConnectionsWrap()
+                .Min(Comparer<ConnectionWrap<TData, TLink>>.Create((a, b) =>
+                    a.CompareTo(link.Value).CompareTo(b.CompareTo(link.Value))))
                 .NullWhenDefault();
             if (!next.HasValue)
                 return;
-            var connectionWrap = next.Value.Wrap(this);
-            result.Add(think.Append(connectionWrap.Neuron.Wrap(this).RefData,
+            var connectionWrap = next.Value;
+            result.Add(think.Append(connectionWrap.NeuronWrap.RefData,
                 connectionWrap.RefLink,
                 connectionWrap));
         }
@@ -136,7 +136,7 @@ TLink> : INerve<TData, TLink>
 
         var pain = new DataPairLink<TData, TLink>(data, link.Value);
         var connection = think.Connection;
-        var array = connection.GetSubConnectionsWrap().ToArray();
+        var array = connection.GetConnectionsWrap().ToArray();
         array.Sort((a, b) =>
             a.CompareTo(pain).CompareTo(b.CompareTo(pain)));
 
@@ -156,7 +156,7 @@ TLink> : INerve<TData, TLink>
 
         await ThinkCoreAsync(link,
             data,
-            new(default, link.Value, Connection.Wrap(this), null),
+            new(default, link.Value, ConnectionWrap, null),
             result,
             cancellationToken);
 
@@ -177,14 +177,14 @@ TLink> : INerve<TData, TLink>
 
         if (input.IsEmpty)
         {
-            var next = think.Connection.GetSubConnections()
-                .Min(Comparer<Connection<TData, TLink>>.Create((a, b) =>
-                    a.Wrap(this).CompareTo(link.Value).CompareTo(b.Wrap(this).CompareTo(link.Value))))
+            var next = think.Connection.GetConnectionsWrap()
+                .Min(Comparer<ConnectionWrap<TData, TLink>>.Create((a, b) =>
+                    a.CompareTo(link.Value).CompareTo(b.CompareTo(link.Value))))
                 .NullWhenDefault();
             if (!next.HasValue)
                 return;
-            var nextWrap = next.Value.Wrap(this);
-            result.Add(await think.AppendAsync(nextWrap.Neuron.Wrap(this).RefData,
+            var nextWrap = next.Value;
+            result.Add(await think.AppendAsync(nextWrap.NeuronWrap.RefData,
                 nextWrap.RefLink,
                 nextWrap,
                 cancellationToken));
@@ -201,9 +201,9 @@ TLink> : INerve<TData, TLink>
 
         var pain = new DataPairLink<TData, TLink>(data, link.Value);
         var connection = think.Connection;
-        var memory = connection.GetSubConnections().ToArray().AsMemory();
+        var memory = connection.GetConnectionsWrap().ToArray().AsMemory();
         memory.Span.Sort((a, b) =>
-            a.Wrap(this).CompareTo(pain).CompareTo(b.Wrap(this).CompareTo(pain)));
+            a.CompareTo(pain).CompareTo(b.CompareTo(pain)));
 
         using var tasks = MemoryPool<Task>.Shared.Rent(memory.Length);
         var taskCount = 0;
@@ -212,7 +212,7 @@ TLink> : INerve<TData, TLink>
         for (var i = 0; i < memory.Length; i++)
         {
             var innerConnection = memory.Span[i];
-            var innerThink = await think.AppendAsync(data, link.Value, innerConnection.Wrap(this), cancellationToken);
+            var innerThink = await think.AppendAsync(data, link.Value, innerConnection, cancellationToken);
             if (result.CanAdd(innerThink))
             {
                 tasks.Memory.Span[i] = ThinkCoreAsync(link, nextInput, innerThink, result, cancellationToken);

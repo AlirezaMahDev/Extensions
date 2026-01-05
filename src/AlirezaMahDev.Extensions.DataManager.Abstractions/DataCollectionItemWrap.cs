@@ -3,12 +3,12 @@ using System.Linq.Expressions;
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public readonly struct DataCollectionItemWrap<TValue>(
-    Expression<SelectValueFunc<TValue, long>> selectNextExpression)
+    Expression<SelectValueFunc<TValue, DataOffset>> selectNextExpression)
     where TValue : unmanaged, IDataValue<TValue>
 {
-    public SelectValueFunc<TValue, long> GetNext { get; } = selectNextExpression.Compile();
+    public SelectValueFunc<TValue, DataOffset> GetNext { get; } = selectNextExpression.Compile();
 
-    public SetValueAction<TValue, long> SetNext { get; } = selectNextExpression.BuildSetter();
+    public SetValueAction<TValue, DataOffset> SetNext { get; } = selectNextExpression.BuildSetter();
 
-    public SelectValueFunc<TValue, long> SelectNext { get; } = selectNextExpression.Compile();
+    public SelectValueFunc<TValue, DataOffset> SelectNext { get; } = selectNextExpression.Compile();
 }

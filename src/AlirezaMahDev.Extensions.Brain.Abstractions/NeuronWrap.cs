@@ -25,9 +25,9 @@ public readonly record struct NeuronWrap<TData, TLink>(INerve<TData, TLink> Nerv
     public ref readonly TData RefData => ref Location.RefValue.Data;
 
     public Connection<TData, TLink>? Connection =>
-        RefValue.Connection != -1
-            ? new(RefValue.Connection)
-            : null;
+        RefValue.Connection.IsNull
+            ? null
+            : new(RefValue.Connection);
     public ConnectionWrap<TData, TLink>? ConnectionWrap =>
         Connection?.Wrap(Nerve);
 

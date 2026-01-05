@@ -2,43 +2,86 @@ using System.IO.Hashing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using AlirezaMahDev.Extensions.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public readonly struct NerveCacheKey(params ReadOnlySpan<byte> bytes)
+public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
 {
     public UInt128 Hash { get; } = XxHash128.HashToUInt128(bytes);
 
     public static NerveCacheKey Create<T1>(in T1 t1)
         where T1 : unmanaged =>
-            new(AsReadOnlySpan(in t1));
+        new(AsReadOnlySpan(in t1));
 
     public static NerveCacheKey Create<T1, T2>(in T1 t1, in T2 t2)
-        where T1 : unmanaged where T2 : unmanaged =>
-            new([.. AsReadOnlySpan(in t1), .. AsReadOnlySpan(in t2)]);
+        where T1 : unmanaged
+        where T2 : unmanaged
+    {
+        var s1 = AsReadOnlySpan(in t1);
+        var s2 = AsReadOnlySpan(in t2);
+
+        int length = s1.Length + s2.Length;
+
+        Span<byte> destination = stackalloc byte[length];
+
+        int offset = 0;
+        s1.CopyTo(destination[offset..]);
+        offset += s1.Length;
+        s2.CopyTo(destination[offset..]);
+
+        return new(destination);
+    }
 
     public static NerveCacheKey Create<T1, T2, T3>(in T1 t1, in T2 t2, in T3 t3)
-        where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged =>
-            new([.. AsReadOnlySpan(in t1), .. AsReadOnlySpan(in t2), .. AsReadOnlySpan(in t3)]);
+        where T1 : unmanaged
+        where T2 : unmanaged
+        where T3 : unmanaged
+    {
+        var s1 = AsReadOnlySpan(in t1);
+        var s2 = AsReadOnlySpan(in t2);
+        var s3 = AsReadOnlySpan(in t3);
+
+        int length = s1.Length + s2.Length + s3.Length;
+
+        Span<byte> destination = stackalloc byte[length];
+
+        int offset = 0;
+        s1.CopyTo(destination[offset..]);
+        offset += s1.Length;
+        s2.CopyTo(destination[offset..]);
+        offset += s2.Length;
+        s3.CopyTo(destination[offset..]);
+
+        return new(destination);
+    }
 
     public static NerveCacheKey Create<T1, T2, T3, T4>(in T1 t1, in T2 t2, in T3 t3, in T4 t4)
-        where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where T4 : unmanaged =>
-            new([.. AsReadOnlySpan(in t1), .. AsReadOnlySpan(in t2), .. AsReadOnlySpan(in t3), .. AsReadOnlySpan(in t4)]);
+            where T1 : unmanaged
+            where T2 : unmanaged
+            where T3 : unmanaged
+            where T4 : unmanaged
+    {
+        var s1 = AsReadOnlySpan(in t1);
+        var s2 = AsReadOnlySpan(in t2);
+        var s3 = AsReadOnlySpan(in t3);
+        var s4 = AsReadOnlySpan(in t4);
 
-    public static NerveCacheKey Create<T1, T2, T3, T4, T5>(in T1 t1, in T2 t2, in T3 t3, in T4 t4, in T5 t5)
-        where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where T4 : unmanaged where T5 : unmanaged =>
-            new([.. AsReadOnlySpan(in t1), .. AsReadOnlySpan(in t2), .. AsReadOnlySpan(in t3), .. AsReadOnlySpan(in t4), .. AsReadOnlySpan(in t5)]);
+        int length = s1.Length + s2.Length + s3.Length + s4.Length;
 
-    public static NerveCacheKey Create<T1, T2, T3, T4, T5, T6>(in T1 t1, in T2 t2, in T3 t3, in T4 t4, in T5 t5, in T6 t6)
-        where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where T4 : unmanaged where T5 : unmanaged where T6 : unmanaged =>
-            new([.. AsReadOnlySpan(in t1), .. AsReadOnlySpan(in t2), .. AsReadOnlySpan(in t3), .. AsReadOnlySpan(in t4), .. AsReadOnlySpan(in t5), .. AsReadOnlySpan(in t6)]);
+        Span<byte> destination = stackalloc byte[length];
 
-    public static NerveCacheKey Create<T1, T2, T3, T4, T5, T6, T7>(in T1 t1, in T2 t2, in T3 t3, in T4 t4, in T5 t5, in T6 t6, in T7 t7)
-        where T1 : unmanaged where T2 : unmanaged where T3 : unmanaged where T4 : unmanaged where T5 : unmanaged where T6 : unmanaged where T7 : unmanaged =>
-            new([.. AsReadOnlySpan(in t1), .. AsReadOnlySpan(in t2), .. AsReadOnlySpan(in t3), .. AsReadOnlySpan(in t4), .. AsReadOnlySpan(in t5), .. AsReadOnlySpan(in t6), .. AsReadOnlySpan(in t7)]);
+        int offset = 0;
+        s1.CopyTo(destination[offset..]);
+        offset += s1.Length;
+        s2.CopyTo(destination[offset..]);
+        offset += s2.Length;
+        s3.CopyTo(destination[offset..]);
+        offset += s3.Length;
+        s4.CopyTo(destination[offset..]);
+
+        return new(destination);
+    }
 
     public static ReadOnlySpan<byte> AsReadOnlySpan<T>(in T value) => MemoryMarshal.CreateReadOnlySpan(
         ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in value)),
-    Unsafe.SizeOf<T>());
+        Unsafe.SizeOf<T>());
 }

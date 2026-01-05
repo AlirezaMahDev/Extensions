@@ -11,8 +11,7 @@ public static class DataLocationDataTrashExtensions
                 .Wrap(access, x => x.Collection())
                 .Add(access.Create(new DataTrashItem
                 {
-                    Offset = dataLocation.Offset,
-                    Length = dataLocation.Length
+                    Offset = dataLocation.Offset
                 }));
         }
 
@@ -25,8 +24,7 @@ public static class DataLocationDataTrashExtensions
                 .Wrap(access, x => x.Collection())
                 .AddAsync(access.Create(new DataTrashItem
                     {
-                        Offset = dataLocation.Offset,
-                        Length = dataLocation.Length
+                        Offset = dataLocation.Offset
                     }),
                     cancellationToken);
         }

@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 
-using AlirezaMahDev.Extensions.Abstractions;
+using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
@@ -40,7 +40,7 @@ public static class NerveCacheExtensions
             return false;
         }
 
-        public bool TryGetNeuronCacheCore(in NerveCacheKey cacheKey, [NotNullWhen(true)] out long? offset)
+        public bool TryGetNeuronCacheCore(in NerveCacheKey cacheKey, [NotNullWhen(true)] out DataOffset? offset)
         {
             return nerveCache.NeuronSection.TryGet(in cacheKey, out offset);
         }
@@ -50,7 +50,7 @@ public static class NerveCacheExtensions
             nerveCache.TrySetNeuronCacheCore(nerveCache.CreateNeuronCacheKey(in neuronWrap), neuronWrap.Cell.RefOffset);
         }
 
-        public void TrySetNeuronCacheCore(in NerveCacheKey cacheKey, in long offset)
+        public void TrySetNeuronCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
         {
             nerveCache.NeuronSection.GetOrAdd(in cacheKey, offset);
         }
@@ -62,7 +62,7 @@ public static class NerveCacheExtensions
                 neuronWrap.Cell.Offset);
         }
 
-        public void SetNeuronCacheCore(in NerveCacheKey cacheKey, in long offset)
+        public void SetNeuronCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
         {
             nerveCache.NeuronSection.Set(in cacheKey, offset);
         }
@@ -82,7 +82,7 @@ public static class NerveCacheExtensions
         IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
         ISubtractionOperators<TLink, TLink, TLink>
     {
-        public bool TryGetNeuronConnectionCacheCore(in NerveCacheKey cacheKey, [NotNullWhen(true)] out long? offset)
+        public bool TryGetNeuronConnectionCacheCore(in NerveCacheKey cacheKey, [NotNullWhen(true)] out DataOffset? offset)
         {
             return nerveCache.ConnectionSection.TryGet(in cacheKey, out offset);
         }
@@ -95,7 +95,7 @@ public static class NerveCacheExtensions
                 connectionWrap.Cell.Offset);
         }
 
-        public void TrySetNeuronConnectionCacheCore(in NerveCacheKey cacheKey, in long offset)
+        public void TrySetNeuronConnectionCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
         {
             nerveCache.ConnectionSection.GetOrAdd(in cacheKey, offset);
         }
@@ -108,7 +108,7 @@ public static class NerveCacheExtensions
                 connectionWrap.Cell.Offset);
         }
 
-        public void SetNeuronConnectionCacheCore(in NerveCacheKey cacheKey, in long offset)
+        public void SetNeuronConnectionCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
         {
             nerveCache.ConnectionSection.Set(in cacheKey, offset);
         }
@@ -156,7 +156,7 @@ public static class NerveCacheExtensions
             return false;
         }
 
-        public bool TryGetConnectionCacheCore(in NerveCacheKey cacheKey, [NotNullWhen(true)] out long? offset)
+        public bool TryGetConnectionCacheCore(in NerveCacheKey cacheKey, [NotNullWhen(true)] out DataOffset? offset)
         {
             return nerveCache.ConnectionSection.TryGet(in cacheKey, out offset);
         }
@@ -167,7 +167,7 @@ public static class NerveCacheExtensions
                 connectionWrap.Cell.Offset);
         }
 
-        public void TrySetConnectionCacheCore(in NerveCacheKey cacheKey, in long offset)
+        public void TrySetConnectionCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
         {
             nerveCache.ConnectionSection.GetOrAdd(in cacheKey, offset);
         }
@@ -179,7 +179,7 @@ public static class NerveCacheExtensions
                 connectionWrap.Cell.Offset);
         }
 
-        public void SetConnectionCacheCore(in NerveCacheKey cacheKey, in long offset)
+        public void SetConnectionCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
         {
             nerveCache.ConnectionSection.Set(in cacheKey, offset);
         }

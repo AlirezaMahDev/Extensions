@@ -19,36 +19,30 @@ public readonly record struct DataLocationObjectProperties : IEnumerable<DataLoc
             .Where(x => x.SetMethod is not null && x.GetMethod is not null)
             .Where(x => x.GetCustomAttribute<NotMappedAttribute>() is null)
             .ToArray();
-        PropertyInfos = properties
-            .Where(x => x.PropertyType.IsUnmanaged)
-            .ToArray();
-        OtherPropertyInfos = properties
-            .Where(x => !x.PropertyType.IsUnmanaged)
-            .ToArray();
+        PropertyInfos = [.. properties.Where(x => x.PropertyType.IsUnmanaged)];
+        OtherPropertyInfos = [.. properties.Where(x => !x.PropertyType.IsUnmanaged)];
     }
 
     public DataLocationObjectProperties(Type type, Func<string, DataBlockMemory> func) : this(type)
     {
-        _properties = PropertyInfos
+        _properties = [.. PropertyInfos
             .Select(x =>
                 new DataLocationObjectProperty(
                     func(x.Name),
                     x
                 )
-            )
-            .ToArray();
+            )];
     }
 
     public DataLocationObjectProperties(Type type, IDataLocation location) : this(type)
     {
-        _properties = PropertyInfos
+        _properties = [.. PropertyInfos
             .Select(x =>
                 new DataLocationObjectProperty(
                     location.GetOrAdd(x.Name),
                     x
                 )
-            )
-            .ToArray();
+            )];
     }
 
     public PropertyInfo[] PropertyInfos { get; }

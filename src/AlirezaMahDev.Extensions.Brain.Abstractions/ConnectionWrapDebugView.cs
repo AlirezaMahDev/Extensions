@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Numerics;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
@@ -13,5 +12,5 @@ public class ConnectionWrapDebugView<TData, TLink>(ConnectionWrap<TData, TLink> 
 {
     public ConnectionWrap<TData, TLink> Wrap { get; } = wrap;
     public IEnumerable<ConnectionWrap<TData, TLink>> SubConnectionsWrap =>
-        Wrap.GetSubConnectionsWrap();
+        Wrap.GetConnectionsWrap();
 }

@@ -1,9 +1,9 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public interface IDataCollection<TValue> : IDataValue<TValue>
-    where TValue : unmanaged, IDataValue<TValue>
+public interface IDataCollection<TValue> : IDataLock<TValue>
+    where TValue : unmanaged, IDataCollection<TValue>
 {
-    long Child { get; set; }
+    DataOffset Child { get; set; }
 }
 
 public interface IDataCollection<TValue, TItem> : IDataCollection<TValue>

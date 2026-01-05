@@ -1,24 +1,27 @@
 using System.Collections.Concurrent;
 using System.IO.MemoryMappedFiles;
 
+using AlirezaMahDev.Extensions.DataManager.Abstractions;
+
 namespace AlirezaMahDev.Extensions.DataManager;
 
 class DataMapFile(MemoryMappedFile file) : IDisposable
 {
     private bool _disposedValue;
-    private readonly ConcurrentDictionary<long, Lazy<DataMapFilePart>> _parts = [];
 
-    public DataMapFilePart Part(long offset) =>
-        _parts.GetOrAdd(DataHelper.PartIndex(offset), static (id, file) =>
-                new(() =>
-                    new(file.CreateViewAccessor(id, DataDefaults.PartSize, MemoryMappedFileAccess.ReadWrite)),
-                LazyThreadSafetyMode.ExecutionAndPublication),
-            file)
-        .Value;
+    private readonly Lazy<DataMapFilePart>[] _parts = [.. Enumerable.Range(0, DataDefaults.PartCount)
+        .Select(index => new Lazy<DataMapFilePart>(() =>
+                new(file.CreateViewAccessor(index * DataDefaults.PartSize, DataDefaults.PartSize, MemoryMappedFileAccess.ReadWrite)),
+            LazyThreadSafetyMode.ExecutionAndPublication))];
+
+    public DataMapFilePart Part(in DataOffset offset)
+    {
+        return _parts[offset.PartIndex].Value;
+    }
 
     public void Flush()
     {
-        foreach (var dataPart in _parts.Values)
+        foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
         {
             dataPart.Value.Flush();
         }
@@ -26,7 +29,7 @@ class DataMapFile(MemoryMappedFile file) : IDisposable
 
     public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var dataPart in _parts.Values)
+        foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
         {
             await dataPart.Value.FlushAsync(cancellationToken);
         }
@@ -38,7 +41,7 @@ class DataMapFile(MemoryMappedFile file) : IDisposable
         {
             if (disposing)
             {
-                foreach (var dataPart in _parts.Values)
+                foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
                 {
                     if (dataPart.Value is IDisposable disposable)
                         disposable.Dispose();
@@ -47,7 +50,6 @@ class DataMapFile(MemoryMappedFile file) : IDisposable
                 file.Dispose();
             }
 
-            _parts.Clear();
             _disposedValue = true;
         }
     }

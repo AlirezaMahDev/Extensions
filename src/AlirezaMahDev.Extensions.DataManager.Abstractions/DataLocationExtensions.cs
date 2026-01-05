@@ -8,14 +8,14 @@ public static class DataLocationExtensions
         where T : IDataLocationBase<T>
     {
         public Memory<byte> GetMemory(IDataAccess access) =>
-            access.ReadMemory(locationBase.Offset, locationBase.Length);
+            access.ReadMemory(locationBase.Offset);
     }
 
     extension(DataLocation location)
     {
         public DataLocation<TValue> As<TValue>()
             where TValue : unmanaged, IDataValue<TValue> =>
-            location.Length >= TValue.ValueSize ? new(location.Offset) : throw new InvalidCastException();
+            location.Offset.Length >= TValue.ValueSize ? new(location.Offset) : throw new InvalidCastException();
     }
 
     extension<TValue>(DataLocation<TValue> location)
@@ -37,7 +37,7 @@ public static class DataLocationExtensions
     extension<TValue>(DataLocation<TValue> location)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public bool IsDefault => location.Offset == 0;
+        public bool IsDefault => location.Offset.IsDefault;
 
         public DataLocation<TValue> WhenDefault(Func<DataLocation<TValue>> func) =>
             location.IsDefault ? func() : location;

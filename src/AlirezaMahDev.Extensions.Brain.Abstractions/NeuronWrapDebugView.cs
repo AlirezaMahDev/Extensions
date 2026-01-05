@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Numerics;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;

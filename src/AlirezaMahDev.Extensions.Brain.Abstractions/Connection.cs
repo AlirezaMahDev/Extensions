@@ -1,8 +1,10 @@
 using System.Numerics;
 
+using AlirezaMahDev.Extensions.DataManager.Abstractions;
+
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public readonly record struct Connection<TData, TLink>(long Offset) : ICell
+public readonly record struct Connection<TData, TLink>(DataOffset Offset) : ICell
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>
