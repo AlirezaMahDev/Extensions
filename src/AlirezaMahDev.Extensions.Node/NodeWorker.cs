@@ -64,7 +64,8 @@ partial class NodeWorker<TNodeService, TNodeServiceOptions>(
             UseShellExecute = false
         };
 
-        LogInformation($"start process {_name}: {workingDirectory} {_process.StartInfo.FileName} {_process.StartInfo.Arguments}");
+        LogInformation($"start process {_name}: {workingDirectory} {_process.StartInfo.FileName} {
+            _process.StartInfo.Arguments}");
 
         await Task.Yield();
 

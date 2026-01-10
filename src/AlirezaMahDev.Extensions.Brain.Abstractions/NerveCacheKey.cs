@@ -55,10 +55,10 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
     }
 
     public static NerveCacheKey Create<T1, T2, T3, T4>(in T1 t1, in T2 t2, in T3 t3, in T4 t4)
-            where T1 : unmanaged
-            where T2 : unmanaged
-            where T3 : unmanaged
-            where T4 : unmanaged
+        where T1 : unmanaged
+        where T2 : unmanaged
+        where T3 : unmanaged
+        where T4 : unmanaged
     {
         var s1 = AsReadOnlySpan(in t1);
         var s2 = AsReadOnlySpan(in t2);

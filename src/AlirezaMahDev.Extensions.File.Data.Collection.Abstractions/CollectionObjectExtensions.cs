@@ -5,7 +5,7 @@ public static class CollectionObjectExtensions
     extension(ICollectionObject collectionObject)
     {
         public CollectionObject<TEntity> As<TEntity>()
-        where TEntity : class
+            where TEntity : class
         {
             return new(collectionObject);
         }

@@ -9,10 +9,7 @@ public static class DataLocationDataTrashExtensions
         {
             location
                 .Wrap(access, x => x.Collection())
-                .Add(access.Create(new DataTrashItem
-                {
-                    Offset = dataLocation.Offset
-                }));
+                .Add(access.Create(new DataTrashItem { Offset = dataLocation.Offset }));
         }
 
         public async ValueTask AddAsync<TDataLocation>(IDataAccess access,
@@ -22,10 +19,7 @@ public static class DataLocationDataTrashExtensions
         {
             await location
                 .Wrap(access, x => x.Collection())
-                .AddAsync(access.Create(new DataTrashItem
-                    {
-                        Offset = dataLocation.Offset
-                    }),
+                .AddAsync(access.Create(new DataTrashItem { Offset = dataLocation.Offset }),
                     cancellationToken);
         }
     }

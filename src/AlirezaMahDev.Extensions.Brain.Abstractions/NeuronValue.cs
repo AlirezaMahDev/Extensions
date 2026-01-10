@@ -26,7 +26,7 @@ public record struct NeuronValue<TData> :
         Score = 1f,
         Weight = 0u
     };
-    
+
     public int RefLock;
     public ref int Lock => ref Unsafe.AsRef(in this).RefLock;
 }

@@ -15,7 +15,7 @@ public static class DataCollectionExtensions
     extension<TValue, TItem>(IDataCollection<TValue, TItem> items)
     {
         public TItem Add(TValue value,
-        Action<TItem> action)
+            Action<TItem> action)
         {
             var item = items.Add(value);
             action(item);

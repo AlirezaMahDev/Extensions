@@ -8,6 +8,7 @@ public readonly struct CollectionAccess<TEntity>(ICollectionAccess access) : IDa
     public ICollectionAccess Access { get; } = access;
 
     public CollectionObjects<TEntity> Items { get; } = access.Objects.As<TEntity>();
+
     public void Save()
     {
         Access.Save();

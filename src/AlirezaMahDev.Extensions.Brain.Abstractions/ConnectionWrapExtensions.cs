@@ -85,7 +85,7 @@ public static class ConnectionWrapExtensions
             {
                 if (wrap.FindCore(in cacheKey, in neuron, in link.Value) is { } connection)
                     return connection;
-                
+
                 var connectionValue = wrap.Nerve.Access
                     .Create(ConnectionValue<TLink>.Default with
                     {
@@ -108,7 +108,7 @@ public static class ConnectionWrapExtensions
             ReadOnlyMemoryValue<TLink> link,
             CancellationToken cancellationToken = default)
         {
-            return await wrap.LockAsync( connectionDataLocation =>
+            return await wrap.LockAsync(connectionDataLocation =>
                 {
                     if (wrap.FindCore(in cacheKey, in neuron, in link.Value) is { } connection)
                         return connection;

@@ -2,15 +2,18 @@
 
 ## Project Description
 
-Concrete, file-backed stack data structures built on top of the File.Data layer. Provides persistent LIFO containers with thread-safe operations and efficient binary layout suitable for large datasets.
+Concrete, file-backed stack data structures built on top of the File.Data layer. Provides persistent LIFO containers
+with thread-safe operations and efficient binary layout suitable for large datasets.
 
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.File.Data**: Low-level binary data storage and allocation APIs.
 - **AlirezaMahDev.Extensions.File.Data.Stack.Abstractions**: Contracts implemented by this project.
 
 ### Why these dependencies?
+
 - **File.Data** supplies the block, location, and allocation primitives used to persist stack nodes.
 - **Stack.Abstractions** defines the stack contracts so implementations remain interchangeable and testable.
 

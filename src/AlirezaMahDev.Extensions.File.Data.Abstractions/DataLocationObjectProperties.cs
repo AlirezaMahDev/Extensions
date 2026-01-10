@@ -25,24 +25,30 @@ public readonly record struct DataLocationObjectProperties : IEnumerable<DataLoc
 
     public DataLocationObjectProperties(Type type, Func<string, DataBlockMemory> func) : this(type)
     {
-        _properties = [.. PropertyInfos
-            .Select(x =>
-                new DataLocationObjectProperty(
-                    func(x.Name),
-                    x
+        _properties =
+        [
+            .. PropertyInfos
+                .Select(x =>
+                    new DataLocationObjectProperty(
+                        func(x.Name),
+                        x
+                    )
                 )
-            )];
+        ];
     }
 
     public DataLocationObjectProperties(Type type, IDataLocation location) : this(type)
     {
-        _properties = [.. PropertyInfos
-            .Select(x =>
-                new DataLocationObjectProperty(
-                    location.GetOrAdd(x.Name),
-                    x
+        _properties =
+        [
+            .. PropertyInfos
+                .Select(x =>
+                    new DataLocationObjectProperty(
+                        location.GetOrAdd(x.Name),
+                        x
+                    )
                 )
-            )];
+        ];
     }
 
     public PropertyInfo[] PropertyInfos { get; }

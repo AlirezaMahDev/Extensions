@@ -2,15 +2,20 @@
 
 ## Project Description
 
-Contracts for JSON file persistence over the ecosystem’s file infrastructure. Defines interfaces for reading, writing, and transforming JSON documents while keeping concrete storage and serialization details pluggable.
+Contracts for JSON file persistence over the ecosystem’s file infrastructure. Defines interfaces for reading, writing,
+and transforming JSON documents while keeping concrete storage and serialization details pluggable.
 
 ## Dependencies
 
 ### Project Dependencies
-- **AlirezaMahDev.Extensions.File.Abstractions**: Underlying file access contracts used to implement JSON persistence safely.
+
+- **AlirezaMahDev.Extensions.File.Abstractions**: Underlying file access contracts used to implement JSON persistence
+  safely.
 
 ### Why this dependency?
-- JSON abstractions rely on standardized file access semantics (locking, async I/O, streams) provided by File.Abstractions.
+
+- JSON abstractions rely on standardized file access semantics (locking, async I/O, streams) provided by
+  File.Abstractions.
 
 ## Key Components
 

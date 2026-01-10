@@ -4,7 +4,7 @@ public readonly record struct DataOffset(int FileId, int PartIndex, int Offset, 
 {
     public bool IsNull => this == Null;
     public bool IsDefault => this == Default;
-    
+
     public static DataOffset Null { get; } = new(-1, -1, -1, -1);
     public static DataOffset Default { get; } = new();
 

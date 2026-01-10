@@ -6,7 +6,8 @@ namespace AlirezaMahDev.Extensions.Node;
 public abstract class NodeService
     : INodeService
 {
-    public Channel<NodeTaskRequest> Channel { get; } = System.Threading.Channels.Channel.CreateUnbounded<NodeTaskRequest>();
+    public Channel<NodeTaskRequest> Channel { get; } =
+        System.Threading.Channels.Channel.CreateUnbounded<NodeTaskRequest>();
 
     public virtual ValueTask<JsonElement?> InitializeAsync(CancellationToken cancellationToken = default)
     {

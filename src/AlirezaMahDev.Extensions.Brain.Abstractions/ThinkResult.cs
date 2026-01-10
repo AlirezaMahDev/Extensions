@@ -12,7 +12,7 @@ public class ThinkResult<TData, TLink>
 {
     private readonly Lock _lock = new();
 
-    public Think<TData, TLink>? Think { get; set; }
+    public Think<TData, TLink>? Think { get; private set; }
 
     public void Add(Think<TData, TLink> think)
     {

@@ -2,7 +2,9 @@
 
 ## Project Description
 
-This project provides a robust implementation of file access operations for the AlirezaMahDev.Extensions ecosystem. It implements the interfaces defined in `AlirezaMahDev.Extensions.File.Abstractions`, offering thread-safe, high-performance file handling with support for dependency injection and configuration.
+This project provides a robust implementation of file access operations for the AlirezaMahDev.Extensions ecosystem. It
+implements the interfaces defined in `AlirezaMahDev.Extensions.File.Abstractions`, offering thread-safe,
+high-performance file handling with support for dependency injection and configuration.
 
 ## Key Features
 
@@ -18,12 +20,14 @@ This project provides a robust implementation of file access operations for the 
 ### FileService
 
 Implements `IFileService` to provide file access instances:
+
 - `Access(string name)`: Gets or creates a file accessor for the specified file
 - Thread-safe and singleton-scoped by default
 
 ### FileAccess
 
 Implements `IFileAccess` to provide thread-safe file operations:
+
 - `Access()`: Performs read operations on the file
 - `Replace()`: Replaces the entire file content atomically
 - `Change()`: Modifies file content with a transformation
@@ -32,6 +36,7 @@ Implements `IFileAccess` to provide thread-safe file operations:
 ### FileBuilder
 
 Implements `IFileBuilder` for configuring file services:
+
 - Configures the file storage directory
 - Registers required services with the DI container
 - Ensures the storage directory exists
@@ -88,6 +93,7 @@ public class MyService
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.File.Abstractions**: Defines the core interfaces
 - **AlirezaMahDev.Extensions.ParameterInstance**: For parameter instance management
 - **AlirezaMahDev.Extensions**: Core extension infrastructure
@@ -102,6 +108,7 @@ public class MyService
 ## Error Handling
 
 The implementation handles various file system errors and provides appropriate exceptions:
+
 - `IOException`: For file access issues
 - `ObjectDisposedException`: For operations on disposed objects
 - `UnauthorizedAccessException`: For permission issues
@@ -131,10 +138,12 @@ Example configuration:
 5. **Consider file locking**: Be aware of file locking behavior in concurrent scenarios
 
 - **AlirezaMahDev.Extensions.File.Abstractions**: Implements the file abstractions defined in this project
-- **AlirezaMahDev.Extensions.ParameterInstance**: Uses parameter-based instance factories for managing file access instances
+- **AlirezaMahDev.Extensions.ParameterInstance**: Uses parameter-based instance factories for managing file access
+  instances
 - **AlirezaMahDev.Extensions**: Inherits base builder implementations for consistent configuration patterns
 
 **Why these dependencies?**
+
 - **File.Abstractions**: Provides the contracts that this project implements
 - **ParameterInstance**: Enables efficient caching and reuse of file access objects based on file paths
 - **Extensions**: Provides the builder pattern infrastructure for service registration
@@ -143,18 +152,21 @@ Example configuration:
 
 ### FileService
 
-The main service implementation that manages file access objects. It uses a factory pattern to create and cache file access instances.
+The main service implementation that manages file access objects. It uses a factory pattern to create and cache file
+access instances.
 
 ### FileAccess
 
 Concrete implementation of `IFileAccess`, providing actual file I/O operations including:
+
 - Reading and writing file content
 - File stream management
 - File metadata operations
 
 ### FileBuilder
 
-Builder implementation for configuring file services in the dependency injection container, following the standard builder pattern.
+Builder implementation for configuring file services in the dependency injection container, following the standard
+builder pattern.
 
 ### FileAccessFactory
 

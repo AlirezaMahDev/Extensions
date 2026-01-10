@@ -11,6 +11,7 @@ public class ConnectionWrapDebugView<TData, TLink>(ConnectionWrap<TData, TLink> 
     ISubtractionOperators<TLink, TLink, TLink>
 {
     public ConnectionWrap<TData, TLink> Wrap { get; } = wrap;
+
     public IEnumerable<ConnectionWrap<TData, TLink>> SubConnectionsWrap =>
         Wrap.GetConnectionsWrap();
 }

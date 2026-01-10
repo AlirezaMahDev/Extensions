@@ -167,8 +167,8 @@ public static class NeuronWrapExtensions
                 yield return connectionWrap.Cell;
             }
         }
-        
-        
+
+
         public IEnumerable<ConnectionWrap<TData, TLink>> GetUnloadedConnectionsWrap() =>
             wrap.GetUnloadedConnections().Select(x => x.Wrap(wrap));
     }

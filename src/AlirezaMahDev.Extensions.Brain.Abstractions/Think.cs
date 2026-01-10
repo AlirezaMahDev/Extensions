@@ -25,6 +25,10 @@ public record Think<TData, TLink>(
     public TLink AllDifferenceLink { get; private init; }
     public TData AllDifferenceData { get; private init; }
 
+    public ConnectionWrap<TData, TLink>? NextConnectionWrap => Connection.GetConnectionsWrap()
+        .Min(Comparer<ConnectionWrap<TData, TLink>>.Create((a, b) =>
+            a.RefLink.CompareTo(Link).CompareTo(b.RefLink.CompareTo(Link))))
+        .NullWhenDefault();
 
     public Think<TData, TLink> Append(TData data, TLink link, ConnectionWrap<TData, TLink> connection)
     {
@@ -50,43 +54,18 @@ public record Think<TData, TLink>(
         };
     }
 
-
-    public async ValueTask<Think<TData, TLink>> AppendAsync(TData data, TLink link, ConnectionWrap<TData, TLink> connectionWrap, CancellationToken cancellationToken = default)
-    {
-        var differenceData = data - connectionWrap.NeuronWrap.RefData;
-        if (differenceData.CompareTo(default) < 0)
-        {
-            differenceData = connectionWrap.NeuronWrap.RefData - data;
-        }
-
-        var differenceLink = link - connectionWrap.RefLink;
-        if (differenceLink.CompareTo(default) < 0)
-        {
-            differenceLink = connectionWrap.RefLink - link;
-        }
-
-        return new(data, link, connectionWrap, this)
-        {
-            Count = Count + 1,
-            DifferenceData = differenceData,
-            DifferenceLink = differenceLink,
-            AllDifferenceData = AllDifferenceData + differenceData,
-            AllDifferenceLink = AllDifferenceLink + differenceLink
-        };
-    }
-
     public int CompareTo(Think<TData, TLink>? other)
     {
         if (other is null)
             return 1;
 
-        var allDifferenceData = AllDifferenceData.CompareTo(other.AllDifferenceData);
-        if (allDifferenceData != 0)
-            return allDifferenceData;
-
         var alDifferenceLink = AllDifferenceLink.CompareTo(other.AllDifferenceLink);
         if (alDifferenceLink != 0)
             return alDifferenceLink;
+
+        var allDifferenceData = AllDifferenceData.CompareTo(other.AllDifferenceData);
+        if (allDifferenceData != 0)
+            return allDifferenceData;
 
         return 0;
     }

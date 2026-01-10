@@ -9,7 +9,7 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager.Abstractions\AlirezaMahDev.Extensions.DataManager.Abstractions.csproj" />
-    <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
+    <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager.Abstractions\AlirezaMahDev.Extensions.DataManager.Abstractions.csproj"/>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj"/>
   </ItemGroup>
 </Project>

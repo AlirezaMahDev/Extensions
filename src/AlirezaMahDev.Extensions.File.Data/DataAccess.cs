@@ -27,6 +27,7 @@ internal class DataAccess : IDataAccess
             BlockRefValue.RefValue.Last =
                 Unsafe.SizeOf<DataFileAccessValue>() + Unsafe.SizeOf<DataLocationValue>();
         }
+
         Root = LocationFactory.GetOrCreate(Unsafe.SizeOf<DataFileAccessValue>());
     }
 

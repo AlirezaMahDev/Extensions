@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.IO.MemoryMappedFiles;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
@@ -9,10 +8,15 @@ class DataMapFile(MemoryMappedFile file) : IDisposable
 {
     private bool _disposedValue;
 
-    private readonly Lazy<DataMapFilePart>[] _parts = [.. Enumerable.Range(0, DataDefaults.PartCount)
-        .Select(index => new Lazy<DataMapFilePart>(() =>
-                new(file.CreateViewAccessor(index * DataDefaults.PartSize, DataDefaults.PartSize, MemoryMappedFileAccess.ReadWrite)),
-            LazyThreadSafetyMode.ExecutionAndPublication))];
+    private readonly Lazy<DataMapFilePart>[] _parts =
+    [
+        .. Enumerable.Range(0, DataDefaults.PartCount)
+            .Select(index => new Lazy<DataMapFilePart>(() =>
+                    new(file.CreateViewAccessor(index * DataDefaults.PartSize,
+                        DataDefaults.PartSize,
+                        MemoryMappedFileAccess.ReadWrite)),
+                LazyThreadSafetyMode.ExecutionAndPublication))
+    ];
 
     public DataMapFilePart Part(in DataOffset offset)
     {

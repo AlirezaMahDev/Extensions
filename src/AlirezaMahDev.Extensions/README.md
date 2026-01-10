@@ -2,14 +2,19 @@
 
 ## Project Description
 
-This project serves as the core implementation of the builder pattern infrastructure for .NET applications. It provides a set of base classes that enable a fluent, type-safe configuration pattern for .NET's dependency injection system, with built-in support for options pattern and hierarchical configuration.
+This project serves as the core implementation of the builder pattern infrastructure for .NET applications. It provides
+a set of base classes that enable a fluent, type-safe configuration pattern for .NET's dependency injection system, with
+built-in support for options pattern and hierarchical configuration.
 
 ## Dependencies
 
 ### Project Dependencies
-- **AlirezaMahDev.Extensions.Abstractions**: Defines the core interfaces and contracts for the builder pattern implementation.
+
+- **AlirezaMahDev.Extensions.Abstractions**: Defines the core interfaces and contracts for the builder pattern
+  implementation.
 
 ### NuGet Dependencies
+
 - **Microsoft.Extensions.Hosting**: Provides the hosting infrastructure for .NET applications.
 - **Microsoft.Extensions.Http**: Implements HTTP client factory and related services.
 - **Microsoft.Extensions.Http.Polly**: Integrates Polly for HTTP resilience patterns.
@@ -24,19 +29,19 @@ This project serves as the core implementation of the builder pattern infrastruc
 ### BuilderBase Class Hierarchy
 
 1. **BuilderBase**
-   - Base class providing access to the service collection
-   - Serves as the foundation for all builder implementations
+    - Base class providing access to the service collection
+    - Serves as the foundation for all builder implementations
 
 2. **BuilderBase<TOptions>**
-   - Extends BuilderBase with options configuration support
-   - Automatically handles configuration binding using Microsoft.Extensions.Options
-   - Supports hierarchical configuration through configuration keys
-   - Provides methods for adding and configuring sub-options
+    - Extends BuilderBase with options configuration support
+    - Automatically handles configuration binding using Microsoft.Extensions.Options
+    - Supports hierarchical configuration through configuration keys
+    - Provides methods for adding and configuring sub-options
 
 3. **BuilderBase<TOptions, TParent, TParentOptions>**
-   - Enables building hierarchical configuration structures
-   - Maintains parent-child relationships between builders
-   - Automatically manages configuration key hierarchies
+    - Enables building hierarchical configuration structures
+    - Maintains parent-child relationships between builders
+    - Automatically manages configuration key hierarchies
 
 ### Core Features
 
@@ -72,6 +77,7 @@ services.AddMyService()
 ## Architecture
 
 The project follows a clean architecture approach where:
+
 - Core abstractions are defined in the Abstractions project
 - This project provides concrete implementations of those abstractions
 - Dependencies are minimal and focused on the core functionality

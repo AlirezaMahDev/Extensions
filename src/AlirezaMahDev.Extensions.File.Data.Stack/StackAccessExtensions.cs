@@ -19,7 +19,7 @@ public static class StackAccessExtensions
     extension(IStackAccess dataLocation)
     {
         public StackAccess<TEntity> As<TEntity>()
-        where TEntity : unmanaged
+            where TEntity : unmanaged
         {
             return new(dataLocation);
         }

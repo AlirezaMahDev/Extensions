@@ -5,7 +5,7 @@ public static class TableAccessExtensions
     extension(ITableAccess dataLocation)
     {
         public TableAccess<TEntity> As<TEntity>()
-        where TEntity : class
+            where TEntity : class
         {
             return new(dataLocation);
         }

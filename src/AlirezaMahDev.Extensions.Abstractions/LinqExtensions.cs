@@ -8,7 +8,6 @@ public static class LinqExtensions
 
         public void Test()
         {
-
         }
     }
 }

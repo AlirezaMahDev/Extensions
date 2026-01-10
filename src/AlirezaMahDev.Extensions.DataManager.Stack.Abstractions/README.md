@@ -2,15 +2,19 @@
 
 ## Project Description
 
-This project is part of the AlirezaMahDev.Extensions ecosystem and is intended to provide abstract stack data structure implementations on top of the DataManager infrastructure. Currently, this project is in its initial stages and serves as a placeholder for future stack-related abstractions.
+This project is part of the AlirezaMahDev.Extensions ecosystem and is intended to provide abstract stack data structure
+implementations on top of the DataManager infrastructure. Currently, this project is in its initial stages and serves as
+a placeholder for future stack-related abstractions.
 
 ## Purpose
 
-The goal of this project is to define the core interfaces and contracts for stack data structures that will work with the underlying DataManager infrastructure, providing persistent and efficient stack operations.
+The goal of this project is to define the core interfaces and contracts for stack data structures that will work with
+the underlying DataManager infrastructure, providing persistent and efficient stack operations.
 
 ## Project Status
 
-⚠️ **Under Development**: This project is currently in the initial setup phase and does not contain any implementation. The interfaces and abstractions for stack operations will be added in future updates.
+⚠️ **Under Development**: This project is currently in the initial setup phase and does not contain any implementation.
+The interfaces and abstractions for stack operations will be added in future updates.
 
 ## Planned Features
 

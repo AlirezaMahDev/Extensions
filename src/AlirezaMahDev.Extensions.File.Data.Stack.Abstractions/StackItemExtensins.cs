@@ -5,7 +5,7 @@ public static class StackItemExtensins
     extension(IStackItem stackItem)
     {
         public StackItem<TEntity> As<TEntity>()
-        where TEntity : unmanaged
+            where TEntity : unmanaged
         {
             return new(stackItem);
         }

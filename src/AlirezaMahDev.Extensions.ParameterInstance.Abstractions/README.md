@@ -2,7 +2,9 @@
 
 ## Project Description
 
-This project provides a set of abstractions for implementing parameter-based instance factories in .NET applications. It defines interfaces for creating, caching, and managing object instances based on parameter values, enabling efficient resource utilization and instance reuse patterns.
+This project provides a set of abstractions for implementing parameter-based instance factories in .NET applications. It
+defines interfaces for creating, caching, and managing object instances based on parameter values, enabling efficient
+resource utilization and instance reuse patterns.
 
 ## Key Features
 
@@ -17,18 +19,21 @@ This project provides a set of abstractions for implementing parameter-based ins
 ### IParameterInstanceFactory<TParameter>
 
 The base interface for parameter-based instance factories:
+
 - `Options`: Gets the configuration options for the factory
 - `TryRemove(TParameter)`: Attempts to remove an instance from the cache
 
 ### IParameterInstanceFactory<TInstance, TParameter>
 
 Extends the base interface with instance management capabilities:
+
 - `GetOrCreate(TParameter)`: Gets an existing instance or creates a new one if it doesn't exist
 - Implements `IEnumerable<TInstance>` for enumerating all created instances
 
 ### ParameterInstanceFactoryOptions
 
 Configuration options for parameter instance factories:
+
 - Cache management settings
 - Instance lifetime policies
 - Factory behavior customization
@@ -83,6 +88,7 @@ public class UserService
 ## When to Use
 
 This library is particularly useful when you need to:
+
 - Cache expensive-to-create objects based on parameters
 - Manage the lifecycle of parameter-dependent instances
 - Implement the flyweight pattern

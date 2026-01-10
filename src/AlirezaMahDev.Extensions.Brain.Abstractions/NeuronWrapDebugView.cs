@@ -11,6 +11,7 @@ public class NeuronWrapDebugView<TData, TLink>(NeuronWrap<TData, TLink> wrap)
     ISubtractionOperators<TLink, TLink, TLink>
 {
     public NeuronWrap<TData, TLink> Wrap { get; } = wrap;
+
     public IEnumerable<ConnectionWrap<TData, TLink>> ConnectionsWrap =>
         Wrap.GetConnectionsWrap();
 }

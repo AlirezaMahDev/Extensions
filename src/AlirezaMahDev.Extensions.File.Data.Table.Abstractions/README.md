@@ -2,17 +2,21 @@
 
 ## Project Description
 
-Contracts for tabular, file-backed storage. Defines table, row, column, and indexing abstractions that map structured data onto the File.Data primitives while keeping implementations swappable.
+Contracts for tabular, file-backed storage. Defines table, row, column, and indexing abstractions that map structured
+data onto the File.Data primitives while keeping implementations swappable.
 
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.File.Data.Abstractions**: Base binary storage contracts.
 - **AlirezaMahDev.Extensions.File.Data.Collection.Abstractions**: Collection metadata and object-grouping contracts.
 - **AlirezaMahDev.Extensions.File.Data.Stack.Abstractions**: Stack contracts for append/log-style scenarios.
 
 ### Why these dependencies?
-- Tables build on data blocks/locations (File.Data), use collection metadata (Collection) and may employ stack-like structures for journaling or append operations (Stack).
+
+- Tables build on data blocks/locations (File.Data), use collection metadata (Collection) and may employ stack-like
+  structures for journaling or append operations (Stack).
 
 ## Key Components
 

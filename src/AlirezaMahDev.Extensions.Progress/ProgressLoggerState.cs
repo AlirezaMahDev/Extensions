@@ -16,7 +16,8 @@ public record ProgressLoggerState(string Title, string Message, int Count, int L
 
     public override string ToString()
     {
-        return $"Timestamp{Timestamp.LocalDateTime} Name:{Title} Message:{Message} Count:{Count} Length:{Length} Progress:{ProgressValue}";
+        return $"Timestamp{Timestamp.LocalDateTime} Name:{Title} Message:{Message} Count:{Count} Length:{Length
+        } Progress:{ProgressValue}";
     }
 }
 

@@ -2,7 +2,9 @@
 
 ## Project Description
 
-This project provides a high-performance, file-based data storage solution for .NET applications. It offers a low-level API for managing structured binary data with efficient read/write operations, built on top of the file access abstractions provided by `AlirezaMahDev.Extensions.File`.
+This project provides a high-performance, file-based data storage solution for .NET applications. It offers a low-level
+API for managing structured binary data with efficient read/write operations, built on top of the file access
+abstractions provided by `AlirezaMahDev.Extensions.File`.
 
 ## Key Features
 
@@ -18,12 +20,14 @@ This project provides a high-performance, file-based data storage solution for .
 ### DataService
 
 Main service for accessing data storage:
+
 - `Default`: Gets the default data access instance
 - `Access(string name)`: Gets or creates a named data access instance
 
 ### DataAccess
 
 Core class for data operations:
+
 - `Block`: Provides access to the underlying data blocks
 - `FileAccess`: Underlying file access instance
 - `Root`: Root data location
@@ -32,6 +36,7 @@ Core class for data operations:
 ### DataBlock
 
 Manages blocks of data in the file:
+
 - `Read<T>(long offset)`: Reads a value of type T from the specified offset
 - `Write<T>(long offset, T value)`: Writes a value of type T to the specified offset
 - `Allocate(int size)`: Allocates a new block of the specified size
@@ -39,6 +44,7 @@ Manages blocks of data in the file:
 ### DataLocation
 
 Represents a location in the data file:
+
 - `Read<T>()`: Reads a value from this location
 - `Write<T>(T value)`: Writes a value to this location
 - `Next`: Gets or sets the next location in the chain
@@ -102,6 +108,7 @@ public class MyService
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.File.Data.Abstractions**: Defines the core interfaces
 - **AlirezaMahDev.Extensions.File**: Provides file access functionality
 - **AlirezaMahDev.Extensions**: Core extension infrastructure
@@ -116,6 +123,7 @@ public class MyService
 ## Error Handling
 
 The implementation handles various error scenarios:
+
 - File access errors
 - Invalid data formats
 - Resource disposal issues

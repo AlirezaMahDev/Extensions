@@ -2,20 +2,26 @@
 
 ## Project Description
 
-This project serves as the foundation for the AlirezaMahDev.Extensions ecosystem, providing essential abstractions and interfaces that enable consistent and type-safe configuration patterns across all extension libraries. It defines the core contracts for implementing the builder pattern with dependency injection and options configuration in .NET applications.
+This project serves as the foundation for the AlirezaMahDev.Extensions ecosystem, providing essential abstractions and
+interfaces that enable consistent and type-safe configuration patterns across all extension libraries. It defines the
+core contracts for implementing the builder pattern with dependency injection and options configuration in .NET
+applications.
 
 ## Dependencies
 
 ### Core Dependencies
+
 - **Microsoft.Extensions.Hosting.Abstractions**: Provides the fundamental interfaces for .NET's hosting infrastructure.
 - **JetBrains.Annotations**: Enhances code quality with static analysis attributes and code annotations.
 
 ### Utility Dependencies
+
 - **CommunityToolkit.Common**: Offers common utility methods and extension methods.
 - **CommunityToolkit.Diagnostics**: Provides guard clauses and argument validation utilities.
 - **CommunityToolkit.HighPerformance**: Delivers high-performance programming utilities and optimizations.
 
 ### Resilience Dependencies
+
 - **Polly**: A .NET resilience and transient-fault-handling library.
 - **Polly.Extensions.Http**: Extends Polly with HTTP-specific resilience policies and utilities.
 
@@ -33,6 +39,7 @@ public interface IOptionsBase
 ```
 
 **Key Features:**
+
 - Enforces a consistent way to define configuration keys
 - Supports hierarchical configuration through key composition
 - Enables type-safe configuration binding
@@ -58,6 +65,7 @@ public interface IBuilderBase<TOptions> : IBuilderBase
 ```
 
 **Key Features:**
+
 - **Service Collection Access**: Direct access to the underlying `IServiceCollection`
 - **Options Configuration**: Type-safe configuration of options with support for validation
 - **Hierarchical Options**: Built-in support for nested configuration sections
@@ -92,6 +100,7 @@ public interface IMyBuilder : IBuilderBase<MyOptions>
 ## Architecture
 
 The project follows these architectural principles:
+
 - **Minimal Dependencies**: Only essential dependencies are included
 - **Interface Segregation**: Small, focused interfaces for each responsibility
 - **Extension Friendly**: Designed to be extended by other projects in the ecosystem

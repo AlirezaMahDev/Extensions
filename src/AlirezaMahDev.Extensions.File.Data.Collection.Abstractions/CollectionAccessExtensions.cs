@@ -5,7 +5,7 @@ public static class CollectionAccessExtensions
     extension(ICollectionAccess dataLocation)
     {
         public CollectionAccess<TEntity> As<TEntity>()
-        where TEntity : class
+            where TEntity : class
         {
             return new(dataLocation);
         }

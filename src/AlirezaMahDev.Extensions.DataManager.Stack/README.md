@@ -2,15 +2,19 @@
 
 ## Project Description
 
-This project is part of the AlirezaMahDev.Extensions ecosystem and is intended to provide concrete implementations of stack data structures on top of the DataManager infrastructure. Currently, this project is in its initial stages and serves as a placeholder for future stack implementations.
+This project is part of the AlirezaMahDev.Extensions ecosystem and is intended to provide concrete implementations of
+stack data structures on top of the DataManager infrastructure. Currently, this project is in its initial stages and
+serves as a placeholder for future stack implementations.
 
 ## Purpose
 
-The goal of this project is to implement efficient, persistent stack data structures that work with the underlying DataManager infrastructure, providing reliable and performant stack operations for various use cases.
+The goal of this project is to implement efficient, persistent stack data structures that work with the underlying
+DataManager infrastructure, providing reliable and performant stack operations for various use cases.
 
 ## Project Status
 
-⚠️ **Under Development**: This project is currently in the initial setup phase and does not contain any implementation. The stack data structure implementations will be added in future updates.
+⚠️ **Under Development**: This project is currently in the initial setup phase and does not contain any implementation.
+The stack data structure implementations will be added in future updates.
 
 ## Planned Features
 
@@ -34,6 +38,7 @@ This project is not yet ready for production use. Once implemented, usage exampl
 ## Performance Considerations
 
 When implemented, this library will focus on:
+
 - Efficient memory usage
 - Fast push/pop operations
 - Minimal overhead for persistent storage

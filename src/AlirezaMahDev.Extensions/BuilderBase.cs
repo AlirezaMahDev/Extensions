@@ -31,7 +31,7 @@ public abstract class BuilderBase<TOptions> : BuilderBase, IBuilderBase<TOptions
 
     public OptionsBuilder<TSubOptions> AddSubOptions<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TSubOptions>()
+        TSubOptions>()
         where TSubOptions : class, IOptionsBase
     {
         return Services.AddOptions<TSubOptions>().BindConfiguration($"{Key}:{TSubOptions.Key}");

@@ -32,7 +32,7 @@ public record struct ConnectionValue<TLink> :
         Weight = 0u,
         Link = default
     };
-    
+
     public int RefLock;
     public ref int Lock => ref Unsafe.AsRef(in this).RefLock;
 }

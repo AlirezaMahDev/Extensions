@@ -162,3 +162,4 @@
 //
 //     public static implicit operator DateOnly(PersianDateOnly persianDateOnly) => persianDateOnly.ToDateOnly();
 // }
+

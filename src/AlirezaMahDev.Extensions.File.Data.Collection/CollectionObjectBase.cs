@@ -16,6 +16,7 @@ public class CollectionObjectBase : ICollectionObjectBase
         LocationValue = location.GetOrAdd<CollectionObjectValue>(".object");
         Properties = properties;
     }
+
     public DataLocation<CollectionObjectValue> LocationValue { get; }
     public virtual ICollectionProperties Properties { get; }
 

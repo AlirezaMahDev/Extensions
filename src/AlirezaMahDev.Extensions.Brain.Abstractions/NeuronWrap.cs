@@ -19,7 +19,7 @@ public readonly record struct NeuronWrap<TData, TLink>(INerve<TData, TLink> Nerv
     {
         return $"{Cell} {RefValue}";
     }
-    
+
     public DataWrap<NeuronValue<TData>> Location => new(Nerve.Access, new(Cell.Offset));
     public ref readonly NeuronValue<TData> RefValue => ref Location.RefValue;
     public ref readonly TData RefData => ref Location.RefValue.Data;
@@ -28,6 +28,7 @@ public readonly record struct NeuronWrap<TData, TLink>(INerve<TData, TLink> Nerv
         RefValue.Connection.IsNull
             ? null
             : new(RefValue.Connection);
+
     public ConnectionWrap<TData, TLink>? ConnectionWrap =>
         Connection?.Wrap(Nerve);
 

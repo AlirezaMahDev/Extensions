@@ -2,7 +2,10 @@
 
 ## Project Description
 
-This project provides a high-performance, file-based data management system for .NET applications. It implements the abstractions defined in `AlirezaMahDev.Extensions.DataManager.Abstractions` to offer a concrete, efficient data storage solution. The library is designed for scenarios requiring fast, reliable, and concurrent access to structured data with minimal overhead.
+This project provides a high-performance, file-based data management system for .NET applications. It implements the
+abstractions defined in `AlirezaMahDev.Extensions.DataManager.Abstractions` to offer a concrete, efficient data storage
+solution. The library is designed for scenarios requiring fast, reliable, and concurrent access to structured data with
+minimal overhead.
 
 ## Key Features
 
@@ -18,6 +21,7 @@ This project provides a high-performance, file-based data management system for 
 ### IDataManager
 
 The main interface for managing data access:
+
 - `Open`: Opens or creates a data store with the specified key
 - `Close`: Closes and cleans up resources for a specific data store
 - `OpenTemp`: Creates a temporary data store for short-lived data
@@ -25,6 +29,7 @@ The main interface for managing data access:
 ### DataAccess
 
 Implements `IDataAccess` to provide:
+
 - Memory-mapped file operations
 - Thread-safe concurrent access
 - Efficient data caching
@@ -33,6 +38,7 @@ Implements `IDataAccess` to provide:
 ### DataManager
 
 The main implementation of `IDataManager` that:
+
 - Manages multiple data stores
 - Handles resource cleanup
 - Implements the builder pattern for configuration
@@ -75,10 +81,12 @@ services.AddDataManager(options =>
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.DataManager.Abstractions**: Core interfaces
 - **AlirezaMahDev.Extensions**: Extension infrastructure
 
 ### NuGet Dependencies
+
 - **System.IO.Hashing**: For checksum and hash operations
 
 ## Performance Considerations
@@ -91,6 +99,7 @@ services.AddDataManager(options =>
 ## Error Handling
 
 The library throws appropriate exceptions for error conditions:
+
 - `ArgumentNullException` for null arguments
 - `ObjectDisposedException` for operations on disposed objects
 - `IOException` for I/O related errors
@@ -101,7 +110,8 @@ All public members of `DataManager` and `DataAccess` are thread-safe and may be 
 
 ## Resource Management
 
-All types that implement `IDisposable` should be properly disposed to release system resources. The recommended pattern is to use the `using` statement:
+All types that implement `IDisposable` should be properly disposed to release system resources. The recommended pattern
+is to use the `using` statement:
 
 ```csharp
 using var dataAccess = dataManager.Open("mydata");

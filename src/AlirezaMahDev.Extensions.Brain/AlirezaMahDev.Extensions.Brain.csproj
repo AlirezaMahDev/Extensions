@@ -1,23 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <LangVersion>preview</LangVersion>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\AlirezaMahDev.Extensions.Brain.Abstractions\AlirezaMahDev.Extensions.Brain.Abstractions.csproj" />
-        <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager\AlirezaMahDev.Extensions.DataManager.csproj" />
-        <ProjectReference Include="..\AlirezaMahDev.Extensions.ParameterInstance\AlirezaMahDev.Extensions.ParameterInstance.csproj" />
-        <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions.Brain.Abstractions\AlirezaMahDev.Extensions.Brain.Abstractions.csproj"/>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager\AlirezaMahDev.Extensions.DataManager.csproj"/>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions.ParameterInstance\AlirezaMahDev.Extensions.ParameterInstance.csproj"/>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj"/>
+  </ItemGroup>
 
 
-    <ItemGroup>
-        <PackageReference Include="ILGPU" Version="1.5.3" />
-        <PackageReference Include="ILGPU.Algorithms" Version="1.5.3" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="ILGPU" Version="1.5.3"/>
+    <PackageReference Include="ILGPU.Algorithms" Version="1.5.3"/>
+  </ItemGroup>
 
 </Project>

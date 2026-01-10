@@ -11,7 +11,7 @@ class TempDataAccess()
         base.Dispose(disposing);
         if (disposing)
         {
-            Directory.Delete(Path,true);
+            Directory.Delete(Path, true);
         }
     }
 }

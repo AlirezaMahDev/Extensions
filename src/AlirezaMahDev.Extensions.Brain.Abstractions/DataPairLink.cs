@@ -2,7 +2,8 @@ using System.Numerics;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public readonly record struct DataPairLink<TData, TLink>(TData Data, TLink Link) : IComparable<DataPairLink<TData, TLink>>
+public readonly record struct DataPairLink<TData, TLink>(TData Data, TLink Link)
+    : IComparable<DataPairLink<TData, TLink>>
     where TData : unmanaged,
     IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
     ISubtractionOperators<TData, TData, TData>

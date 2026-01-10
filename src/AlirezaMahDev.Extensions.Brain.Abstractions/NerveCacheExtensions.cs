@@ -82,7 +82,8 @@ public static class NerveCacheExtensions
         IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
         ISubtractionOperators<TLink, TLink, TLink>
     {
-        public bool TryGetNeuronConnectionCacheCore(in NerveCacheKey cacheKey, [NotNullWhen(true)] out DataOffset? offset)
+        public bool TryGetNeuronConnectionCacheCore(in NerveCacheKey cacheKey,
+            [NotNullWhen(true)] out DataOffset? offset)
         {
             return nerveCache.ConnectionSection.TryGet(in cacheKey, out offset);
         }

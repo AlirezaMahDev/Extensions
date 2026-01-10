@@ -1,15 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net10.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
 
-    <ItemGroup>
-        <ProjectReference Include="..\AlirezaMahDev.Extensions.File.Json.Abstractions\AlirezaMahDev.Extensions.File.Json.Abstractions.csproj" />
-        <ProjectReference Include="..\AlirezaMahDev.Extensions.File\AlirezaMahDev.Extensions.File.csproj" />
-        <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions.File.Json.Abstractions\AlirezaMahDev.Extensions.File.Json.Abstractions.csproj"/>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions.File\AlirezaMahDev.Extensions.File.csproj"/>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj"/>
+  </ItemGroup>
 
 </Project>

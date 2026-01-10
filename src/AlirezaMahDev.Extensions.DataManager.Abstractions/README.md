@@ -2,7 +2,10 @@
 
 ## Project Description
 
-This project provides a set of abstractions for efficient data management in .NET applications. It offers a low-level, high-performance data access layer with support for memory-mapped files, data location tracking, and efficient data storage and retrieval. The library is designed to be extensible and can be used as a foundation for building custom data management solutions.
+This project provides a set of abstractions for efficient data management in .NET applications. It offers a low-level,
+high-performance data access layer with support for memory-mapped files, data location tracking, and efficient data
+storage and retrieval. The library is designed to be extensible and can be used as a foundation for building custom data
+management solutions.
 
 ## Key Features
 
@@ -18,6 +21,7 @@ This project provides a set of abstractions for efficient data management in .NE
 ### IDataAccess
 
 The main interface for data access operations:
+
 - `ReadMemory`/`ReadMemoryAsync`: Read data from a specific offset
 - `WriteMemory`/`WriteMemoryAsync`: Write data to a specific offset
 - `AllocateOffset`: Allocate space for new data
@@ -27,6 +31,7 @@ The main interface for data access operations:
 ### IDataLocation
 
 Represents a location in the data store:
+
 - `Offset`: The position in the data store
 - `Length`: The size of the data
 - `Access`: Reference to the underlying data access
@@ -70,6 +75,7 @@ var value = readLocation.RefValue;
 ## Architecture
 
 The project follows a layered architecture:
+
 - **Abstraction Layer**: Defines core interfaces and contracts
 - **Data Types**: Implements value types and data structures
 - **Extensions**: Provides utility methods and extensions

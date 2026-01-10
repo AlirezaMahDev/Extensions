@@ -2,7 +2,9 @@
 
 ## Project Description
 
-This project provides a high-performance, thread-safe implementation of parameter-based instance factories. It enables efficient creation, caching, and management of object instances based on parameter values, significantly improving performance in scenarios where object creation is expensive or where instance reuse is desired.
+This project provides a high-performance, thread-safe implementation of parameter-based instance factories. It enables
+efficient creation, caching, and management of object instances based on parameter values, significantly improving
+performance in scenarios where object creation is expensive or where instance reuse is desired.
 
 ## Key Features
 
@@ -90,10 +92,12 @@ public class UserRequestProcessor
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.ParameterInstance.Abstractions**: Defines the core interfaces
 - **AlirezaMahDev.Extensions**: Provides base builder patterns
 
 ### Why These Dependencies?
+
 - **ParameterInstance.Abstractions**: Provides the contract interfaces that this project implements
 - **Extensions**: Supplies the builder infrastructure for DI integration
 
@@ -113,7 +117,8 @@ public class UserRequestProcessor
 
 ## Implementation Details
 
-The factory uses a combination of `ConcurrentDictionary` and `Lazy<T>` to ensure thread-safe lazy initialization. When an instance is requested:
+The factory uses a combination of `ConcurrentDictionary` and `Lazy<T>` to ensure thread-safe lazy initialization. When
+an instance is requested:
 
 1. The factory checks if an instance exists for the given parameters
 2. If not, it creates a new `Lazy<T>` instance that will create the actual object when needed

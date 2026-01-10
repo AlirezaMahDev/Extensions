@@ -2,17 +2,21 @@
 
 ## Project Description
 
-JSON-centric utilities over the File and Extensions infrastructure. Provides services to persist and retrieve JSON documents with thread-safe file access and a fluent configuration model.
+JSON-centric utilities over the File and Extensions infrastructure. Provides services to persist and retrieve JSON
+documents with thread-safe file access and a fluent configuration model.
 
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.File.Json.Abstractions**: Contracts implemented by this project.
 - **AlirezaMahDev.Extensions.File**: Thread-safe file access used for JSON persistence.
 - **AlirezaMahDev.Extensions**: Builder and options infrastructure.
 
 ### Why these dependencies?
-- Uses File to ensure safe concurrent I/O, and the shared builder pipeline for consistent configuration across the ecosystem. Abstractions keep the consumer API stable.
+
+- Uses File to ensure safe concurrent I/O, and the shared builder pipeline for consistent configuration across the
+  ecosystem. Abstractions keep the consumer API stable.
 
 ## Key Components
 

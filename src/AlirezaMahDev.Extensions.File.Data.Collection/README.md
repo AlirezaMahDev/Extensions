@@ -2,7 +2,9 @@
 
 ## Project Description
 
-This project provides a high-performance, file-based collection implementation for .NET applications. It offers a persistent, thread-safe collection that can store and retrieve objects with minimal overhead, making it ideal for scenarios requiring fast access to large datasets with persistence.
+This project provides a high-performance, file-based collection implementation for .NET applications. It offers a
+persistent, thread-safe collection that can store and retrieve objects with minimal overhead, making it ideal for
+scenarios requiring fast access to large datasets with persistence.
 
 ## Key Features
 
@@ -18,6 +20,7 @@ This project provides a high-performance, file-based collection implementation f
 ### CollectionAccess
 
 The main entry point for working with collections, providing methods to:
+
 - Create and manage collections
 - Access collection properties
 - Enumerate through collection items
@@ -26,6 +29,7 @@ The main entry point for working with collections, providing methods to:
 ### CollectionObjects
 
 Manages a collection of objects with features like:
+
 - Thread-safe access to collection items
 - Lazy loading of objects
 - Efficient memory management
@@ -34,6 +38,7 @@ Manages a collection of objects with features like:
 ### CollectionObject
 
 Represents an individual item in the collection with:
+
 - Property storage and retrieval
 - Type-safe value access
 - Change tracking
@@ -42,6 +47,7 @@ Represents an individual item in the collection with:
 ### CollectionProperties
 
 Manages metadata and properties of collections:
+
 - Custom property definitions
 - Type information
 - Validation rules
@@ -76,10 +82,12 @@ foreach (var item in items)
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.File.Data**: Core file data access functionality
 - **AlirezaMahDev.Extensions.File.Data.Collection.Abstractions**: Defines the core interfaces and contracts
 
 ### Why These Dependencies?
+
 - **File.Data**: Provides the underlying file-based storage infrastructure
 - **Collection.Abstractions**: Defines the contracts that this project implements
 
@@ -100,7 +108,8 @@ foreach (var item in items)
 
 ## Implementation Details
 
-The implementation uses a combination of memory-mapped files and in-memory caching to provide fast access to collection data. Collections are stored in a structured format that allows for efficient querying and updates.
+The implementation uses a combination of memory-mapped files and in-memory caching to provide fast access to collection
+data. Collections are stored in a structured format that allows for efficient querying and updates.
 
 ### Data Structure
 
@@ -121,6 +130,7 @@ Collection/
 ## Error Handling
 
 The library throws appropriate exceptions for error conditions:
+
 - `CollectionNotFoundException`: When a requested collection doesn't exist
 - `ObjectNotFoundException`: When an object is not found
 - `InvalidOperationException`: For invalid operations
@@ -128,8 +138,10 @@ The library throws appropriate exceptions for error conditions:
 
 ## Thread Safety
 
-All public members of `CollectionAccess` and related classes are thread-safe and may be used concurrently from multiple threads.
+All public members of `CollectionAccess` and related classes are thread-safe and may be used concurrently from multiple
+threads.
 
 ## Contributing
 
-Contributions are welcome! Please ensure that any changes maintain backward compatibility and include appropriate unit tests.
+Contributions are welcome! Please ensure that any changes maintain backward compatibility and include appropriate unit
+tests.

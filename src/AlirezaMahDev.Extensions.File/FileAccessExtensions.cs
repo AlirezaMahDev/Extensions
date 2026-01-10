@@ -41,7 +41,8 @@ public static class FileAccessExtensions
                 cancellationToken);
         }
 
-        public async ValueTask<TResult> MemoryAccessAsync<TResult>(Func<Stream, CancellationToken, ValueTask<TResult>> func,
+        public async ValueTask<TResult> MemoryAccessAsync<TResult>(
+            Func<Stream, CancellationToken, ValueTask<TResult>> func,
             CancellationToken cancellationToken = default)
         {
             return await fileAccess.AccessAsync(async (stream, token) =>

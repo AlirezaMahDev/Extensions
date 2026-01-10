@@ -2,17 +2,21 @@ d# AlirezaMahDev.Extensions.Brain
 
 ## Project Description
 
-This project implements a neural network infrastructure with a focus on high-performance computation, leveraging ILGPU for GPU acceleration. It provides a flexible and extensible framework for building and training neural networks with support for custom data types and network architectures.
+This project implements a neural network infrastructure with a focus on high-performance computation, leveraging ILGPU
+for GPU acceleration. It provides a flexible and extensible framework for building and training neural networks with
+support for custom data types and network architectures.
 
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.Brain.Abstractions**: Core interfaces and contracts
 - **AlirezaMahDev.Extensions.DataManager**: Data management and persistence
 - **AlirezaMahDev.Extensions.ParameterInstance**: Parameter handling and configuration
 - **AlirezaMahDev.Extensions**: Core extension infrastructure
 
 ### NuGet Dependencies
+
 - **ILGPU (v1.5.3)**: High-performance GPU computing
 - **ILGPU.Algorithms (v1.5.3)**: GPU-accelerated algorithms
 
@@ -21,6 +25,7 @@ This project implements a neural network infrastructure with a focus on high-per
 ### Nerve
 
 The `Nerve<TData>` class is the central component that manages the neural network. It provides:
+
 - Neural network training and inference capabilities
 - Thread-safe operations for concurrent access
 - Integration with data management for persistence
@@ -29,6 +34,7 @@ The `Nerve<TData>` class is the central component that manages the neural networ
 ### Neuron
 
 The `Neuron<TData>` class represents individual neurons in the network, featuring:
+
 - Support for generic data types (unmanaged)
 - Thread-safe caching mechanism
 - Connection management to other neurons
@@ -37,6 +43,7 @@ The `Neuron<TData>` class represents individual neurons in the network, featurin
 ### Connection
 
 Connection handling between neurons, including:
+
 - Weighted connections
 - Bi-directional relationships
 - Connection persistence
@@ -74,6 +81,7 @@ var result = nerve.Predict(inputData);
 ## Architecture
 
 The project follows a modular architecture with clear separation of concerns:
+
 - **Data Layer**: Handles persistence and retrieval of neural network data
 - **Core Logic**: Implements neural network operations and algorithms
 - **Infrastructure**: Provides GPU acceleration and performance optimizations
@@ -81,4 +89,5 @@ The project follows a modular architecture with clear separation of concerns:
 
 ## Configuration
 
-Configuration can be done through the `BrainBuilder` class, which provides a fluent API for setting up the neural network with various options and parameters.
+Configuration can be done through the `BrainBuilder` class, which provides a fluent API for setting up the neural
+network with various options and parameters.

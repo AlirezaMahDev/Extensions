@@ -90,7 +90,8 @@ public static class DataCollectionWrapExtensions
 
         public DataLocation<TItem> Add(DataLocation<TItem> dataLocation)
         {
-            wrap.Wrap().Lock(location =>
+            wrap.Wrap()
+                .Lock(location =>
                 {
                     var child = wrap.Wrap.GetChild(location.GetRefValue(wrap.Access));
 

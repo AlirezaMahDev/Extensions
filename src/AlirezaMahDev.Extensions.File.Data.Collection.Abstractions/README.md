@@ -2,7 +2,9 @@
 
 ## Project Description
 
-This project defines the core abstractions and interfaces for the file-based collection system in the AlirezaMahDev.Extensions ecosystem. It provides the contract that concrete implementations must follow, ensuring a consistent API for working with file-based collections across different implementations.
+This project defines the core abstractions and interfaces for the file-based collection system in the
+AlirezaMahDev.Extensions ecosystem. It provides the contract that concrete implementations must follow, ensuring a
+consistent API for working with file-based collections across different implementations.
 
 ## Key Features
 
@@ -17,6 +19,7 @@ This project defines the core abstractions and interfaces for the file-based col
 ### ICollectionAccess
 
 The main entry point for working with collections, providing:
+
 - Access to collection objects
 - Basic collection management capabilities
 - Integration with the file system
@@ -24,6 +27,7 @@ The main entry point for working with collections, providing:
 ### ICollectionObjects
 
 Represents a collection of objects with capabilities for:
+
 - Enumerating through collection items
 - Accessing objects by index
 - Managing the lifecycle of collection items
@@ -31,6 +35,7 @@ Represents a collection of objects with capabilities for:
 ### ICollectionObject
 
 Represents an individual item within a collection with:
+
 - Property access and manipulation
 - Type conversion support
 - Change tracking
@@ -39,6 +44,7 @@ Represents an individual item within a collection with:
 ### ICollectionProperties
 
 Manages metadata and properties of collections:
+
 - Property definitions
 - Type information
 - Validation rules
@@ -75,10 +81,13 @@ public class CollectionService
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.File.Data.Abstractions**: Core file data access abstractions
 
 ### Why This Dependency?
-- **File.Data.Abstractions**: Provides the fundamental interfaces and base classes for file-based data access that this project extends
+
+- **File.Data.Abstractions**: Provides the fundamental interfaces and base classes for file-based data access that this
+  project extends
 
 ## Design Principles
 
@@ -123,17 +132,20 @@ public class CustomCollectionAccess : ICollectionAccess
 ## Error Handling
 
 Implementations should throw appropriate exceptions:
+
 - `InvalidOperationException` for invalid operations
 - `IOException` for file system related errors
 - Custom exceptions for domain-specific error conditions
 
 ## Thread Safety
 
-All implementations of these interfaces should be thread-safe. The recommended pattern is to make all public members thread-safe while keeping internal operations as simple as possible.
+All implementations of these interfaces should be thread-safe. The recommended pattern is to make all public members
+thread-safe while keeping internal operations as simple as possible.
 
 ## Contributing
 
 When contributing to this project, please ensure that:
+
 1. New interfaces follow the established patterns
 2. Documentation is kept up-to-date
 3. Changes maintain backward compatibility or follow semantic versioning for breaking changes

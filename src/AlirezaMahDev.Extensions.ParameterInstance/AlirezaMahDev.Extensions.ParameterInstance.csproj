@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AlirezaMahDev.Extensions.ParameterInstance.Abstractions\AlirezaMahDev.Extensions.ParameterInstance.Abstractions.csproj" />
-    <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj" />
+    <ProjectReference Include="..\AlirezaMahDev.Extensions.ParameterInstance.Abstractions\AlirezaMahDev.Extensions.ParameterInstance.Abstractions.csproj"/>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj"/>
   </ItemGroup>
 
 </Project>

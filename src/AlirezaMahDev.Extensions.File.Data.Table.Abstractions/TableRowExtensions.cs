@@ -5,7 +5,7 @@ public static class TableRowExtensions
     extension(ITableRow tableRow)
     {
         public TableRow<TEntity> As<TEntity>()
-        where TEntity : class
+            where TEntity : class
         {
             return new(tableRow);
         }

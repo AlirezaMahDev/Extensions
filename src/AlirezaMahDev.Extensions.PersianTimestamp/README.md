@@ -2,7 +2,9 @@
 
 ## Project Description
 
-This project provides a comprehensive implementation of Persian (Jalali) date and time functionality for .NET applications. It offers a strongly-typed, high-performance implementation of Persian calendar operations, including date parsing, formatting, and arithmetic operations.
+This project provides a comprehensive implementation of Persian (Jalali) date and time functionality for .NET
+applications. It offers a strongly-typed, high-performance implementation of Persian calendar operations, including date
+parsing, formatting, and arithmetic operations.
 
 ## Key Features
 
@@ -17,6 +19,7 @@ This project provides a comprehensive implementation of Persian (Jalali) date an
 ### PersianDateTime
 
 A value type that represents a point in time in the Persian calendar system:
+
 - Implements standard .NET interfaces for consistent behavior
 - Supports parsing and formatting in various formats
 - Provides methods for date and time arithmetic
@@ -25,6 +28,7 @@ A value type that represents a point in time in the Persian calendar system:
 ### PersianDefault
 
 Provides default calendar instances and settings:
+
 - `Calendar`: Default `GregorianCalendar` instance configured for Persian calendar operations
 
 ## Usage Example
@@ -102,4 +106,5 @@ string monthName = now.GetPersianMonthName();
 
 ## Contributing
 
-Contributions are welcome! Please ensure that any changes maintain backward compatibility and include appropriate unit tests.
+Contributions are welcome! Please ensure that any changes maintain backward compatibility and include appropriate unit
+tests.

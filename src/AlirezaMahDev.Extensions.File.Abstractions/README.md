@@ -2,7 +2,9 @@
 
 ## Project Description
 
-This project provides a set of abstractions for file-based operations in the AlirezaMahDev.Extensions ecosystem. It defines interfaces for file access, service management, and configuration, enabling consistent and type-safe file handling across applications.
+This project provides a set of abstractions for file-based operations in the AlirezaMahDev.Extensions ecosystem. It
+defines interfaces for file access, service management, and configuration, enabling consistent and type-safe file
+handling across applications.
 
 ## Key Features
 
@@ -18,11 +20,13 @@ This project provides a set of abstractions for file-based operations in the Ali
 ### IFileService
 
 Main service interface for accessing files:
+
 - `Access(string name)`: Gets a file accessor for the specified file
 
 ### IFileAccess
 
 Provides thread-safe access to file operations:
+
 - `Access()`: Performs read operations on the file
 - `Replace()`: Replaces the entire file content
 - `Change()`: Modifies file content with a transformation
@@ -31,12 +35,14 @@ Provides thread-safe access to file operations:
 ### IFileBuilder
 
 Fluent interface for configuring file services:
+
 - Extends `IBuilderBase<FileOptions>`
 - Used with dependency injection to configure file handling
 
 ### FileOptions
 
 Configuration options for file handling:
+
 - `Path`: Base directory for file operations (defaults to `./.data`)
 
 ## Usage Example
@@ -75,11 +81,14 @@ fileAccess.Replace(stream =>
 ## Dependencies
 
 ### Project Dependencies
+
 - **AlirezaMahDev.Extensions.Abstractions**: Core extension infrastructure
 
-- **AlirezaMahDev.Extensions.Abstractions**: Uses the base builder and options interfaces to maintain consistency with the broader framework
+- **AlirezaMahDev.Extensions.Abstractions**: Uses the base builder and options interfaces to maintain consistency with
+  the broader framework
 
-**Why this dependency?** The file abstractions follow the same builder and configuration patterns established by the core abstractions, ensuring a unified API experience.
+**Why this dependency?** The file abstractions follow the same builder and configuration patterns established by the
+core abstractions, ensuring a unified API experience.
 
 ## Key Components
 

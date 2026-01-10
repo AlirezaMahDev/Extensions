@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.IO.MemoryMappedFiles;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
@@ -9,22 +8,25 @@ class DataMap(string path) : IDisposable
 {
     private bool _disposedValue;
 
-    private readonly Lazy<DataMapFile>[] _files = [.. Enumerable.Range(0, DataDefaults.FileCount)
-        .Select(id =>
-            new Lazy<DataMapFile>(() =>
-                {
-                    var directoryPath = Path.GetDirectoryName(path)!;
-                    if (!Directory.Exists(directoryPath))
-                        Directory.CreateDirectory(directoryPath);
-                    return new(MemoryMappedFile.CreateFromFile(
-                        string.Format(path, id),
-                        FileMode.OpenOrCreate,
-                        null,
-                        DataDefaults.FileSize,
-                        MemoryMappedFileAccess.ReadWrite)
-                    );
-                },
-                LazyThreadSafetyMode.ExecutionAndPublication))];
+    private readonly Lazy<DataMapFile>[] _files =
+    [
+        .. Enumerable.Range(0, DataDefaults.FileCount)
+            .Select(id =>
+                new Lazy<DataMapFile>(() =>
+                    {
+                        var directoryPath = Path.GetDirectoryName(path)!;
+                        if (!Directory.Exists(directoryPath))
+                            Directory.CreateDirectory(directoryPath);
+                        return new(MemoryMappedFile.CreateFromFile(
+                            string.Format(path, id),
+                            FileMode.OpenOrCreate,
+                            null,
+                            DataDefaults.FileSize,
+                            MemoryMappedFileAccess.ReadWrite)
+                        );
+                    },
+                    LazyThreadSafetyMode.ExecutionAndPublication))
+    ];
 
     public DataMapFile File(in DataOffset offset)
     {
