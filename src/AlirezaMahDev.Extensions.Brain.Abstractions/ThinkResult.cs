@@ -1,26 +1,79 @@
-using System.Numerics;
+using System.Buffers;
+
+using AlirezaMahDev.Extensions.Abstractions;
+
+using JetBrains.Annotations;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public class ThinkResult<TData, TLink>
-    where TData : unmanaged,
-    IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
-    ISubtractionOperators<TData, TData, TData>
-    where TLink : unmanaged,
-    IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
-    ISubtractionOperators<TLink, TLink, TLink>
+[MustDisposeResource]
+public class ThinkResult<TData, TLink> : IDisposable
+    where TData : unmanaged, ICellData<TData>
+    where TLink : unmanaged, ICellLink<TLink>
 {
-    private readonly Lock _lock = new();
+    private readonly ReaderWriterLockSlim _lock = new();
 
-    public Think<TData, TLink>? Think { get; private set; }
 
-    public void Add(Think<TData, TLink> think)
+    private readonly MemoryList<Think<TData, TLink>> _memoryList = [];
+    public Memory<Think<TData, TLink>> Thinks => _memoryList.Memory;
+
+    public Memory<Think<TData, TLink>> GetBestThinks(int depth) =>
+        Thinks[..Thinks.Span.BestScoreSort(depth, NerveHelper<TData, TLink>.ThinkComparisons.Span)];
+
+    public bool Add(Think<TData, TLink> think, int depth)
     {
-        using var scope = _lock.EnterScope();
-        if (CanAdd(think))
-            Think = think;
+        _lock.EnterWriteLock();
+        try
+        {
+            if (CanAddCore(think, depth))
+            {
+                _memoryList.Add(think);
+                return true;
+            }
+
+            return false;
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
 
-    public bool CanAdd(Think<TData, TLink> think) =>
-        Think is null || Think.CompareTo(think) > 0;
+    public bool CanAdd(Think<TData, TLink> think, int depth)
+    {
+        _lock.EnterReadLock();
+        try
+        {
+            return CanAddCore(think, depth);
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
+    }
+
+    private bool CanAddCore(Think<TData, TLink> think, int depth)
+    {
+        if (_memoryList.Count <= Math.Max(1, depth))
+        {
+            return true;
+        }
+
+        var cloneLength = _memoryList.Count + 1;
+        using var memoryOwner = MemoryPool<Think<TData, TLink>>.Shared.Rent(cloneLength);
+        var memory = memoryOwner.Memory[..cloneLength];
+        _memoryList.Memory.CopyTo(memory);
+
+        Span<Think<TData, TLink>> span = memory.Span;
+        span[^1] = think;
+        span.ScoreSort(NerveHelper<TData, TLink>.ThinkComparisons.Span);
+        return span[^1] != think;
+    }
+
+    public void Dispose()
+    {
+        _lock.Dispose();
+        _memoryList.Dispose();
+        GC.SuppressFinalize(this);
+    }
 }

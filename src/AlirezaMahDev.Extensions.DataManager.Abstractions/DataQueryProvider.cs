@@ -14,7 +14,7 @@ public class DataQueryProvider : IQueryProvider
         throw new NotImplementedException();
     }
 
-    public object? Execute(Expression expression)
+    public object Execute(Expression expression)
     {
         throw new NotImplementedException();
     }

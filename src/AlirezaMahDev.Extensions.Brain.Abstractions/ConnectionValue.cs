@@ -1,4 +1,3 @@
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,11 +7,10 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public record struct ConnectionValue<TLink> :
-    IDataValueDefault<ConnectionValue<TLink>>,
-    IDataLock<ConnectionValue<TLink>>
-    where TLink : unmanaged,
-    IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
-    ISubtractionOperators<TLink, TLink, TLink>
+    ICellValueDefault<ConnectionValue<TLink>>,
+    ICellScoreValue,
+    ICellWeightValue
+    where TLink : unmanaged, ICellLink<TLink>
 {
     public DataOffset Neuron;
     public DataOffset Child;
@@ -34,5 +32,8 @@ public record struct ConnectionValue<TLink> :
     };
 
     public int RefLock;
-    public ref int Lock => ref Unsafe.AsRef(in this).RefLock;
+    public readonly ref int Lock => ref Unsafe.AsRef(in this).RefLock;
+
+    public readonly ref float RefScore => ref Unsafe.AsRef(in this).Score;
+    public readonly ref uint RefWeight => ref Unsafe.AsRef(in this).Weight;
 }

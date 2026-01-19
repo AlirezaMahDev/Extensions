@@ -1,5 +1,3 @@
-using System.Numerics;
-
 using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
@@ -8,22 +6,18 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 public static class NerveExtensions
 {
     extension<TData, TLink>(INerve<TData, TLink> nerve)
-        where TData : unmanaged,
-        IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
-        ISubtractionOperators<TData, TData, TData>
-        where TLink : unmanaged,
-        IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
-        ISubtractionOperators<TLink, TLink, TLink>
+        where TData : unmanaged, ICellData<TData>
+        where TLink : unmanaged, ICellLink<TLink>
     {
-        public Neuron<TData, TLink>? FindNeuron(in TData data)
+        public Neuron? FindNeuron(in TData data)
         {
-            var cacheKey = nerve.Cache.CreateNeuronCacheKey(in data);
+            var cacheKey = nerve.CreateNeuronCacheKey(in data);
             return nerve.FindNeuronCore(in cacheKey, in data);
         }
 
-        public Neuron<TData, TLink>? FindNeuronCore(in NerveCacheKey cacheKey, in TData data)
+        public Neuron? FindNeuronCore(in NerveCacheKey cacheKey, in TData data)
         {
-            if (nerve.Cache.TryGetNeuronCacheCore(in cacheKey, out var offset))
+            if (nerve.TryGetNeuronCacheCore(in cacheKey, out var offset))
                 return new(offset.Value);
 
             var localData = data;
@@ -35,17 +29,17 @@ public static class NerveExtensions
                 return null;
 
             offset = connection.Value.RefValue.Neuron;
-            nerve.Cache.TrySetNeuronCacheCore(in cacheKey, offset.Value);
+            nerve.TrySetNeuronCacheCore(in cacheKey, offset.Value);
             return new(offset.Value);
         }
 
-        public Neuron<TData, TLink> FindOrAddNeuron(ReadOnlyMemoryValue<TData> data)
+        public Neuron FindOrAddNeuron(ReadOnlyMemoryValue<TData> data)
         {
-            var cacheKey = nerve.Cache.CreateNeuronCacheKey(in data.Value);
+            var cacheKey = nerve.CreateNeuronCacheKey(in data.Value);
             return nerve.FindNeuronCore(in cacheKey, in data.Value) ?? nerve.AddNeuronCore(cacheKey, data);
         }
 
-        private Neuron<TData, TLink> AddNeuronCore(NerveCacheKey cacheKey, ReadOnlyMemoryValue<TData> data)
+        private Neuron AddNeuronCore(NerveCacheKey cacheKey, ReadOnlyMemoryValue<TData> data)
         {
             return nerve.Neuron.Wrap(nerve)
                 .Lock(neuronDataLocation =>
@@ -65,20 +59,20 @@ public static class NerveExtensions
 
                     neuronDataLocationWrap.RefValue.Connection = connectionValue.Offset;
 
-                    nerve.Cache.TrySetNeuronCacheCore(in cacheKey, neuronValue.Offset);
+                    nerve.TrySetNeuronCacheCore(in cacheKey, neuronValue.Offset);
                     return new(neuronValue.Offset);
                 });
         }
 
-        public async ValueTask<Neuron<TData, TLink>> FindOrAddNeuronAsync(ReadOnlyMemoryValue<TData> data,
+        public async ValueTask<Neuron> FindOrAddNeuronAsync(ReadOnlyMemoryValue<TData> data,
             CancellationToken cancellationToken = default)
         {
-            var cacheKey = nerve.Cache.CreateNeuronCacheKey(in data.Value);
+            var cacheKey = nerve.CreateNeuronCacheKey(in data.Value);
             return nerve.FindNeuronCore(in cacheKey, in data.Value) ??
                    await nerve.AddNeuronAsyncCore(cacheKey, data, cancellationToken);
         }
 
-        private async ValueTask<Neuron<TData, TLink>> AddNeuronAsyncCore(NerveCacheKey cacheKey,
+        private async ValueTask<Neuron> AddNeuronAsyncCore(NerveCacheKey cacheKey,
             ReadOnlyMemoryValue<TData> data,
             CancellationToken cancellationToken)
         {
@@ -101,7 +95,7 @@ public static class NerveExtensions
 
                         neuronDataLocationWrap.RefValue.Connection = connectionValue.Offset;
 
-                        nerve.Cache.TrySetNeuronCacheCore(in cacheKey, neuronValue.Offset);
+                        nerve.TrySetNeuronCacheCore(in cacheKey, neuronValue.Offset);
                         return new(neuronValue.Offset);
                     },
                     cancellationToken);

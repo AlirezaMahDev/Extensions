@@ -1,5 +1,3 @@
-using System.Numerics;
-
 using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
@@ -8,12 +6,8 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 public static class NerveLearnExtensions
 {
     extension<TData, TLink>(INerve<TData, TLink> nerve)
-        where TData : unmanaged,
-        IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
-        ISubtractionOperators<TData, TData, TData>
-        where TLink : unmanaged,
-        IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
-        ISubtractionOperators<TLink, TLink, TLink>
+        where TData : unmanaged, ICellData<TData>
+        where TLink : unmanaged, ICellLink<TLink>
     {
         public void Learn(ReadOnlyMemoryValue<TLink> link, ReadOnlyMemory<TData> data)
         {

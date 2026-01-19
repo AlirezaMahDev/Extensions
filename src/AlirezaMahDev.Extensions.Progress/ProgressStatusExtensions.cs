@@ -6,9 +6,9 @@ public static class ProgressStatusExtensions
 {
     extension(ILogger logger)
     {
-        public ProgressLogger AsProgressLogger(Action<ProgressLoggerState>? action = null, int length = -1)
+        public ProgressLogger AsProgressLogger()
         {
-            return new(logger, action, length);
+            return ProgressLogger.Create(logger);
         }
     }
 }

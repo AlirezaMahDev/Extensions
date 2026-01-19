@@ -1,21 +1,10 @@
-using System.Numerics;
-
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public static class CellWrapExtensions
+public interface ICellWrap<out TCell, TValue, TData, TLink> : ICellWrap<TCell, TValue>
+    where TCell : ICell
+    where TValue : unmanaged, ICellValue<TValue>
+    where TData : unmanaged, ICellData<TData>
+    where TLink : unmanaged, ICellLink<TLink>
 {
-    extension<TCellWrap, TValue, TCell, TData, TLink>(TCellWrap wrap)
-        where TCellWrap : ICellWrap<TCell, TValue, TData, TLink>
-        where TValue : unmanaged, IDataValue<TValue>
-        where TCell : ICell
-        where TData : unmanaged,
-        IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
-        ISubtractionOperators<TData, TData, TData>
-        where TLink : unmanaged,
-        IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
-        ISubtractionOperators<TLink, TLink, TLink>
-    {
-    }
+    INerve<TData, TLink> Nerve { get; }
 }

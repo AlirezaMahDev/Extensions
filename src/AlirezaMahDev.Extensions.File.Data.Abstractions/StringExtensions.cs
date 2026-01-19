@@ -14,7 +14,7 @@ public static class StringExtensions
     {
         public String256 ToString256()
         {
-            return type.FullName!;
+            return type.FullName;
         }
     }
 }

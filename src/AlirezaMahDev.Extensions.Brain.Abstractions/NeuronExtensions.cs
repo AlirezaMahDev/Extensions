@@ -1,22 +1,18 @@
-using System.Numerics;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NeuronExtensions
 {
-    extension<TData, TLink>(Neuron<TData, TLink> neuron)
-        where TData : unmanaged,
-        IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
-        ISubtractionOperators<TData, TData, TData>
-        where TLink : unmanaged,
-        IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
-        ISubtractionOperators<TLink, TLink, TLink>
+    extension<TData, TLink>(Neuron neuron)
+        where TData : unmanaged, ICellData<TData>
+        where TLink : unmanaged, ICellLink<TLink>
     {
-        public NeuronWrap<TData, TLink> Wrap(INerve<TData, TLink> nerve) =>
+        public CellWrap<Neuron, NeuronValue<TData>, TData, TLink> Wrap(INerve<TData, TLink> nerve) =>
             new(nerve, neuron);
 
-        public NeuronWrap<TData, TLink> Wrap<TWrap>(TWrap wrap)
-            where TWrap : ICellWrap<TData, TLink> =>
+        public CellWrap<Neuron, NeuronValue<TData>, TData, TLink> Wrap<TCell, TValue>(
+            in CellWrap<TCell, TValue, TData, TLink> wrap)
+            where TCell : ICell
+            where TValue : unmanaged, ICellValue<TValue> =>
             new(wrap.Nerve, neuron);
     }
 }

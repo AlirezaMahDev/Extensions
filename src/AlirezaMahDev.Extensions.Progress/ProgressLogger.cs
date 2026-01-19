@@ -2,15 +2,27 @@ using Microsoft.Extensions.Logging;
 
 namespace AlirezaMahDev.Extensions.Progress;
 
-public partial class ProgressLogger(ILogger? logger, Action<ProgressLoggerState>? action = null, int length = -1)
-    : Progress<ProgressLoggerState>(action ?? (_ => { })), IDisposable
+public partial class ProgressLogger : Progress<ProgressLoggerState>, IDisposable
 {
-    private int _count;
-
-    public ProgressLoggerState State { get; private set; } = ProgressLoggerState.Empty;
+    public static ProgressLogger Create(ILogger logger) =>
+        new(logger);
 
     [LoggerMessage(LogLevel.Information, "{message}")]
     private static partial void LogInformation(ILogger logger, string message);
+
+    private int _count;
+
+    public ProgressLogger(ILogger<ProgressLogger> logger) : base(state =>
+        LogInformation(logger, state.ToString()))
+    {
+    }
+
+    private ProgressLogger(ILogger logger) : base(state =>
+        LogInformation(logger, state.ToString()))
+    {
+    }
+
+    public ProgressLoggerState State { get; private set; } = ProgressLoggerState.Empty;
 
     private string Name
     {
@@ -34,15 +46,10 @@ public partial class ProgressLogger(ILogger? logger, Action<ProgressLoggerState>
     {
         get;
         set => Interlocked.Exchange(ref field, value);
-    } = length;
+    } = -1;
 
     protected override void OnReport(ProgressLoggerState value)
     {
-        if (logger != null)
-        {
-            LogInformation(logger, value.ToString());
-        }
-
         State = value;
         base.OnReport(value);
     }

@@ -1,22 +1,20 @@
 using System.Collections;
-using System.Numerics;
+
+using AlirezaMahDev.Extensions.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public record Think<TData, TLink>(
     TData Data,
     TLink Link,
-    ConnectionWrap<TData, TLink> Connection,
+    CellWrap<Connection,ConnectionValue<TLink>,TData, TLink> Connection,
     Think<TData, TLink>? Previous)
-    : IComparable<Think<TData, TLink>>,
-        IEnumerable<Think<TData, TLink>>
-    where TData : unmanaged,
-    IEquatable<TData>, IComparable<TData>, IAdditionOperators<TData, TData, TData>,
-    ISubtractionOperators<TData, TData, TData>
-    where TLink : unmanaged,
-    IEquatable<TLink>, IComparable<TLink>, IAdditionOperators<TLink, TLink, TLink>,
-    ISubtractionOperators<TLink, TLink, TLink>
+    : IEnumerable<Think<TData, TLink>>, IScoreSortItem
+    where TData : unmanaged, ICellData<TData>
+    where TLink : unmanaged, ICellLink<TLink>
 {
+    public Guid Id { get; } = Guid.CreateVersion7();
+
     public int Count { get; private init; }
 
     public TLink DifferenceLink { get; private init; }
@@ -25,25 +23,15 @@ public record Think<TData, TLink>(
     public TLink AllDifferenceLink { get; private init; }
     public TData AllDifferenceData { get; private init; }
 
-    public ConnectionWrap<TData, TLink>? NextConnectionWrap => Connection.GetConnectionsWrap()
-        .Min(Comparer<ConnectionWrap<TData, TLink>>.Create((a, b) =>
-            a.RefLink.CompareTo(Link).CompareTo(b.RefLink.CompareTo(Link))))
-        .NullWhenDefault();
+    public int Score { get; set; }
 
-    public Think<TData, TLink> Append(TData data, TLink link, ConnectionWrap<TData, TLink> connection)
+    public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetNextConnectionWrap(int depth) =>
+        Connection.GetConnectionsWrap().ToArray().AsMemory().Near(Link, depth);
+
+    public Think<TData, TLink> Append(TData data, TLink link, CellWrap<Connection,ConnectionValue<TLink>,TData, TLink> connection)
     {
-        var differenceData = data - connection.NeuronWrap.RefData;
-        if (differenceData.CompareTo(default) < 0)
-        {
-            differenceData = connection.NeuronWrap.RefData - data;
-        }
-
-        var differenceLink = link - connection.RefLink;
-        if (differenceLink.CompareTo(default) < 0)
-        {
-            differenceLink = connection.RefLink - link;
-        }
-
+        var differenceData = NerveHelper.Difference(data, connection.NeuronWrap.RefData);
+        var differenceLink = NerveHelper.Difference(link, connection.RefLink);
         return new(data, link, connection, this)
         {
             Count = Count + 1,
@@ -52,22 +40,6 @@ public record Think<TData, TLink>(
             AllDifferenceData = AllDifferenceData + differenceData,
             AllDifferenceLink = AllDifferenceLink + differenceLink
         };
-    }
-
-    public int CompareTo(Think<TData, TLink>? other)
-    {
-        if (other is null)
-            return 1;
-
-        var alDifferenceLink = AllDifferenceLink.CompareTo(other.AllDifferenceLink);
-        if (alDifferenceLink != 0)
-            return alDifferenceLink;
-
-        var allDifferenceData = AllDifferenceData.CompareTo(other.AllDifferenceData);
-        if (allDifferenceData != 0)
-            return allDifferenceData;
-
-        return 0;
     }
 
     public IEnumerator<Think<TData, TLink>> GetEnumerator()
@@ -84,4 +56,20 @@ public record Think<TData, TLink>(
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public override int GetHashCode()
+    {
+        return Id.GetHashCode();
+    }
+
+    public virtual bool Equals(Think<TData, TLink>? other)
+    {
+        return Id == other?.Id;
+    }
+
+    public override string ToString()
+    {
+        return $"Count:{Count} AllDifferenceData:{AllDifferenceData} AllDifferenceLink:{AllDifferenceLink
+        } DifferenceData:{DifferenceData} DifferenceLink:{DifferenceLink}";
+    }
 }

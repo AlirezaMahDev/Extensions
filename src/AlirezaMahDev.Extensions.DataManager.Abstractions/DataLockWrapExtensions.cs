@@ -1,5 +1,4 @@
 using System.IO.Hashing;
-using System.Runtime.CompilerServices;
 
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
@@ -44,11 +43,6 @@ public static class DataLockWrapExtensions
             if (cancellationToken.IsCancellationRequested)
             {
                 return await ValueTask.FromCanceled<DataLockDisposable<TValue>>(cancellationToken);
-            }
-
-            unsafe
-            {
-                var p = Unsafe.AsPointer(ref wrap.RefValue.Lock);
             }
 
             while (Interlocked.CompareExchange(ref wrap.RefValue.Lock, SessionLockKey, 0) != 0)
