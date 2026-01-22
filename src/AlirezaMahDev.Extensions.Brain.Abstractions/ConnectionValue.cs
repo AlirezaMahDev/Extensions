@@ -8,8 +8,7 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public record struct ConnectionValue<TLink> :
     ICellValueDefault<ConnectionValue<TLink>>,
-    ICellScoreValue,
-    ICellWeightValue
+    ICellScoreValue, ICellWeightValue
     where TLink : unmanaged, ICellLink<TLink>
 {
     public DataOffset Neuron;

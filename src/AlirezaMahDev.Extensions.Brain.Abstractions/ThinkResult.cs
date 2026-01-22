@@ -18,7 +18,8 @@ public class ThinkResult<TData, TLink> : IDisposable
     public Memory<Think<TData, TLink>> Thinks => _memoryList.Memory;
 
     public Memory<Think<TData, TLink>> GetBestThinks(int depth) =>
-        Thinks[..Thinks.Span.BestScoreSort(depth, NerveHelper<TData, TLink>.ThinkComparisons.Span)];
+        Thinks[..Thinks.AsScoreSort()
+            .BestSort(depth, NerveHelper<TData, TLink>.ThinkComparisons)];
 
     public bool Add(Think<TData, TLink> think, int depth)
     {
@@ -66,7 +67,8 @@ public class ThinkResult<TData, TLink> : IDisposable
 
         Span<Think<TData, TLink>> span = memory.Span;
         span[^1] = think;
-        span.ScoreSort(NerveHelper<TData, TLink>.ThinkComparisons.Span);
+        using var memoryWrapComparer = memory.AsScoreSort();
+        memoryWrapComparer.Sort(NerveHelper<TData, TLink>.ThinkComparisons);
         return span[^1] != think;
     }
 

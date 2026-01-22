@@ -106,7 +106,7 @@ public static class NeuronCellWrapExtensions
                     {
                         Neuron = neuron.Offset,
                         Next = neuronDataLocationWrap.RefValue.Connection,
-                        Link = link.Value,
+                        Link = link.Value
                     });
 
                 neuronDataLocationWrap.RefValue.Connection = connectionValue.Offset;
@@ -134,7 +134,7 @@ public static class NeuronCellWrapExtensions
                         {
                             Neuron = neuron.Offset,
                             Next = neuronDataLocationWrap.RefValue.Connection,
-                            Link = link.Value,
+                            Link = link.Value
                         });
 
 

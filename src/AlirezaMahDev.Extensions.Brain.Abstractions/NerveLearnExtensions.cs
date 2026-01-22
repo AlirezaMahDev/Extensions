@@ -9,20 +9,20 @@ public static class NerveLearnExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public void Learn(ReadOnlyMemoryValue<TLink> link, ReadOnlyMemory<TData> data)
+        public void Learn(Func<ReadOnlyMemory<TData>,TLink> linkFunc, ReadOnlyMemory<TData> data)
         {
             var connectionWrap = nerve.ConnectionWrap;
             for (var i = 0; i < data.Length; i++)
             {
                 var neuron = nerve.FindOrAddNeuron(data.Span[i]);
-                var connection = connectionWrap.FindOrAdd(neuron, link.Value);
+                var connection = connectionWrap.FindOrAdd(neuron, linkFunc(data[i..]));
                 connectionWrap = connection.Wrap(nerve);
                 Interlocked.Increment(ref connectionWrap.Location.RefValue.Weight);
                 Interlocked.Increment(ref connectionWrap.NeuronWrap.Location.RefValue.Weight);
             }
         }
 
-        public async ValueTask LearnAsync(ReadOnlyMemoryValue<TLink> link,
+        public async ValueTask LearnAsync(Func<ReadOnlyMemory<TData>,TLink> linkFunc,
             ReadOnlyMemory<TData> data,
             CancellationToken cancellationToken = default)
         {
@@ -30,7 +30,7 @@ public static class NerveLearnExtensions
             for (var i = 0; i < data.Length; i++)
             {
                 var neuron = await nerve.FindOrAddNeuronAsync(data.Span[i], cancellationToken);
-                var connection = await connectionWrap.FindOrAddAsync(neuron, link, cancellationToken);
+                var connection = await connectionWrap.FindOrAddAsync(neuron, linkFunc(data[i..]), cancellationToken);
                 connectionWrap = connection.Wrap(nerve);
                 Interlocked.Increment(ref connectionWrap.Location.RefValue.Weight);
                 Interlocked.Increment(ref connectionWrap.NeuronWrap.Location.RefValue.Weight);

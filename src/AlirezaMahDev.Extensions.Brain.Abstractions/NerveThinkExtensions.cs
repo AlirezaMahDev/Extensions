@@ -75,7 +75,8 @@ public static class NerveThinkExtensions
             Thread.Yield();
 
             var nextInput = input[1..];
-            Parallel.ForEach(MemoryMarshal.ToEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>(memory)
+            Parallel.ForEach(MemoryMarshal
+                    .ToEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>(memory)
                     .Select(innerConnection => think.Append(data, link.Value, innerConnection))
                     .TakeWhile(result.CanAdd),
                 innerThink =>
@@ -126,13 +127,13 @@ public static class NerveThinkExtensions
                 var innerThink = think.Append(data, link.Value, innerConnection);
                 if (result.CanAdd(innerThink, depth))
                 {
-                    tasks.Memory.Span[i] =
-                        INerve<TData, TLink>.ThinkCoreAsync(depth,
+                    tasks.Memory.Span[i] = Task.Run(() => INerve<TData, TLink>.ThinkCoreAsync(depth,
                             link,
                             nextInput,
                             innerThink,
                             result,
-                            cancellationToken);
+                            cancellationToken),
+                        cancellationToken);
                     taskCount++;
                 }
                 else

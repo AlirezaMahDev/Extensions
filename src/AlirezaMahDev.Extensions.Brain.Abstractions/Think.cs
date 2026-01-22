@@ -1,15 +1,13 @@
 using System.Collections;
 
-using AlirezaMahDev.Extensions.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public record Think<TData, TLink>(
     TData Data,
     TLink Link,
-    CellWrap<Connection,ConnectionValue<TLink>,TData, TLink> Connection,
+    CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> Connection,
     Think<TData, TLink>? Previous)
-    : IEnumerable<Think<TData, TLink>>, IScoreSortItem
+    : IEnumerable<Think<TData, TLink>>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
@@ -19,26 +17,30 @@ public record Think<TData, TLink>(
 
     public TLink DifferenceLink { get; private init; }
     public TData DifferenceData { get; private init; }
-
+    public ulong DifferenceWeight { get; private init; }
     public TLink AllDifferenceLink { get; private init; }
     public TData AllDifferenceData { get; private init; }
-
-    public int Score { get; set; }
+    public ulong AllDifferenceWeight { get; private init; }
 
     public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetNextConnectionWrap(int depth) =>
         Connection.GetConnectionsWrap().ToArray().AsMemory().Near(Link, depth);
 
-    public Think<TData, TLink> Append(TData data, TLink link, CellWrap<Connection,ConnectionValue<TLink>,TData, TLink> connection)
+    public Think<TData, TLink> Append(TData data,
+        TLink link,
+        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection)
     {
         var differenceData = NerveHelper.Difference(data, connection.NeuronWrap.RefData);
         var differenceLink = NerveHelper.Difference(link, connection.RefLink);
+        var differenceWeight = connection.RefValue.Weight;
         return new(data, link, connection, this)
         {
             Count = Count + 1,
             DifferenceData = differenceData,
             DifferenceLink = differenceLink,
+            DifferenceWeight = differenceWeight,
             AllDifferenceData = AllDifferenceData + differenceData,
-            AllDifferenceLink = AllDifferenceLink + differenceLink
+            AllDifferenceLink = AllDifferenceLink + differenceLink,
+            AllDifferenceWeight = AllDifferenceWeight + differenceWeight
         };
     }
 

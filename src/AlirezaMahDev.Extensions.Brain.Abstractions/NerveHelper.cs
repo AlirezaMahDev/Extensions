@@ -1,5 +1,7 @@
 using System.Numerics;
 
+using AlirezaMahDev.Extensions.Abstractions;
+
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NerveHelper
@@ -13,21 +15,31 @@ public static class NerveHelper<TData, TLink>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    public static Memory<Comparison<Think<TData, TLink>>> ThinkComparisons { get; } = new(
-    [
-        (x, y) => x.AllDifferenceData.CompareTo(y.AllDifferenceData),
-        (x, y) => x.AllDifferenceLink.CompareTo(y.AllDifferenceLink)
-    ]);
+    public static
+        ComparisonBuilder<ComparisonCollectionChain<ScoreSortItem<Think<TData, TLink>>>,
+            ScoreSortItem<Think<TData, TLink>>> ThinkComparisons { get; } =
+        comparisonChain => comparisonChain
+            .WithBy(x => x.Value.AllDifferenceData)
+            .WithBy(x => x.Value.AllDifferenceLink)
+            .ThenBy(x => x.Value.AllDifferenceLink)
+            .ThenByDescending(x => x.Value.AllDifferenceWeight);
 
+    public static ComparisonBuilder<
+            ComparisonCollectionChain<ScoreSortItem<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>,
+            ScoreSortItem<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
+        ConnectionComparisons(DataPairLink<TData, TLink> pair) =>
+        comparisonChain => comparisonChain
+            .WithBy(x => NerveHelper.Difference(x.Value.NeuronWrap.RefData, pair.Data))
+            .WithBy(x => NerveHelper.Difference(x.Value.RefLink, pair.Link))
+            .ThenBy(x => NerveHelper.Difference(x.Value.RefLink, pair.Link))
+            .ThenByDescending(x => x.Value.RefValue.Weight);
 
-    public static Memory<Comparison<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>> GetConnectionComparisons(
-        DataPairLink<TData, TLink> pair)
-    {
-        return new([
-            CellWrap<Connection,ConnectionValue<TLink>,TData, TLink>.ComparerOnData(pair.Data),
-            CellWrap<Connection,ConnectionValue<TLink>,TData, TLink>.ComparerOnLink(pair.Link),
-            CellWrap<Connection,ConnectionValue<TLink>,TData, TLink>
-                .ComparerOnWeight<CellWrap<Connection,ConnectionValue<TLink>,TData, TLink>, ConnectionValue<TLink>, Connection>()
-        ]);
-    }
+    public static ComparisonBuilder<
+            ComparisonCollectionChain<ScoreSortItem<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>,
+            ScoreSortItem<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
+        NextConnectionComparisons(TLink link) =>
+        comparisonChain =>
+            comparisonChain
+                .WithBy(x => NerveHelper.Difference(x.Value.RefLink, link))
+                .ThenByDescending(x => x.Value.RefValue.Weight);
 }
