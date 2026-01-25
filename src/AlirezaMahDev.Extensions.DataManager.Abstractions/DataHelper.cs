@@ -1,6 +1,6 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public class DataHelper
+public static class DataHelper
 {
     public static int FileId(long offset) => (int)(offset / DataDefaults.FileSize);
     public static int FileOffset(long offset) => (int)(offset % DataDefaults.FileSize);

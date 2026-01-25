@@ -24,7 +24,7 @@ public static class ComparerExtensions
                 : y is null
                     ? -1
                     : null;
-            
+
         public static int NullDown(T? x, T? y, Comparison<T> comparison) =>
             Comparer<T>.NullDown(x, y) ?? comparison(x!, y!);
     }

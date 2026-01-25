@@ -11,26 +11,26 @@ public static class ConnectionWrapMemoryExtensions
         public void Sort(DataPairLink<TData, TLink> pair)
         {
             using var scoreSortMemoryWrap = memory.AsScoreSort();
-            scoreSortMemoryWrap.Sort(NerveHelper<TData, TLink>.ConnectionComparisons(pair));
+            scoreSortMemoryWrap.ScoreSort(NerveHelper<TData, TLink>.ConnectionComparisons(pair));
         }
 
         public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> Near(DataPairLink<TData, TLink> pair,
             int depth)
         {
             using var scoreSortMemoryWrap = memory.AsScoreSort();
-            return scoreSortMemoryWrap.TakeBestSort(depth, NerveHelper<TData, TLink>.ConnectionComparisons(pair));
+            return scoreSortMemoryWrap.TakeBestScoreSort(depth, NerveHelper<TData, TLink>.ConnectionComparisons(pair));
         }
 
         public void Sort(TLink link)
         {
             using var scoreSortMemoryWrap = memory.AsScoreSort();
-            scoreSortMemoryWrap.Sort(NerveHelper<TData, TLink>.NextConnectionComparisons(link));
+            scoreSortMemoryWrap.ScoreSort(NerveHelper<TData, TLink>.NextConnectionComparisons(link));
         }
 
         public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> Near(TLink link, int depth)
         {
             using var scoreSortMemoryWrap = memory.AsScoreSort();
-            return scoreSortMemoryWrap.TakeBestSort(depth, NerveHelper<TData, TLink>.NextConnectionComparisons(link));
+            return scoreSortMemoryWrap.TakeBestScoreSort(depth, NerveHelper<TData, TLink>.NextConnectionComparisons(link));
         }
     }
 }

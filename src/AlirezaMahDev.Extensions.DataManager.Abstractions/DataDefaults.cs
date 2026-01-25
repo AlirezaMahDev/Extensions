@@ -1,6 +1,6 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public class DataDefaults
+public static class DataDefaults
 {
     public const string FileFormat = "{0}.db";
     public const int PartSize = 1 << 28;

@@ -11,7 +11,7 @@ class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TLink> : INerve<TData,TLink>
+    TLink> : INerve<TData, TLink>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
@@ -28,7 +28,7 @@ class Nerve<
     public CellWrap<Neuron, NeuronValue<TData>, TData, TLink> NeuronWrap { get; }
 
     public Connection Connection { get; }
-    public CellWrap<Connection,ConnectionValue<TLink>,TData, TLink> ConnectionWrap { get; }
+    public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; }
 
     public Nerve(IDataManager dataManager, string name)
     {
@@ -37,7 +37,7 @@ class Nerve<
         Name = name;
         Access = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
         Debug.WriteLine($"open access {Name} {Access.Path}");
-        
+
         Location = Access.Root.Wrap(Access, x => x.Dictionary()).GetOrAdd(".nerve");
         ConnectionLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".connection");
         NeuronLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".neuron");

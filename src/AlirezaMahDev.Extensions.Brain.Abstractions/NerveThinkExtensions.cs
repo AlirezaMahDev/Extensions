@@ -13,16 +13,16 @@ public static class NerveThinkExtensions
         where TLink : unmanaged, ICellLink<TLink>
     {
         public Memory<Think<TData, TLink>> Think(int depth,
-            ReadOnlyMemoryValue<TLink> link,
+            Func<ReadOnlyMemory<TData>, TLink> linkFunc,
             ReadOnlyMemory<TData> data)
         {
             var result = new ThinkResult<TData, TLink>();
 
             INerve<TData, TLink>.ThinkCore(
                 depth,
-                link,
+                linkFunc,
                 data,
-                new(default, link.Value, nerve.ConnectionWrap, null),
+                new(default, linkFunc(data), nerve.ConnectionWrap, null),
                 result
             );
 
@@ -31,25 +31,27 @@ public static class NerveThinkExtensions
 
         public async ValueTask<Memory<Think<TData, TLink>>> ThinkAsync(
             int depth,
-            ReadOnlyMemoryValue<TLink> link,
+            Func<ReadOnlyMemory<TData>, TLink> linkFunc,
             ReadOnlyMemory<TData> data,
             CancellationToken cancellationToken = default)
         {
             var result = new ThinkResult<TData, TLink>();
 
             await INerve<TData, TLink>.ThinkCoreAsync(depth,
-                link,
-                data,
-                new(default, link.Value, nerve.ConnectionWrap, null),
-                result,
-                cancellationToken);
+                    linkFunc,
+                    data,
+                    new(default, linkFunc(data), nerve.ConnectionWrap, null),
+                    result,
+                    cancellationToken)
+                .AsTaskRun()
+                .ConfigureAwait(false);
 
             return result.GetBestThinks(depth);
         }
 
         private static void ThinkCore(
             int depth,
-            ReadOnlyMemoryValue<TLink> link,
+            Func<ReadOnlyMemory<TData>, TLink> linkFunc,
             ReadOnlyMemory<TData> input,
             Think<TData, TLink> think,
             ThinkResult<TData, TLink> result)
@@ -61,6 +63,7 @@ public static class NerveThinkExtensions
 
             Thread.Yield();
 
+            var link = linkFunc(input).AsReadonlyMemoryValue();
             if (INerve<TData, TLink>.FindNextConnections(
                     depth,
                     link,
@@ -80,12 +83,12 @@ public static class NerveThinkExtensions
                     .Select(innerConnection => think.Append(data, link.Value, innerConnection))
                     .TakeWhile(result.CanAdd),
                 innerThink =>
-                    INerve<TData, TLink>.ThinkCore(depth, link, nextInput, innerThink, result));
+                    INerve<TData, TLink>.ThinkCore(depth, linkFunc, nextInput, innerThink, result));
         }
 
         private static async Task ThinkCoreAsync(
             int depth,
-            ReadOnlyMemoryValue<TLink> link,
+            Func<ReadOnlyMemory<TData>, TLink> linkFunc,
             ReadOnlyMemory<TData> input,
             Think<TData, TLink> think,
             ThinkResult<TData, TLink> result,
@@ -103,6 +106,7 @@ public static class NerveThinkExtensions
                 await Task.FromCanceled(cancellationToken);
             await Task.Yield();
 
+            var link = linkFunc(input).AsReadonlyMemoryValue();
             if (INerve<TData, TLink>.FindNextConnections(
                     depth,
                     link,
@@ -127,12 +131,11 @@ public static class NerveThinkExtensions
                 var innerThink = think.Append(data, link.Value, innerConnection);
                 if (result.CanAdd(innerThink, depth))
                 {
-                    tasks.Memory.Span[i] = Task.Run(() => INerve<TData, TLink>.ThinkCoreAsync(depth,
-                            link,
-                            nextInput,
-                            innerThink,
-                            result,
-                            cancellationToken),
+                    tasks.Memory.Span[i] = INerve<TData, TLink>.ThinkCoreAsync(depth,
+                        linkFunc,
+                        nextInput,
+                        innerThink,
+                        result,
                         cancellationToken);
                     taskCount++;
                 }

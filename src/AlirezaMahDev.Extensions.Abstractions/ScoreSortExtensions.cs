@@ -1,3 +1,5 @@
+using JetBrains.Annotations;
+
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class ScoreSortExtensions
@@ -5,6 +7,7 @@ public static class ScoreSortExtensions
     extension<T>(Memory<T> memory)
         where T : notnull
     {
+        [MustDisposeResource]
         public ScoreSortComparer<T> AsScoreSort() =>
             new(memory);
     }
@@ -17,7 +20,7 @@ public static class ScoreSortExtensions
 
         public int BestScoreSort(int depth, ComparisonBuilder<ComparisonCollectionChain<T>, T> builder)
         {
-            var collectionChain =input.ScoreSortCore(builder);
+            var collectionChain = input.ScoreSortCore(builder);
             var comparer = Span<T>.FinalSort(input, collectionChain);
             return input.BestScoreSortCore(depth, comparer);
         }
@@ -49,15 +52,8 @@ public static class ScoreSortExtensions
         public void ScoreSort(ComparisonBuilder<ComparisonCollectionChain<T>, T> builder)
         {
             var collectionChain = input.ScoreSortCore(builder);
-            Span<T>.FinalSort(input,collectionChain);
-        }
-
-        public void ScoreSortChain(ComparisonBuilder<ComparisonCollectionChain<T>, T> builder)
-        {
-            var collectionChain =  input.ScoreSortCore(builder);
             Span<T>.FinalSort(input, collectionChain);
         }
-
 
         private ComparisonCollectionChain<T> ScoreSortCore(ComparisonBuilder<ComparisonCollectionChain<T>, T> builder)
         {

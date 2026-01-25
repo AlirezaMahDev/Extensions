@@ -7,7 +7,7 @@ using JetBrains.Annotations;
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [MustDisposeResource]
-public class ThinkResult<TData, TLink> : IDisposable
+public sealed class ThinkResult<TData, TLink> : IDisposable
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
@@ -17,9 +17,12 @@ public class ThinkResult<TData, TLink> : IDisposable
     private readonly MemoryList<Think<TData, TLink>> _memoryList = [];
     public Memory<Think<TData, TLink>> Thinks => _memoryList.Memory;
 
-    public Memory<Think<TData, TLink>> GetBestThinks(int depth) =>
-        Thinks[..Thinks.AsScoreSort()
-            .BestSort(depth, NerveHelper<TData, TLink>.ThinkComparisons)];
+    public Memory<Think<TData, TLink>> GetBestThinks(int depth)
+    {
+        using var scoreSortComparer = Thinks.AsScoreSort();
+        return Thinks[..scoreSortComparer
+            .BestScoreSort(depth, NerveHelper<TData, TLink>.ThinkComparisons)];
+    }
 
     public bool Add(Think<TData, TLink> think, int depth)
     {
@@ -68,7 +71,7 @@ public class ThinkResult<TData, TLink> : IDisposable
         Span<Think<TData, TLink>> span = memory.Span;
         span[^1] = think;
         using var memoryWrapComparer = memory.AsScoreSort();
-        memoryWrapComparer.Sort(NerveHelper<TData, TLink>.ThinkComparisons);
+        memoryWrapComparer.ScoreSort(NerveHelper<TData, TLink>.ThinkComparisons);
         return span[^1] != think;
     }
 
@@ -76,6 +79,5 @@ public class ThinkResult<TData, TLink> : IDisposable
     {
         _lock.Dispose();
         _memoryList.Dispose();
-        GC.SuppressFinalize(this);
     }
 }

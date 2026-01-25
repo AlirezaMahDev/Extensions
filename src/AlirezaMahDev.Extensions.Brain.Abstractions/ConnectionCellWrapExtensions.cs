@@ -19,7 +19,7 @@ public static class ConnectionCellWrapExtensions
                 ? null
                 : new(wrap.RefValue.Previous);
 
-        public CellWrap<Connection,ConnectionValue<TLink>,TData, TLink>? PreviousWrap =>
+        public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>? PreviousWrap =>
             wrap.RefValue.Previous.IsNull
                 ? null
                 : new(wrap.Nerve, new(wrap.RefValue.Previous));
@@ -29,7 +29,7 @@ public static class ConnectionCellWrapExtensions
                 ? null
                 : new(wrap.RefValue.Next);
 
-        public CellWrap<Connection,ConnectionValue<TLink>,TData, TLink>? NextWrap =>
+        public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>? NextWrap =>
             wrap.RefValue.Next.IsNull
                 ? null
                 : new(wrap.Nerve, new(wrap.RefValue.Next));
@@ -39,7 +39,7 @@ public static class ConnectionCellWrapExtensions
                 ? null
                 : new(wrap.RefValue.Child);
 
-        public CellWrap<Connection,ConnectionValue<TLink>,TData, TLink>? ChildWrap =>
+        public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>? ChildWrap =>
             wrap.RefValue.Child.IsNull
                 ? null
                 : new(wrap.Nerve, new(wrap.RefValue.Child));

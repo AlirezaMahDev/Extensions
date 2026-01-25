@@ -8,7 +8,8 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public record struct NeuronValue<TData> :
     ICellValueDefault<NeuronValue<TData>>,
-    ICellScoreValue, ICellWeightValue
+    ICellScoreValue,
+    ICellWeightValue
     where TData : unmanaged, ICellData<TData>
 {
     public TData Data;

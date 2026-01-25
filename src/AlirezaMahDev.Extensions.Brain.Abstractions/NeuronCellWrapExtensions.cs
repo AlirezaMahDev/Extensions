@@ -16,7 +16,7 @@ public static class NeuronCellWrapExtensions
                 ? null
                 : new(wrap.RefValue.Connection);
 
-        public CellWrap<Connection,ConnectionValue<TLink>,TData, TLink>? ConnectionWrap =>
+        public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>? ConnectionWrap =>
             wrap.Connection?.Wrap(wrap.Nerve);
 
         public IEnumerable<Connection> GetConnections()

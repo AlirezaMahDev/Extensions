@@ -7,16 +7,16 @@ public interface INerve<TData, TLink>
     where TLink : unmanaged, ICellLink<TLink>
 {
     INerveCache Cache { get; }
-    
+
     IDataAccess Access { get; }
     string Name { get; }
     DataLocation<DataPath> Location { get; }
     DataLocation<DataPath> ConnectionLocation { get; }
     DataLocation<DataPath> NeuronLocation { get; }
     void Flush();
-    
+
     Neuron Neuron { get; }
     CellWrap<Neuron, NeuronValue<TData>, TData, TLink> NeuronWrap { get; }
     Connection Connection { get; }
-    CellWrap<Connection,ConnectionValue<TLink>,TData, TLink> ConnectionWrap { get; }
+    CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; }
 }

@@ -14,6 +14,7 @@ public readonly record struct CellWrap<TCell, TValue, TData, TLink>(INerve<TData
 
     public DataWrap<TValue> Location => new(Nerve.Access, new(Cell.Offset));
     public ref readonly TValue RefValue => ref Location.RefValue;
+
     public void Lock(DataLocationAction<TValue> action) => Location.Lock(action);
 
     public TResult Lock<TResult>(DataLocationFunc<TValue, TResult> func) =>

@@ -6,6 +6,7 @@ public static class ComparisonChainExtensions
     {
         public static ComparisonChain<T> Order(Comparison<T> comparison) =>
             new(comparison);
+
         public static ComparisonChain<T> OrderDescending(Comparison<T> comparison) =>
             new((x, y) => comparison(y, x));
 
@@ -17,7 +18,7 @@ public static class ComparisonChainExtensions
             where TKey : IComparable<TKey> =>
             ComparisonChain<T>.OrderDescending((x, y) => func(x).CompareTo(func(y)));
     }
-    
+
     extension<T>(ComparisonChain<T> unwrap)
     {
         public ComparisonWrap<ComparisonChain<T>, T> Wrap() =>

@@ -2,6 +2,12 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class MemoryValueExtensions
 {
+    extension<T>(T t)
+    {
+        public MemoryValue<T> AsMemoryValue() =>
+            new(t);
+    }
+
     extension<T>(MemoryValue<T> memoryValue)
     {
         public ReadOnlyMemory<T> AsReadOnlyMemory() => memoryValue.Memory;

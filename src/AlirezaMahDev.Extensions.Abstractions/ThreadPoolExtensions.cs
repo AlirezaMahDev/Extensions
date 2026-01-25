@@ -20,7 +20,7 @@ public static class ThreadPoolExtensions
 
         private async Task AsTaskRunCore()
         {
-             await Task.Run(async () => await task);
+            await Task.Run(async () => await task);
         }
     }
 
@@ -96,6 +96,7 @@ public static class ThreadPoolExtensions
             return await Task.Run(async () => await awaitable);
         }
     }
+
     extension(ConfiguredValueTaskAwaitable awaitable)
     {
         public async ValueTask AsTaskRun()

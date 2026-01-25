@@ -1,7 +1,10 @@
 using System.Buffers;
 
+using JetBrains.Annotations;
+
 namespace AlirezaMahDev.Extensions.Abstractions;
 
+[MustDisposeResource]
 public class ScoreSortComparer<T> : IDisposable, IComparer<T>
     where T : notnull
 {
@@ -23,19 +26,19 @@ public class ScoreSortComparer<T> : IDisposable, IComparer<T>
         }
     }
 
-    public void Sort(
+    public void ScoreSort(
         ComparisonBuilder<ComparisonCollectionChain<ScoreSortItem<T>>, ScoreSortItem<T>> builder)
     {
         WrapMemory.Span.ScoreSort(builder);
         Apply();
     }
 
-    public Memory<T> TakeBestSort(int depth,
+    public Memory<T> TakeBestScoreSort(int depth,
         ComparisonBuilder<ComparisonCollectionChain<ScoreSortItem<T>>, ScoreSortItem<T>>
             comparisons) =>
-        Memory[..BestSort(depth, comparisons)];
+        Memory[..BestScoreSort(depth, comparisons)];
 
-    public int BestSort(int depth,
+    public int BestScoreSort(int depth,
         ComparisonBuilder<ComparisonCollectionChain<ScoreSortItem<T>>, ScoreSortItem<T>>
             comparisons)
     {

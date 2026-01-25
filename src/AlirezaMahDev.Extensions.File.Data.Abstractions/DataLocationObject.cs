@@ -6,7 +6,8 @@ namespace AlirezaMahDev.Extensions.File.Data.Abstractions;
 
 [MustDisposeResource]
 public readonly record struct DataLocationObject<
-    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TEntity> : IDataBlockAccessorSave, IDisposable
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
+    TEntity> : IDataBlockAccessorSave, IDisposable
     where TEntity : class
 {
     public DataLocationObject(Func<string, DataBlockMemory> func)

@@ -1,4 +1,3 @@
-using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
@@ -9,7 +8,7 @@ public static class NerveLearnExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public void Learn(Func<ReadOnlyMemory<TData>,TLink> linkFunc, ReadOnlyMemory<TData> data)
+        public void Learn(Func<ReadOnlyMemory<TData>, TLink> linkFunc, ReadOnlyMemory<TData> data)
         {
             var connectionWrap = nerve.ConnectionWrap;
             for (var i = 0; i < data.Length; i++)
@@ -22,7 +21,7 @@ public static class NerveLearnExtensions
             }
         }
 
-        public async ValueTask LearnAsync(Func<ReadOnlyMemory<TData>,TLink> linkFunc,
+        public async ValueTask LearnAsync(Func<ReadOnlyMemory<TData>, TLink> linkFunc,
             ReadOnlyMemory<TData> data,
             CancellationToken cancellationToken = default)
         {

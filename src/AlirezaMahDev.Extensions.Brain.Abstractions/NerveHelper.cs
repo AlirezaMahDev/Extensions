@@ -20,9 +20,9 @@ public static class NerveHelper<TData, TLink>
             ScoreSortItem<Think<TData, TLink>>> ThinkComparisons { get; } =
         comparisonChain => comparisonChain
             .WithBy(x => x.Value.AllDifferenceData)
-            .WithBy(x => x.Value.AllDifferenceLink)
-            .ThenBy(x => x.Value.AllDifferenceLink)
-            .ThenByDescending(x => x.Value.AllDifferenceWeight);
+            .WithBy(x => x.Value.AllDifferenceLink);
+            // .ThenBy(x => x.Value.AllDifferenceLink)
+            // .ThenByDescending(x => x.Value.AllDifferenceWeight);
 
     public static ComparisonBuilder<
             ComparisonCollectionChain<ScoreSortItem<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>,
@@ -30,9 +30,9 @@ public static class NerveHelper<TData, TLink>
         ConnectionComparisons(DataPairLink<TData, TLink> pair) =>
         comparisonChain => comparisonChain
             .WithBy(x => NerveHelper.Difference(x.Value.NeuronWrap.RefData, pair.Data))
-            .WithBy(x => NerveHelper.Difference(x.Value.RefLink, pair.Link))
-            .ThenBy(x => NerveHelper.Difference(x.Value.RefLink, pair.Link))
-            .ThenByDescending(x => x.Value.RefValue.Weight);
+            .WithBy(x => NerveHelper.Difference(x.Value.RefLink, pair.Link));
+            // .ThenBy(x => NerveHelper.Difference(x.Value.RefLink, pair.Link))
+            // .ThenByDescending(x => x.Value.RefValue.Weight);
 
     public static ComparisonBuilder<
             ComparisonCollectionChain<ScoreSortItem<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>,
