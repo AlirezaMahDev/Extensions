@@ -5,25 +5,29 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public record struct ConnectionValue<TLink> :
     ICellValueDefault<ConnectionValue<TLink>>,
     ICellScoreValue,
     ICellWeightValue
     where TLink : unmanaged, ICellLink<TLink>
 {
+    public TLink Link;
+
     public DataOffset Neuron;
     public DataOffset Child;
     public DataOffset Next;
     public DataOffset Previous;
-    public float Score;
+
+    public int ChildCount;
     public uint Weight;
-    public TLink Link;
+    public float Score;
 
     public static ConnectionValue<TLink> Default { get; } = new()
     {
         Neuron = DataOffset.Null,
         Next = DataOffset.Null,
+        ChildCount = 0,
         Child = DataOffset.Null,
         Previous = DataOffset.Null,
         Score = 1f,
@@ -31,8 +35,8 @@ public record struct ConnectionValue<TLink> :
         Link = default
     };
 
-    public int RefLock;
-    public readonly ref int Lock => ref Unsafe.AsRef(in this).RefLock;
+    public int Lock;
+    public readonly ref int RefLock => ref Unsafe.AsRef(in this).Lock;
 
     public readonly ref float RefScore => ref Unsafe.AsRef(in this).Score;
     public readonly ref uint RefWeight => ref Unsafe.AsRef(in this).Weight;

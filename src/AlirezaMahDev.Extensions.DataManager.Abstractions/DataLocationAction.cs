@@ -1,4 +1,4 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public delegate void DataLocationAction<TValue>(DataLocation<TValue> location)
+public delegate void DataWrapAction<TValue>(DataWrap<TValue> location)
     where TValue : unmanaged, IDataValue<TValue>;

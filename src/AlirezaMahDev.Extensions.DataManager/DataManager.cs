@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-class DataManager(IOptions<DataManagerOptions> options) : IDisposable, IDataManager
+sealed class DataManager(IOptions<DataManagerOptions> options) : IDisposable, IDataManager
 {
     private readonly IOptions<DataManagerOptions> _options = options;
     private readonly ConcurrentDictionary<string, Lazy<DataAccess>> _cache = [];
@@ -45,7 +45,7 @@ class DataManager(IOptions<DataManagerOptions> options) : IDisposable, IDataMana
         return true;
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposedValue)
         {

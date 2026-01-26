@@ -5,7 +5,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public record struct NeuronValue<TData> :
     ICellValueDefault<NeuronValue<TData>>,
     ICellScoreValue,
@@ -13,21 +13,25 @@ public record struct NeuronValue<TData> :
     where TData : unmanaged, ICellData<TData>
 {
     public TData Data;
-    public float Score;
-    public uint Weight;
+
     public DataOffset Connection;
+
+    public int ConnectionCount;
+    public uint Weight;
+    public float Score;
 
     public static NeuronValue<TData> Default { get; } = new()
     {
         Connection = DataOffset.Null,
+        ConnectionCount = 0,
         Data = default,
         Score = 1f,
         Weight = 0u
     };
 
-    public int RefLock;
+    public int Lock;
 
-    public readonly ref int Lock => ref Unsafe.AsRef(in this).RefLock;
+    public readonly ref int RefLock => ref Unsafe.AsRef(in this).Lock;
     public readonly ref float RefScore => ref Unsafe.AsRef(in this).Score;
     public readonly ref uint RefWeight => ref Unsafe.AsRef(in this).Weight;
 }

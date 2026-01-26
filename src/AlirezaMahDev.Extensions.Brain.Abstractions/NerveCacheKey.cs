@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
+[StructLayout(LayoutKind.Sequential)]
 public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
 {
     public UInt128 Hash { get; } = XxHash128.HashToUInt128(bytes);

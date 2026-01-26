@@ -11,19 +11,19 @@ public static class DataLockWrapExtensions
     {
         public void UnLock()
         {
-            Interlocked.Exchange(ref wrap.RefValue.Lock, 0);
+            Interlocked.Exchange(ref wrap.RefValue.RefLock, 0);
         }
 
         public void FreeLastLock()
         {
-            if (Volatile.Read(ref wrap.RefValue.Lock) != SessionLockKey)
-                Interlocked.Exchange(ref wrap.RefValue.Lock, 0);
+            if (Volatile.Read(ref wrap.RefValue.RefLock) != SessionLockKey)
+                Interlocked.Exchange(ref wrap.RefValue.RefLock, 0);
         }
 
         public DataLockDisposable<TValue> Lock()
         {
             wrap.FreeLastLock();
-            while (Interlocked.CompareExchange(ref wrap.RefValue.Lock, SessionLockKey, 0) != 0)
+            while (Interlocked.CompareExchange(ref wrap.RefValue.RefLock, SessionLockKey, 0) != 0)
             {
                 Thread.Yield();
             }
@@ -45,7 +45,7 @@ public static class DataLockWrapExtensions
                 return await ValueTask.FromCanceled<DataLockDisposable<TValue>>(cancellationToken);
             }
 
-            while (Interlocked.CompareExchange(ref wrap.RefValue.Lock, SessionLockKey, 0) != 0)
+            while (Interlocked.CompareExchange(ref wrap.RefValue.RefLock, SessionLockKey, 0) != 0)
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
@@ -63,51 +63,51 @@ public static class DataLockWrapExtensions
             return new(wrap);
         }
 
-        public DataWrap<TValue> Lock(DataLocationAction<TValue> action)
+        public DataWrap<TValue> Lock(DataWrapAction<TValue> action)
         {
             using var lockScope = wrap.Lock();
-            action(wrap.Location);
+            action(wrap);
             return wrap;
         }
 
-        public TResult Lock<TResult>(DataLocationFunc<TValue, TResult> func)
+        public TResult Lock<TResult>(DataWrapFunc<TValue, TResult> func)
         {
-            using var lockScope = wrap.Lock();
-            return func(wrap.Location);
+            using DataLockDisposable<TValue> lockScope = wrap.Lock();
+            return func(wrap);
         }
 
         public async ValueTask<DataWrap<TValue>> LockAsync(
-            DataLocationAction<TValue> action,
+            DataWrapAction<TValue> action,
             CancellationToken cancellationToken = default)
         {
             using var lockScope = await wrap.LockAsync(cancellationToken);
-            action(wrap.Location);
+            action(wrap);
             return wrap;
         }
 
         public async ValueTask<DataWrap<TValue>> LockAsync(
-            DataLocationAsyncAction<TValue> action,
+            DataWrapAsyncAction<TValue> action,
             CancellationToken cancellationToken = default)
         {
             using var lockScope = await wrap.LockAsync(cancellationToken);
-            await action(wrap.Location, cancellationToken);
+            await action(wrap, cancellationToken);
             return wrap;
         }
 
         public async ValueTask<TResult> LockAsync<TResult>(
-            DataLocationFunc<TValue, TResult> func,
+            DataWrapFunc<TValue, TResult> func,
             CancellationToken cancellationToken = default)
         {
             using var lockScope = await wrap.LockAsync(cancellationToken);
-            return func(wrap.Location);
+            return func(wrap);
         }
 
         public async ValueTask<TResult> LockAsync<TResult>(
-            DataLocationAsyncFunc<TValue, TResult> func,
+            DataWrapAsyncFunc<TValue, TResult> func,
             CancellationToken cancellationToken = default)
         {
             using var lockScope = await wrap.LockAsync(cancellationToken);
-            return await func(wrap.Location, cancellationToken);
+            return await func(wrap, cancellationToken);
         }
     }
 }

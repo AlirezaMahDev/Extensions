@@ -12,7 +12,6 @@ public static class NerveCacheExtensions
     {
         public INerveCacheSection NeuronSectionCache => nerve.Cache.GetOrAdd("n");
         public INerveCacheSection ConnectionSectionCache => nerve.Cache.GetOrAdd("c");
-        public INerveCacheSection LastLoadedConnectionCache => nerve.Cache.GetOrAdd("l");
     }
 
     extension<TData, TLink>(INerve<TData, TLink> nerve)

@@ -4,7 +4,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-class DataMap(string path) : IDisposable
+sealed class DataMap(string path) : IDisposable
 {
     private bool _disposedValue;
 
@@ -49,7 +49,7 @@ class DataMap(string path) : IDisposable
         }
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposedValue)
         {

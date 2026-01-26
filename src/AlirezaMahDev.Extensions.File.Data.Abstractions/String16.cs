@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace AlirezaMahDev.Extensions.File.Data.Abstractions;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = Size)]
+[StructLayout(LayoutKind.Sequential, Size = Size)]
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public readonly unsafe struct String16 : IEquatable<String16>, IString
 {

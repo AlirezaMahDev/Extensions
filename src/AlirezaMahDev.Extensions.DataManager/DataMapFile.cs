@@ -4,7 +4,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-class DataMapFile(MemoryMappedFile file) : IDisposable
+sealed class DataMapFile(MemoryMappedFile file) : IDisposable
 {
     private bool _disposedValue;
 
@@ -39,7 +39,7 @@ class DataMapFile(MemoryMappedFile file) : IDisposable
         }
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposedValue)
         {

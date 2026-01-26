@@ -1,5 +1,8 @@
+using System.Runtime.InteropServices;
+
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
+[StructLayout(LayoutKind.Sequential)]
 public readonly record struct DataOffset(int FileId, int PartIndex, int Offset, int Length)
 {
     public bool IsNull => this == Null;

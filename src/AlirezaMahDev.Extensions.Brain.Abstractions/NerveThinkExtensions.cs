@@ -29,26 +29,6 @@ public static class NerveThinkExtensions
             return result.Thinks;
         }
 
-        public async ValueTask<Memory<Think<TData, TLink>>> ThinkAsync(
-            int depth,
-            Func<ReadOnlyMemory<TData>, TLink> linkFunc,
-            ReadOnlyMemory<TData> data,
-            CancellationToken cancellationToken = default)
-        {
-            var result = new ThinkResult<TData, TLink>();
-
-            await INerve<TData, TLink>.ThinkCoreAsync(depth,
-                    linkFunc,
-                    data,
-                    new(default, linkFunc(data), nerve.ConnectionWrap, null),
-                    result,
-                    cancellationToken)
-                .AsTaskRun()
-                .ConfigureAwait(false);
-
-            return result.GetBestThinks(depth);
-        }
-
         private static void ThinkCore(
             int depth,
             Func<ReadOnlyMemory<TData>, TLink> linkFunc,
@@ -84,6 +64,37 @@ public static class NerveThinkExtensions
                     .TakeWhile(result.CanAdd),
                 innerThink =>
                     INerve<TData, TLink>.ThinkCore(depth, linkFunc, nextInput, innerThink, result));
+        }
+
+        public async ValueTask<Memory<Think<TData, TLink>>> ThinkAsync(
+            int depth,
+            Func<ReadOnlyMemory<TData>, TLink> linkFunc,
+            ReadOnlyMemory<TData> data,
+            CancellationToken cancellationToken = default)
+        {
+            var result = new ThinkResult<TData, TLink>();
+
+            await INerve<TData, TLink>.ThinkCoreAsync(depth,
+                    linkFunc,
+                    data,
+                    new(default, linkFunc(data), nerve.ConnectionWrap, null),
+                    result,
+                    cancellationToken)
+                .AsTaskRun()
+                .ConfigureAwait(false);
+
+            return result.GetBestThinks(depth);
+        }
+
+
+        private  async Task ThinkInitializeAsync(
+            int depth,
+            Func<ReadOnlyMemory<TData>, TLink> linkFunc,
+            ReadOnlyMemory<TData> input,
+            ThinkResult<TData, TLink> result,
+            CancellationToken cancellationToken = default)
+        {
+            nerve.NeuronWrap.GetConnectionsWrap();
         }
 
         private static async Task ThinkCoreAsync(

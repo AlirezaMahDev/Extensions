@@ -1,5 +1,8 @@
+using System.Runtime.InteropServices;
+
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
+[StructLayout(LayoutKind.Sequential)]
 public readonly record struct DataPairLink<TData, TLink>(TData Data, TLink Link)
     : IComparable<DataPairLink<TData, TLink>>
     where TData : unmanaged, ICellData<TData>

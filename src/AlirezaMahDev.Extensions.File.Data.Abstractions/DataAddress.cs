@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace AlirezaMahDev.Extensions.File.Data.Abstractions;
 
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[StructLayout(LayoutKind.Sequential)]
 public readonly record struct DataAddress(long Id, int Length)
 {
     public readonly long Id = Id;

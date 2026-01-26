@@ -9,20 +9,20 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 [MustDisposeResource]
 [DebuggerDisplay("Count = {Count}")]
-public class MemoryList<T>(int capacity = -1) : IDisposable, IList<T>
+public sealed class MemoryList<T>(int capacity = -1) : IDisposable, IList<T>
 {
     private bool _disposedValue;
 
-    protected virtual IMemoryOwner<T> MemoryOwner { get; set; } = MemoryPool<T>.Shared.Rent(capacity);
-    protected virtual Memory<T> OriginalMemory => MemoryOwner.Memory;
-    protected virtual int OriginalCount => OriginalMemory.Length;
+    private IMemoryOwner<T> MemoryOwner { get; set; } = MemoryPool<T>.Shared.Rent(capacity);
+    private Memory<T> OriginalMemory => MemoryOwner.Memory;
+    private int OriginalCount => OriginalMemory.Length;
 
-    public virtual Memory<T> Memory => OriginalMemory[..Count];
-    public virtual int Count { get; private set; }
+    public Memory<T> Memory => OriginalMemory[..Count];
+    public int Count { get; private set; }
 
-    public virtual bool IsReadOnly => false;
+    public bool IsReadOnly => false;
 
-    public virtual IEnumerator<T> GetEnumerator()
+    public IEnumerator<T> GetEnumerator()
     {
         return MemoryMarshal.ToEnumerable<T>(Memory).GetEnumerator();
     }
@@ -32,7 +32,7 @@ public class MemoryList<T>(int capacity = -1) : IDisposable, IList<T>
         return GetEnumerator();
     }
 
-    protected virtual void CheckNeedGrow()
+    private void CheckNeedGrow()
     {
         if (OriginalCount < Count)
         {
@@ -42,25 +42,25 @@ public class MemoryList<T>(int capacity = -1) : IDisposable, IList<T>
         }
     }
 
-    public virtual void Add(T item)
+    public void Add(T item)
     {
         Count++;
         CheckNeedGrow();
         Memory.Span[Count - 1] = item;
     }
 
-    public virtual void Clear()
+    public void Clear()
     {
         Count = 0;
         OriginalMemory.Span.Clear();
     }
 
-    public virtual bool Contains(T item)
+    public bool Contains(T item)
     {
         return IndexOf(item) != -1;
     }
 
-    public virtual void CopyTo(T[] array, int arrayIndex)
+    public void CopyTo(T[] array, int arrayIndex)
     {
         for (int i = 0; i < Count; i++)
         {
@@ -68,7 +68,7 @@ public class MemoryList<T>(int capacity = -1) : IDisposable, IList<T>
         }
     }
 
-    public virtual bool Remove(T item)
+    public bool Remove(T item)
     {
         var index = IndexOf(item);
         if (index == -1)
@@ -77,12 +77,12 @@ public class MemoryList<T>(int capacity = -1) : IDisposable, IList<T>
         return true;
     }
 
-    public virtual int IndexOf(T item)
+    public int IndexOf(T item)
     {
         return Memory.Span.IndexOf(item);
     }
 
-    public virtual void Insert(int index, T item)
+    public void Insert(int index, T item)
     {
         Count++;
         CheckNeedGrow();
@@ -90,20 +90,20 @@ public class MemoryList<T>(int capacity = -1) : IDisposable, IList<T>
         Memory.Span[index] = item;
     }
 
-    public virtual void RemoveAt(int index)
+    public void RemoveAt(int index)
     {
         Count--;
         if (index != Count - 1)
             OriginalMemory[(index + 1)..].CopyTo(OriginalMemory[index..]);
     }
 
-    public virtual T this[int index]
+    public T this[int index]
     {
         get => Memory.Span[index];
         set => Memory.Span[index] = value;
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposedValue)
         {

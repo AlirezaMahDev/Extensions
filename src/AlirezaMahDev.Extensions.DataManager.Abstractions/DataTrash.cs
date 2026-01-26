@@ -3,12 +3,12 @@ using System.Runtime.InteropServices;
 
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[StructLayout(LayoutKind.Sequential)]
 public record struct DataTrash(DataOffset Child)
     : IDataCollection<DataTrash, DataTrashItem>, IDataValueDefault<DataTrash>
 {
-    public int RefLock;
+    public int Lock;
     public static DataTrash Default { get; } = new(DataOffset.Null);
 
-    public ref int Lock => ref Unsafe.AsRef(in this).RefLock;
+    public ref int RefLock => ref Unsafe.AsRef(in this).Lock;
 }

@@ -21,8 +21,9 @@ public static class NerveExtensions
                 return new(offset.Value);
 
             var localData = data;
-            var connection = nerve.NeuronWrap
-                .GetUnloadedConnectionsWrap()
+            using var cellMemory = nerve.NeuronWrap
+                .GetConnectionsWrap();
+            var connection = cellMemory
                 .FirstOrDefault(x => x.Neuron.Wrap(nerve).RefData.Equals(localData))
                 .NullWhenDefault();
             if (!connection.HasValue)
@@ -42,7 +43,7 @@ public static class NerveExtensions
         private Neuron AddNeuronCore(NerveCacheKey cacheKey, ReadOnlyMemoryValue<TData> data)
         {
             return nerve.Neuron.Wrap(nerve)
-                .Lock(neuronDataLocation =>
+                .Lock(valueWrap =>
                 {
                     if (nerve.FindNeuronCore(in cacheKey, in data.Value) is { } neuron)
                         return neuron;
@@ -50,14 +51,15 @@ public static class NerveExtensions
                     var neuronValue = nerve.Access
                         .Create(NeuronValue<TData>.Default with { Data = data.Value });
 
-                    var neuronDataLocationWrap = neuronDataLocation.Wrap(nerve.Access);
+                    var neuronDataLocationWrap = valueWrap.Wrap(nerve.Access);
                     var connectionValue = nerve.Access.Create(ConnectionValue<TLink>.Default with
                     {
                         Neuron = neuronValue.Offset,
-                        Next = neuronDataLocationWrap.RefValue.Connection
+                        Next = valueWrap.RefValue.Connection
                     });
 
-                    neuronDataLocationWrap.RefValue.Connection = connectionValue.Offset;
+                    valueWrap.RefValue.Connection = connectionValue.Offset;
+                    valueWrap.RefValue.ConnectionCount++;
 
                     nerve.TrySetNeuronCacheCore(in cacheKey, neuronValue.Offset);
                     return new(neuronValue.Offset);
@@ -77,7 +79,7 @@ public static class NerveExtensions
             CancellationToken cancellationToken)
         {
             return await nerve.Neuron.Wrap(nerve)
-                .LockAsync(neuronDataLocation =>
+                .LockAsync(valueWrap =>
                     {
                         if (nerve.FindNeuronCore(in cacheKey, in data.Value) is { } neuron)
                             return neuron;
@@ -85,15 +87,16 @@ public static class NerveExtensions
                         var neuronValue =
                             nerve.Access.Create(NeuronValue<TData>.Default with { Data = data.Value });
 
-                        var neuronDataLocationWrap = neuronDataLocation.Wrap(nerve.Access);
+                        var neuronDataLocationWrap = valueWrap.Wrap(nerve.Access);
                         var connectionValue = nerve.Access
                             .Create(ConnectionValue<TLink>.Default with
                             {
                                 Neuron = neuronValue.Offset,
-                                Next = neuronDataLocationWrap.RefValue.Connection
+                                Next = valueWrap.RefValue.Connection
                             });
 
-                        neuronDataLocationWrap.RefValue.Connection = connectionValue.Offset;
+                        valueWrap.RefValue.Connection = connectionValue.Offset;
+                        valueWrap.RefValue.ConnectionCount++;
 
                         nerve.TrySetNeuronCacheCore(in cacheKey, neuronValue.Offset);
                         return new(neuronValue.Offset);

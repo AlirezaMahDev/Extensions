@@ -1,7 +1,9 @@
 using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
+[StructLayout(LayoutKind.Sequential)]
 public readonly struct DataCollectionItemWrap<TValue>(
     Expression<SelectValueFunc<TValue, DataOffset>> selectNextExpression)
     where TValue : unmanaged, IDataValue<TValue>

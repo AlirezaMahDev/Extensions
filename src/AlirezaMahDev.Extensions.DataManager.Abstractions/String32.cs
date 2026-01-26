@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = Size)]
+[StructLayout(LayoutKind.Sequential, Size = Size)]
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
 public readonly unsafe struct String32 : IEquatable<String32>, IString<String32>
 {

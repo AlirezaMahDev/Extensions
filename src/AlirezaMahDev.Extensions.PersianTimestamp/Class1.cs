@@ -10,7 +10,7 @@
 //     public static System.Globalization.GregorianCalendar Calendar { get; } = new();
 // }
 //
-// [StructLayout(LayoutKind.Sequential, Pack = 1)]
+// [StructLayout(LayoutKind.Sequential)]
 // public readonly struct PersianDateTime :
 //     IComparable,
 //     IComparable<PersianDateTime>,
@@ -113,7 +113,7 @@
 //     public DateTime ToDateTime() => _dateTime;
 // }
 //
-// [StructLayout(LayoutKind.Sequential, Pack = 1)]
+// [StructLayout(LayoutKind.Sequential)]
 // public struct PersianDateTimeOffset
 // {
 //     private readonly DateTimeOffset _dateTimeOffset;
@@ -148,7 +148,7 @@
 //     public DateTime ToDateTime() => _dateTimeOffset;
 // }
 //
-// [StructLayout(LayoutKind.Sequential, Pack = 1)]
+// [StructLayout(LayoutKind.Sequential)]
 // public readonly struct PersianDateOnly(int year, int month, int day) :
 //     IComparable,
 //     IComparable<PersianDateOnly>,

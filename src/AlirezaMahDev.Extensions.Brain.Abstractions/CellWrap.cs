@@ -1,7 +1,10 @@
+using System.Runtime.InteropServices;
+
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
+[StructLayout(LayoutKind.Sequential)]
 public readonly record struct CellWrap<TCell, TValue, TData, TLink>(INerve<TData, TLink> Nerve, TCell Cell)
     : ICellWrap<TCell, TValue, TData, TLink>
     where TCell : ICell
@@ -9,30 +12,30 @@ public readonly record struct CellWrap<TCell, TValue, TData, TLink>(INerve<TData
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    public INerve<TData, TLink> Nerve { get; } = Nerve;
     public TCell Cell { get; } = Cell;
+    public INerve<TData, TLink> Nerve { get; } = Nerve;
 
-    public DataWrap<TValue> Location => new(Nerve.Access, new(Cell.Offset));
+    private DataWrap<TValue> Location => new(Nerve.Access, new(Cell.Offset));
     public ref readonly TValue RefValue => ref Location.RefValue;
 
-    public void Lock(DataLocationAction<TValue> action) => Location.Lock(action);
+    public void Lock(DataWrapAction<TValue> action) => Location.Lock(action);
 
-    public TResult Lock<TResult>(DataLocationFunc<TValue, TResult> func) =>
+    public TResult Lock<TResult>(DataWrapFunc<TValue, TResult> func) =>
         Location.Lock(func);
 
-    public async ValueTask LockAsync(DataLocationAction<TValue> action,
+    public async ValueTask LockAsync(DataWrapAction<TValue> action,
         CancellationToken cancellationToken = default) =>
         await Location.LockAsync(action, cancellationToken);
 
-    public async ValueTask LockAsync(DataLocationAsyncAction<TValue> action,
+    public async ValueTask LockAsync(DataWrapAsyncAction<TValue> action,
         CancellationToken cancellationToken = default) =>
         await Location.LockAsync(action, cancellationToken);
 
-    public ValueTask<TResult> LockAsync<TResult>(DataLocationFunc<TValue, TResult> func,
+    public ValueTask<TResult> LockAsync<TResult>(DataWrapFunc<TValue, TResult> func,
         CancellationToken cancellationToken = default) =>
         Location.LockAsync(func, cancellationToken);
 
-    public ValueTask<TResult> LockAsync<TResult>(DataLocationAsyncFunc<TValue, TResult> func,
+    public ValueTask<TResult> LockAsync<TResult>(DataWrapAsyncFunc<TValue, TResult> func,
         CancellationToken cancellationToken = default) =>
         Location.LockAsync(func, cancellationToken);
 

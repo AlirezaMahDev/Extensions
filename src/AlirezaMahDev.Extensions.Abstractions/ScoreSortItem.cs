@@ -1,6 +1,9 @@
+using System.Runtime.InteropServices;
+
 namespace AlirezaMahDev.Extensions.Abstractions;
 
-public record ScoreSortItem<T>(T Value) : IScoreSortItem
+[StructLayout(LayoutKind.Sequential)]
+public record struct ScoreSortItem<T>(T Value) : IScoreSortItem
     where T : notnull
 {
     public int Score { get; set; }

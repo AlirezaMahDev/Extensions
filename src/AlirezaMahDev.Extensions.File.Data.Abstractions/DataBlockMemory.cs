@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace AlirezaMahDev.Extensions.File.Data.Abstractions;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[StructLayout(LayoutKind.Sequential)]
 public readonly struct DataBlockMemory(IDataBlockAccessor accessor, Memory<byte> memory)
 {
     public DataBlockMemory(IDataBlockAccessor accessor) : this(accessor, accessor.Memory)

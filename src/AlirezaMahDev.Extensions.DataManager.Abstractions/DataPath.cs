@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public record struct DataPath(
     String64 Key,
     int Size,
@@ -14,12 +14,11 @@ public record struct DataPath(
     : IDataDictionaryTree<DataPath, String64>, IDataValueDefault<DataPath>, IDataStorage<DataPath>, IDataIndex<DataPath>
 {
     public String64 RefKey = Key;
-    public int RefSize = Size;
-
     public DataOffset RefNext = Next;
     public DataOffset RefChild = Child;
     public DataOffset RefData = Data;
     public DataOffset RefIndex = Index;
+    public int RefSize = Size;
 
     public static DataPath Default { get; } =
         new(default, -1, DataOffset.Null, DataOffset.Null, DataOffset.Null, DataOffset.Null);
@@ -60,6 +59,6 @@ public record struct DataPath(
         set => RefIndex = value;
     }
 
-    public int RefLock;
-    public ref int Lock => ref Unsafe.AsRef(in this).RefLock;
+    public int Lock;
+    public ref int RefLock => ref Unsafe.AsRef(in this).Lock;
 }
