@@ -8,7 +8,7 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 // ReSharper disable once RedundantExtendsListEntry
 [MustDisposeResource]
 // ReSharper disable once RedundantExtendsListEntry
-public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>
+public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>, ICellMemory<T>
 {
     public static CellMemory<T> Empty { get; } = new(CellEnumerable<T>.Empty);
 

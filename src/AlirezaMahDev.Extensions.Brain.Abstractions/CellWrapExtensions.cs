@@ -8,6 +8,5 @@ public static class CellWrapExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        
     }
 }

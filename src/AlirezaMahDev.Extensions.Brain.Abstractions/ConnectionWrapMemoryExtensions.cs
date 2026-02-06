@@ -1,3 +1,5 @@
+using AlirezaMahDev.Extensions.Abstractions;
+
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class ConnectionWrapMemoryExtensions
@@ -6,23 +8,18 @@ public static class ConnectionWrapMemoryExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> Near(DataPairLink<TData, TLink> pair,
-            int depth)
-        {
-            var comparable = new DataPairLinkComparable<TData, TLink>(pair,
-                NerveHelper<TData, TLink>.NearComparisons.Comparison);
-            var findIndex = memory.Span.BinarySearch(comparable);
-            var targetIndex = findIndex < 0 ? ~findIndex : findIndex;
-            return memory[Math.Max(0, targetIndex - depth)..Math.Min(memory.Length, targetIndex + depth + 1)];
-        }
+        public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> NearConnection(
+            DataPairLink<TData, TLink> pair,
+            int depth) =>
+            memory.Near(pair,
+                x => new(x.NeuronWrap.RefData, x.RefLink),
+                NerveHelper<TData, TLink>.NearComparisons.Wrap(), depth)
+                .ToArray();
 
-        public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> Near(TLink link, int depth)
-        {
-            var comparable = new LinkComparable<TData, TLink>(link,
-                NerveHelper<TData, TLink>.NearNextComparisons.Comparison);
-            var findIndex = memory.Span.BinarySearch(comparable);
-            var targetIndex = findIndex < 0 ? ~findIndex : findIndex;
-            return memory[Math.Max(0, targetIndex - depth)..Math.Min(memory.Length, targetIndex + depth + 1)];
-        }
+        public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> NearConnection(TLink link, int depth) =>
+            memory.Near(link,
+                x => x.RefLink,
+                NerveHelper<TData, TLink>.NearNextComparisons.Wrap(), depth)
+                .ToArray();
     }
 }

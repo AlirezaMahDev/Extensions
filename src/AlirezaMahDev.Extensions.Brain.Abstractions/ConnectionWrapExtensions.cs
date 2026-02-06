@@ -57,13 +57,13 @@ public static class ConnectionWrapExtensions
                 : CellEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>.Empty;
         }
 
-        public CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCache() =>
+        public ICellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCache() =>
             wrap.Nerve.MemoryCache.GetOrCreate(wrap.Cell.Offset,
                 entry =>
                 {
                     var result = wrap.GetConnectionsWrap().ToCellMemory();
                     entry.PostEvictionCallbacks.Add(new() { EvictionCallback = (_, _, _, _) => result.Dispose() });
-                    entry.SlidingExpiration = TimeSpan.FromMinutes(1);
+                    entry.Priority = CacheItemPriority.NeverRemove;
                     return result;
                 })!;
 

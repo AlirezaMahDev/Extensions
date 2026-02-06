@@ -44,8 +44,6 @@ TLink> : INerve<TData, TLink>
         MemoryCache = memoryCache;
         Name = name;
         Access = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
-        Debug.WriteLine($"open access {Name} {Access.Path}");
-
         Location = Access.Root.Wrap(Access, x => x.Dictionary()).GetOrAdd(".nerve");
         ConnectionLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".connection");
         NeuronLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".neuron");
@@ -63,10 +61,8 @@ TLink> : INerve<TData, TLink>
             .Wrap(Access);
 
         Neuron = new(neuron.Offset);
-        Debug.WriteLine($"detect root neuron at {neuron.Offset}");
         NeuronWrap = Neuron.Wrap(this);
         Connection = new(connection.Offset);
-        Debug.WriteLine($"detect root connection at {neuron.Offset}");
         ConnectionWrap = Connection.Wrap(this);
     }
 

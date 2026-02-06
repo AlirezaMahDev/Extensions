@@ -73,7 +73,7 @@ public static class NerveThinkExtensions
         {
             var result = new ThinkResult<TData, TLink>();
 
-            Think<TData, TLink> think = new(default, linkFunc(data), nerve.ConnectionWrap, null);
+            Think<TData, TLink> think = new(nerve.ConnectionWrap, null);
             await INerve<TData, TLink>.ThinkCoreAsync(depth,
                     linkFunc,
                     data,
@@ -103,7 +103,6 @@ public static class NerveThinkExtensions
                 {
                     if (result.Add(think, depth))
                     {
-                        Debug.WriteLine($"think found {think}");
                         return true;
                     }
                 }
@@ -120,14 +119,12 @@ public static class NerveThinkExtensions
 
             var pair = new DataPairLink<TData, TLink>(data, link.Value);
             var cellMemory = think.ConnectionWrap.GetConnectionsWrapCache();
-            var memory = cellMemory.Memory.Near(pair, depth);
+            Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> memory = cellMemory.Memory.NearConnection(pair, depth);
 
             if (memory.IsEmpty)
             {
                 return false;
             }
-
-            Debug.WriteLine($"found new neuron path {memory.Length}");
 
             if (cancellationToken.IsCancellationRequested)
                 await Task.FromCanceled(cancellationToken);

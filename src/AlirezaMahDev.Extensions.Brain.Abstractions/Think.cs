@@ -9,16 +9,11 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     where TLink : unmanaged, ICellLink<TLink>
 {
     private readonly Think<TData, TLink>? _previous;
-    private readonly TLink _link;
     private readonly CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> _connectionWrap;
 
     public Think(
-        TData data,
-        TLink link,
-        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
-        Think<TData, TLink>? previous)
+        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap, Think<TData, TLink>? previous)
     {
-        _link = link;
         _connectionWrap = connectionWrap;
         _previous = previous;
         ConnectionWrap = connectionWrap;
@@ -36,10 +31,10 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     public TData AllDifferenceData { get; private init; }
     public ulong AllDifferenceWeight { get; private init; }
 
-    public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetNextConnectionWrap(int depth)
+    public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetNextConnectionWrap(TLink link, int depth)
     {
-        using var cellMemory = _connectionWrap.GetConnectionsWrapCache();
-        return cellMemory.Memory.Near(_link, depth);
+        var cellMemory = _connectionWrap.GetConnectionsWrapCache();
+        return cellMemory.Memory.NearConnection(link, depth);
     }
 
     public Think<TData, TLink> Append(TData data,
@@ -49,7 +44,7 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         var differenceData = NerveHelper.Difference(data, connection.NeuronWrap.RefData);
         var differenceLink = NerveHelper.Difference(link, connection.RefLink);
         var differenceWeight = connection.RefValue.Weight;
-        return new(data, link, connection, this)
+        return new(connection, this)
         {
             Count = Count + 1,
             DifferenceData = differenceData,
@@ -88,7 +83,6 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
 
     public override string ToString()
     {
-        return $"Count:{Count} AllDifferenceData:{AllDifferenceData} AllDifferenceLink:{AllDifferenceLink
-        } DifferenceData:{DifferenceData} DifferenceLink:{DifferenceLink}";
+        return $"Count:{Count} AllDifferenceData:{AllDifferenceData} AllDifferenceLink:{AllDifferenceLink} DifferenceData:{DifferenceData} DifferenceLink:{DifferenceLink}";
     }
 }
