@@ -16,14 +16,12 @@ public record struct NeuronValue<TData> :
 
     public DataOffset Connection;
 
-    public int ConnectionCount;
     public uint Weight;
     public float Score;
 
     public static NeuronValue<TData> Default { get; } = new()
     {
         Connection = DataOffset.Null,
-        ConnectionCount = 0,
         Data = default,
         Score = 1f,
         Weight = 0u

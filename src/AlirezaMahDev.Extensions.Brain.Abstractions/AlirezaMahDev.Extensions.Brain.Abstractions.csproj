@@ -11,4 +11,8 @@
     <ProjectReference Include="..\AlirezaMahDev.Extensions.DataManager.Abstractions\AlirezaMahDev.Extensions.DataManager.Abstractions.csproj"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="10.0.2" />
+  </ItemGroup>
+
 </Project>

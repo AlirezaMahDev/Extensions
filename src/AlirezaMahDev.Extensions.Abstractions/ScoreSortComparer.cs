@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 [MustDisposeResource]
-public class ScoreSortComparer<T> : IDisposable, IComparer<T>
+public sealed class ScoreSortComparer<T> : IDisposable, IComparer<T>
     where T : notnull
 {
     public Memory<T> Memory { get; }
@@ -38,11 +38,34 @@ public class ScoreSortComparer<T> : IDisposable, IComparer<T>
             comparisons) =>
         Memory[..BestScoreSort(depth, comparisons)];
 
+    public Memory<T> TakeBestScoreSortClone(int depth,
+        ComparisonBuilder<ComparisonCollectionChain<ScoreSortItem<T>>, ScoreSortItem<T>>
+            comparisons)
+    {
+        var source = WrapMemory[..BestScoreSortCore(depth, comparisons)];
+        var dist = new T[source.Length].AsMemory();
+        var sourceSpan = source.Span;
+        var distSpan = dist.Span;
+        for (int i = 0; i < sourceSpan.Length; i++)
+        {
+            distSpan[i] = sourceSpan[i].Value;
+        }
+
+        return dist;
+    }
+
+    public int BestScoreSortCore(int depth,
+        ComparisonBuilder<ComparisonCollectionChain<ScoreSortItem<T>>, ScoreSortItem<T>>
+            comparisons)
+    {
+        return WrapMemory.Span.BestScoreSort(depth, comparisons);
+    }
+
     public int BestScoreSort(int depth,
         ComparisonBuilder<ComparisonCollectionChain<ScoreSortItem<T>>, ScoreSortItem<T>>
             comparisons)
     {
-        var count = WrapMemory.Span.BestScoreSort(depth, comparisons);
+        var count = BestScoreSortCore(depth, comparisons);
         Apply();
         return count;
     }
@@ -60,7 +83,6 @@ public class ScoreSortComparer<T> : IDisposable, IComparer<T>
     public void Dispose()
     {
         _memoryOwner.Dispose();
-        GC.SuppressFinalize(this);
     }
 
     public int Compare(T? x, T? y) =>

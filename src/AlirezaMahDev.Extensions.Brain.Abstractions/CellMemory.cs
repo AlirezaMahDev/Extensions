@@ -5,42 +5,38 @@ using JetBrains.Annotations;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
+// ReSharper disable once RedundantExtendsListEntry
 [MustDisposeResource]
 // ReSharper disable once RedundantExtendsListEntry
 public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>
 {
-    [MustDisposeResource]
-    public static CellMemory<T> Create(int count, IEnumerable<T> enumerable)
+    public static CellMemory<T> Empty { get; } = new(CellEnumerable<T>.Empty);
+
+    private IMemoryOwner<T>? _memoryOwner;
+
+    public CellMemory(CellEnumerable<T> cellEnumerable)
     {
-        var cellMemory = new CellMemory<T>(count);
-        if (count == 0)
-            return cellMemory;
+        if (cellEnumerable.Count == 0)
+        {
+            Memory = new();
+            return;
+        }
+
+        _memoryOwner = MemoryPool<T>.Shared.Rent(cellEnumerable.Count);
+        Memory = _memoryOwner.Memory[..cellEnumerable.Count];
 
         var index = 0;
-        foreach (var item in enumerable)
+        var span = Memory.Span;
+        foreach (var item in cellEnumerable)
         {
-            cellMemory.Memory.Span[index] = item;
+            span[index] = item;
             index++;
         }
 
-        if (index != count)
-            throw new IndexOutOfRangeException($"Expected {count} items but received {index}.");
-
-        return cellMemory;
-    }
-
-    private readonly IMemoryOwner<T>? _memoryOwner;
-
-    public CellMemory(int count)
-    {
-        if (count != 0)
+        if (index != cellEnumerable.Count)
         {
-            _memoryOwner = MemoryPool<T>.Shared.Rent(count);
-            Memory = _memoryOwner.Memory[..count];
-        }
-        else
-        {
-            Memory = new();
+            Dispose();
+            throw new IndexOutOfRangeException($"Expected {cellEnumerable.Count} items but received {index}.");
         }
     }
 
@@ -52,6 +48,7 @@ public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>
     public void Dispose()
     {
         _memoryOwner?.Dispose();
+        _memoryOwner = null;
     }
 
     public IEnumerator<T> GetEnumerator()
@@ -67,12 +64,12 @@ public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>
 
     public bool Contains(T item)
     {
-        throw new NotImplementedException();
+        return Memory.Span.Contains(item);
     }
 
     public void CopyTo(T[] array, int arrayIndex)
     {
-        throw new NotImplementedException();
+        Memory.Span.CopyTo(array.AsSpan(arrayIndex));
     }
 
     void ICollection<T>.Add(T item) => throw new NotSupportedException();

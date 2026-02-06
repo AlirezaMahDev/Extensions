@@ -11,6 +11,17 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 [DebuggerDisplay("Count = {Count}")]
 public sealed class MemoryList<T>(int capacity = -1) : IDisposable, IList<T>
 {
+    public MemoryList(int capacity, IEnumerable<T> values) : this(capacity)
+    {
+        foreach (var value in values)
+        {
+            Add(value);
+        }
+    }
+    public MemoryList(IEnumerable<T> values) : this(-1, values)
+    {
+    }
+
     private bool _disposedValue;
 
     private IMemoryOwner<T> MemoryOwner { get; set; } = MemoryPool<T>.Shared.Rent(capacity);
@@ -119,6 +130,5 @@ public sealed class MemoryList<T>(int capacity = -1) : IDisposable, IList<T>
     public void Dispose()
     {
         Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

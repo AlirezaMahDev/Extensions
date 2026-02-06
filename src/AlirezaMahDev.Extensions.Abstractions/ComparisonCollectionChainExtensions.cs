@@ -5,18 +5,18 @@ public static class ComparisonCollectionChainExtensions
     extension<T>(ComparisonCollectionChain<T>)
     {
         public static ComparisonCollectionChain<T> OrderBy(Comparison<T> comparison) =>
-            new([], comparison);
+            new([], comparison, comparison, null);
 
         public static ComparisonCollectionChain<T> OrderByDescending(Comparison<T> comparison) =>
-            new([], (x, y) => comparison(y, x));
+            new([], (x, y) => comparison(y, x), (x, y) => comparison(y, x), null);
 
         public static ComparisonCollectionChain<T> OrderBy(IEnumerable<Comparison<T>> enumerable,
             Comparison<T> comparison) =>
-            new(enumerable, comparison);
+            new(enumerable, comparison, comparison, null);
 
         public static ComparisonCollectionChain<T> OrderByDescending(IEnumerable<Comparison<T>> enumerable,
             Comparison<T> comparison) =>
-            new(enumerable, (x, y) => comparison(y, x));
+            new(enumerable, (x, y) => comparison(y, x), (x, y) => comparison(y, x), null);
     }
 
     extension<T>(ComparisonCollectionChain<T> unwrap)

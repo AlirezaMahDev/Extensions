@@ -1,7 +1,7 @@
 using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-using JetBrains.Annotations;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
@@ -15,6 +15,7 @@ public static class ConnectionWrapExtensions
 
         public Neuron Neuron => new(wrap.RefValue.Neuron);
         public CellWrap<Neuron, NeuronValue<TData>, TData, TLink> NeuronWrap => wrap.Neuron.Wrap(wrap.Nerve);
+        public int Length => wrap.ChildWrap?.RefValue.NextCount + 1 ?? 0;
 
         public Connection? Previous =>
             wrap.RefValue.Previous.IsNull
@@ -46,15 +47,35 @@ public static class ConnectionWrapExtensions
                 ? null
                 : new(wrap.Nerve, new(wrap.RefValue.Child));
 
-        [MustDisposeResource]
-        public CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrap() =>
-            CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>.Create(
-                wrap.RefValue.ChildCount,
-                wrap.GetConnectionsWrapCore());
-
-        public IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCore()
+        public CellEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrap()
         {
-            var current = wrap.ChildWrap;
+            var childWrap = wrap.ChildWrap;
+            return childWrap.HasValue
+                ? new(
+                    childWrap.Value.RefValue.NextCount + 1,
+                    CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>.GetConnectionsWrapCore(childWrap.Value))
+                : CellEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>.Empty;
+        }
+
+        public CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCache() =>
+            wrap.Nerve.MemoryCache.GetOrCreate(wrap.Cell.Offset,
+                entry =>
+                {
+                    var result = wrap.GetConnectionsWrap().ToCellMemory();
+                    entry.PostEvictionCallbacks.Add(new() { EvictionCallback = (_, _, _, _) => result.Dispose() });
+                    entry.SlidingExpiration = TimeSpan.FromMinutes(1);
+                    return result;
+                })!;
+
+        public IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapRaw() =>
+            wrap.ChildWrap is { } childWrap
+                ? CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>.GetConnectionsWrapCore(childWrap)
+                : [];
+
+        private static IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCore(
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> cellWrap)
+        {
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>? current = cellWrap;
             while (current.HasValue)
             {
                 yield return current.Value;
@@ -62,10 +83,28 @@ public static class ConnectionWrapExtensions
             }
         }
 
-        public Connection? Find(in Neuron neuron, in TLink link)
+        public DataOffset? LastLoadedConnection
         {
-            var cacheKey = wrap.Nerve.CreateConnectionCacheKey(in wrap, in neuron, in link);
-            return wrap.FindCore(in cacheKey, in neuron, in link);
+            get => wrap.Nerve.LastLoadedConnectionCache.GetOrNull(wrap.Cell.Offset);
+            set => wrap.Nerve.LastLoadedConnectionCache.Set(wrap.Cell.Offset, value ?? DataOffset.Null);
+        }
+
+        public IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetUnloadedConnectionsWrap()
+        {
+            var unloaded = wrap.LastLoadedConnection;
+            if (unloaded?.IsNull == true)
+                yield break;
+
+            var connection = unloaded.HasValue ? new Connection(unloaded.Value) : wrap.Child;
+            while (connection.HasValue)
+            {
+                var connectionWrap = connection.Value.Wrap(wrap);
+                wrap.Nerve.TrySetConnectionCache(connectionWrap);
+                wrap.Nerve.TrySetNeuronCache(connectionWrap.NeuronWrap);
+                wrap.LastLoadedConnection = connectionWrap.RefValue.Next;
+                connection = connectionWrap.Next;
+                yield return connectionWrap;
+            }
         }
 
         private Connection? FindCore(in NerveCacheKey cacheKey,
@@ -77,7 +116,7 @@ public static class ConnectionWrapExtensions
 
             var localNeuron = neuron;
             var localLink = link;
-            using var cellMemory = wrap.GetConnectionsWrap();
+            var cellMemory = wrap.GetUnloadedConnectionsWrap();
             var result = cellMemory
                 .FirstOrDefault(x =>
                     x.RefValue.Neuron == localNeuron.Offset && x.RefLink.Equals(localLink))
@@ -89,12 +128,6 @@ public static class ConnectionWrapExtensions
             return result?.Cell;
         }
 
-        public Connection FindOrAdd(in Neuron neuron, in TLink link)
-        {
-            var cacheKey = wrap.Nerve.CreateConnectionCacheKey(in wrap, in neuron, in link);
-            return wrap.FindCore(in cacheKey, in neuron, in link) ?? wrap.AddCore(cacheKey, neuron, link);
-        }
-
         public async ValueTask<Connection> FindOrAddAsync(Neuron neuron,
             ReadOnlyMemoryValue<TLink> link,
             CancellationToken cancellationToken = default)
@@ -102,32 +135,6 @@ public static class ConnectionWrapExtensions
             var cacheKey = wrap.Nerve.CreateConnectionCacheKey(in wrap, in neuron, in link.Value);
             return wrap.FindCore(in cacheKey, in neuron, in link.Value) ??
                    await wrap.AddAsyncCore(cacheKey, neuron, link, cancellationToken);
-        }
-
-        private Connection AddCore(NerveCacheKey cacheKey,
-            Neuron neuron,
-            ReadOnlyMemoryValue<TLink> link)
-        {
-            return wrap.Lock(valueWrap =>
-            {
-                if (wrap.FindCore(in cacheKey, in neuron, in link.Value) is { } connection)
-                    return connection;
-
-                var connectionValue = wrap.Nerve.Access
-                    .Create(ConnectionValue<TLink>.Default with
-                    {
-                        Previous = wrap.Cell.Offset,
-                        Neuron = neuron.Offset,
-                        Link = link.Value,
-                        Next = valueWrap.RefValue.Child
-                    });
-
-                valueWrap.RefValue.Child = connectionValue.Offset;
-                valueWrap.RefValue.ChildCount++;
-
-                wrap.Nerve.TrySetConnectionCacheCore(in cacheKey, connectionValue.Offset);
-                return new(connectionValue.Offset);
-            });
         }
 
         private async ValueTask<Connection> AddAsyncCore(
@@ -147,12 +154,13 @@ public static class ConnectionWrapExtensions
                             Previous = wrap.Cell.Offset,
                             Neuron = neuron.Offset,
                             Link = link.Value,
-                            Next = wrap.RefValue.Child
+                            Next = wrap.RefValue.Child,
+                            NextCount = wrap.ChildWrap?.RefValue.NextCount + 1 ?? 0
                         });
+                    Interlocked.Increment(ref wrap.Nerve.Counter.RefValue.ConnectionCount);
 
                     valueWrap.RefValue.Child = connectionValue.Offset;
-                    valueWrap.RefValue.ChildCount++;
-                    
+
                     wrap.Nerve.TrySetConnectionCacheCore(in cacheKey, connectionValue.Offset);
                     return new(connectionValue.Offset);
                 },

@@ -91,18 +91,16 @@ public static class DataCollectionWrapExtensions
         public DataLocation<TItem> Add(DataLocation<TItem> dataLocation)
         {
             wrap.Wrap()
-                .Lock(location =>
+                .Lock(innerWrap =>
                 {
-                    var child = wrap.Wrap.GetChild(location.GetRefValue(wrap.Access));
+                    var child = wrap.Wrap.GetChild(innerWrap.RefValue);
 
                     dataLocation.Wrap(wrap.Access)
                         .Lock(innerDataLocation =>
-                        {
-                            wrap.Wrap.ItemWrap.SetNext(ref innerDataLocation.GetRefValue(wrap.Access),
-                                child);
-                        });
+                            wrap.Wrap.ItemWrap.SetNext(ref innerDataLocation.RefValue,
+                                child));
 
-                    wrap.Wrap.SetChild(ref location.GetRefValue(wrap.Access), dataLocation.Offset);
+                    wrap.Wrap.SetChild(ref innerWrap.RefValue, dataLocation.Offset);
                 });
             return dataLocation;
         }
@@ -112,20 +110,18 @@ public static class DataCollectionWrapExtensions
             CancellationToken cancellationToken = default)
         {
             await wrap.Wrap()
-                .LockAsync(async (location, token) =>
+                .LockAsync(async (innerWrap, token) =>
                     {
-                        var child = wrap.Wrap.GetChild(location.GetRefValue(wrap.Access));
+                        var child = wrap.Wrap.GetChild(innerWrap.RefValue);
 
                         await dataLocation.Wrap(wrap.Access)
                             .LockAsync(innerDataLocation =>
-                                {
-                                    wrap.Wrap.ItemWrap.SetNext(
-                                        ref innerDataLocation.GetRefValue(wrap.Access),
-                                        child);
-                                },
+                                wrap.Wrap.ItemWrap.SetNext(
+                                    ref innerDataLocation.RefValue,
+                                    child),
                                 token);
 
-                        wrap.Wrap.SetChild(ref location.GetRefValue(wrap.Access), dataLocation.Offset);
+                        wrap.Wrap.SetChild(ref innerWrap.RefValue, dataLocation.Offset);
                     },
                     cancellationToken: cancellationToken);
             return dataLocation;
@@ -141,20 +137,16 @@ public static class DataCollectionWrapExtensions
                     if (previous.HasValue)
                     {
                         previous.Value.Wrap(wrap.Access)
-                            .Lock(location =>
-                            {
-                                wrap.Wrap.ItemWrap.SetNext(ref location.GetRefValue(wrap.Access),
-                                    wrap.Wrap.ItemWrap.GetNext(dataLocation.GetRefValue(wrap.Access)));
-                            });
+                            .Lock(innerWrap =>
+                                wrap.Wrap.ItemWrap.SetNext(ref innerWrap.RefValue,
+                                    wrap.Wrap.ItemWrap.GetNext(dataLocation.GetRefValue(wrap.Access))));
                     }
                     else
                     {
                         wrap.Location.Wrap(wrap.Access)
-                            .Lock(location =>
-                            {
-                                wrap.Wrap.SetChild(ref location.GetRefValue(wrap.Access),
-                                    wrap.Wrap.ItemWrap.GetNext(dataLocation.GetRefValue(wrap.Access)));
-                            });
+                            .Lock(innerWrap =>
+                                wrap.Wrap.SetChild(ref innerWrap.RefValue,
+                                    wrap.Wrap.ItemWrap.GetNext(dataLocation.GetRefValue(wrap.Access))));
                     }
 
                     wrap.Access.GetTrash().Add(wrap.Access, dataLocation);
@@ -179,22 +171,18 @@ public static class DataCollectionWrapExtensions
                     {
                         await previous.Value.Wrap(wrap.Access)
                             .LockAsync(location =>
-                                {
-                                    wrap.Wrap.ItemWrap.SetNext(ref location.GetRefValue(wrap.Access),
-                                        wrap.Wrap.ItemWrap.GetNext(
-                                            dataLocation.GetRefValue(wrap.Access)));
-                                },
+                                wrap.Wrap.ItemWrap.SetNext(ref location.RefValue,
+                                    wrap.Wrap.ItemWrap.GetNext(
+                                        dataLocation.GetRefValue(wrap.Access))),
                                 cancellationToken);
                     }
                     else
                     {
-                        await wrap.Location.Wrap(wrap.Access)
+                        _ = await wrap.Location.Wrap(wrap.Access)
                             .LockAsync(location =>
-                                {
-                                    wrap.Wrap.SetChild(ref location.GetRefValue(wrap.Access),
-                                        wrap.Wrap.ItemWrap.GetNext(
-                                            dataLocation.GetRefValue(wrap.Access)));
-                                },
+                                wrap.Wrap.SetChild(ref location.RefValue,
+                                    wrap.Wrap.ItemWrap.GetNext(
+                                        dataLocation.GetRefValue(wrap.Access))),
                                 cancellationToken);
                     }
 

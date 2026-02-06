@@ -16,6 +16,7 @@
 
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.2" />
     <PackageReference Include="ILGPU" Version="1.5.3"/>
     <PackageReference Include="ILGPU.Algorithms" Version="1.5.3"/>
   </ItemGroup>

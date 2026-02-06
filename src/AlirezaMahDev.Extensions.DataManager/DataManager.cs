@@ -69,6 +69,5 @@ sealed class DataManager(IOptions<DataManagerOptions> options) : IDisposable, ID
     void IDisposable.Dispose()
     {
         Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

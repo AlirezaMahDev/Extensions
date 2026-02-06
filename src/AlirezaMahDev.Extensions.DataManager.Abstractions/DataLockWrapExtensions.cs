@@ -11,13 +11,14 @@ public static class DataLockWrapExtensions
     {
         public void UnLock()
         {
-            Interlocked.Exchange(ref wrap.RefValue.RefLock, 0);
+            Interlocked.CompareExchange(ref wrap.RefValue.RefLock, 0, SessionLockKey);
         }
 
         public void FreeLastLock()
         {
-            if (Volatile.Read(ref wrap.RefValue.RefLock) != SessionLockKey)
-                Interlocked.Exchange(ref wrap.RefValue.RefLock, 0);
+            var read = Volatile.Read(ref wrap.RefValue.RefLock);
+            if (read != 0 && read != SessionLockKey)
+                Interlocked.CompareExchange(ref wrap.RefValue.RefLock, 0, read);
         }
 
         public DataLockDisposable<TValue> Lock()

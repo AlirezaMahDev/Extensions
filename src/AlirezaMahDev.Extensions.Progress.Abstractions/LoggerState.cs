@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace AlirezaMahDev.Extensions.Progress;
+namespace AlirezaMahDev.Extensions.Progress.Abstractions;
 
 [method: JsonConstructor]
 public record LoggerState(string Title, string Message)

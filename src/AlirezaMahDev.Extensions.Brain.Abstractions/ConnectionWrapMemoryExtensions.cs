@@ -1,5 +1,3 @@
-using AlirezaMahDev.Extensions.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class ConnectionWrapMemoryExtensions
@@ -8,29 +6,23 @@ public static class ConnectionWrapMemoryExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public void Sort(DataPairLink<TData, TLink> pair)
-        {
-            using var scoreSortMemoryWrap = memory.AsScoreSort();
-            scoreSortMemoryWrap.ScoreSort(NerveHelper<TData, TLink>.ConnectionComparisons(pair));
-        }
-
         public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> Near(DataPairLink<TData, TLink> pair,
             int depth)
         {
-            using var scoreSortMemoryWrap = memory.AsScoreSort();
-            return scoreSortMemoryWrap.TakeBestScoreSort(depth, NerveHelper<TData, TLink>.ConnectionComparisons(pair));
-        }
-
-        public void Sort(TLink link)
-        {
-            using var scoreSortMemoryWrap = memory.AsScoreSort();
-            scoreSortMemoryWrap.ScoreSort(NerveHelper<TData, TLink>.NextConnectionComparisons(link));
+            var comparable = new DataPairLinkComparable<TData, TLink>(pair,
+                NerveHelper<TData, TLink>.NearComparisons.Comparison);
+            var findIndex = memory.Span.BinarySearch(comparable);
+            var targetIndex = findIndex < 0 ? ~findIndex : findIndex;
+            return memory[Math.Max(0, targetIndex - depth)..Math.Min(memory.Length, targetIndex + depth + 1)];
         }
 
         public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> Near(TLink link, int depth)
         {
-            using var scoreSortMemoryWrap = memory.AsScoreSort();
-            return scoreSortMemoryWrap.TakeBestScoreSort(depth, NerveHelper<TData, TLink>.NextConnectionComparisons(link));
+            var comparable = new LinkComparable<TData, TLink>(link,
+                NerveHelper<TData, TLink>.NearNextComparisons.Comparison);
+            var findIndex = memory.Span.BinarySearch(comparable);
+            var targetIndex = findIndex < 0 ? ~findIndex : findIndex;
+            return memory[Math.Max(0, targetIndex - depth)..Math.Min(memory.Length, targetIndex + depth + 1)];
         }
     }
 }

@@ -61,6 +61,5 @@ sealed class DataMapFile(MemoryMappedFile file) : IDisposable
     public void Dispose()
     {
         Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

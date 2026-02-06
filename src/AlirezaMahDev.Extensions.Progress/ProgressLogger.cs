@@ -1,89 +1,69 @@
+using AlirezaMahDev.Extensions.Abstractions;
+using AlirezaMahDev.Extensions.Progress.Abstractions;
+
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace AlirezaMahDev.Extensions.Progress;
 
-public partial class ProgressLogger : Progress<ProgressLoggerState>, IDisposable
+partial class ProgressLogger<T>(ILogger<T> logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
+    : ProgressLogger(logger, optionsMonitor), IProgressLogger<T>
 {
-    public static ProgressLogger Create(ILogger logger) =>
-        new(logger);
 
+}
+
+partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
+    : IDisposable, IProgressLogger
+{
     [LoggerMessage(LogLevel.Information, "{message}")]
     private static partial void LogInformation(ILogger logger, string message);
+    private readonly ProgressLoggerOptions _options = optionsMonitor.CurrentValue;
 
-    private int _count;
+    public ProgressLoggerState State => _options.State;
 
-    public ProgressLogger(ILogger<ProgressLogger> logger) : base(state =>
-        LogInformation(logger, state.ToString()))
+    public Disposable Listener(EventHandler<ProgressLoggerState> action)
     {
+        _options.Progress.ProgressChanged += action;
+        return new(() => _options.Progress.ProgressChanged -= action);
     }
 
-    private ProgressLogger(ILogger logger) : base(state =>
-        LogInformation(logger, state.ToString()))
+    public void Dispose()
     {
-    }
-
-    public ProgressLoggerState State { get; private set; } = ProgressLoggerState.Empty;
-
-    private string Name
-    {
-        get;
-        set => Interlocked.Exchange(ref field, value);
-    } = string.Empty;
-
-    private string Message
-    {
-        get;
-        set => Interlocked.Exchange(ref field, value);
-    } = string.Empty;
-
-    private int Count
-    {
-        get => _count;
-        set => Interlocked.Exchange(ref _count, value);
-    }
-
-    private int Length
-    {
-        get;
-        set => Interlocked.Exchange(ref field, value);
-    } = -1;
-
-    protected override void OnReport(ProgressLoggerState value)
-    {
-        State = value;
-        base.OnReport(value);
+        ReportStop();
     }
 
     public void Report(int? count = null, int? length = null)
     {
         if (count.HasValue)
         {
-            Count = count.Value;
+            _options.Count = count.Value;
         }
 
         if (length.HasValue)
         {
-            Length = length.Value;
+            _options.Length = length.Value;
         }
 
-        OnReport(new(Name, Message, Count, Length));
+        ProgressLoggerState value = new(_options.Name, _options.Message, _options.Count, _options.Length);
+        LogInformation(logger, value.ToString());
+        _options.ProgressInterface.Report(value);
     }
 
     public void Report(string message, int? count = null, int? length = null)
     {
-        Message = message;
+        _options.Message = message;
         Report(count, length);
     }
 
     public void Report(string name, string message, int? count = null, int? length = null)
     {
-        Name = name;
+        _options.Name = name;
         Report(message, count, length);
     }
 
     public void ReportStart(string name, string message = "start")
     {
-        Name = name;
+        _options.Name = name;
         Report(message, 0, -1);
     }
 
@@ -104,44 +84,45 @@ public partial class ProgressLogger : Progress<ProgressLoggerState>, IDisposable
 
     public void SetName(string name)
     {
-        Name = name;
+        _options.Name = name;
     }
 
     public void SetMessage(string message)
     {
-        Message = message;
+        _options.Message = message;
     }
 
     public void SetCount(int count)
     {
-        Count = count;
+        _options.Count = count;
     }
 
     public void SetLength(int length)
     {
-        Length = length;
+        _options.Length = length;
     }
 
     public void AddCount(int count)
     {
-        Interlocked.Add(ref _count, count);
+        Interlocked.Add(ref _options.RefCount, count);
     }
 
     public void IncrementCount()
     {
-        Interlocked.Increment(ref _count);
+        Interlocked.Increment(ref _options.RefCount);
     }
 
     public void DecrementCount()
     {
-        Interlocked.Decrement(ref _count);
+        Interlocked.Decrement(ref _options.RefCount);
     }
 
     public async Task AutoReportAsync(
-        Func<CancellationToken, Task> func,
+        Func<IProgressLogger, CancellationToken, ValueTask> func,
         CancellationToken cancellationToken = default)
     {
-        var task = Task.Run(async () => await func(cancellationToken), cancellationToken);
+        var task = Task.Run(async () => await func(this, cancellationToken), cancellationToken);
+        await Task.Yield();
         while (!task.IsCompleted)
         {
             Report();
@@ -149,10 +130,5 @@ public partial class ProgressLogger : Progress<ProgressLoggerState>, IDisposable
         }
 
         await task.WaitAsync(cancellationToken);
-    }
-
-    public void Dispose()
-    {
-        ReportStop();
     }
 }

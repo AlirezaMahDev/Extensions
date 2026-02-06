@@ -4,19 +4,19 @@ public static class ComparisonChainExtensions
 {
     extension<T>(ComparisonChain<T>)
     {
-        public static ComparisonChain<T> Order(Comparison<T> comparison) =>
-            new(comparison);
+        public static ComparisonWrap<ComparisonChain<T>, T> ChainOrder(Comparison<T> comparison) =>
+            new ComparisonChain<T>(comparison, comparison, null).Wrap();
 
-        public static ComparisonChain<T> OrderDescending(Comparison<T> comparison) =>
-            new((x, y) => comparison(y, x));
+        public static ComparisonWrap<ComparisonChain<T>, T> ChainOrderDescending(Comparison<T> comparison) =>
+            new ComparisonChain<T>((x, y) => comparison(y, x), (x, y) => comparison(y, x), null).Wrap();
 
-        public static ComparisonChain<T> OrderBy<TKey>(Func<T, TKey> func)
+        public static ComparisonWrap<ComparisonChain<T>, T> ChainOrderBy<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey> =>
-            ComparisonChain<T>.Order((x, y) => func(x).CompareTo(func(y)));
+            ComparisonChain<T>.ChainOrder((x, y) => func(x).CompareTo(func(y)));
 
-        public static ComparisonChain<T> OrderByDescending<TKey>(Func<T, TKey> func)
+        public static ComparisonWrap<ComparisonChain<T>, T> ChainOrderByDescending<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey> =>
-            ComparisonChain<T>.OrderDescending((x, y) => func(x).CompareTo(func(y)));
+            ComparisonChain<T>.ChainOrderDescending((x, y) => func(x).CompareTo(func(y)));
     }
 
     extension<T>(ComparisonChain<T> unwrap)
@@ -28,24 +28,40 @@ public static class ComparisonChainExtensions
     extension<TComparisonChain, T>(ComparisonWrap<TComparisonChain, T> wrap)
         where TComparisonChain : struct, IComparisonChain<T>
     {
-        public ComparisonWrap<TComparisonChain, T> Then(Comparison<T> comparison) =>
+        public ComparisonWrap<TComparisonChain, T> ChainOrder(Comparison<T> comparison) =>
             new(wrap.UnWrap with
             {
-                Comparison = (x, y) => wrap.UnWrap.Comparison(x, y) is var z && z != 0 ? z : comparison(x, y)
+                Comparison = (x, y) => wrap.UnWrap.Comparison(x, y) is var z && z != 0 ? z : comparison(x, y),
+                CurrentComparison = (x, y) => comparison(x, y),
+                PreviousComparisonChain = wrap.UnWrap
             });
 
-        public ComparisonWrap<TComparisonChain, T> ThenDescending(Comparison<T> comparison) =>
+        public ComparisonWrap<TComparisonChain, T> ChainOrderDescending(Comparison<T> comparison) =>
             new(wrap.UnWrap with
             {
-                Comparison = (x, y) => wrap.UnWrap.Comparison(x, y) is var z && z != 0 ? z : comparison(y, x)
+                Comparison = (x, y) => wrap.UnWrap.Comparison(x, y) is var z && z != 0 ? z : comparison(y, x),
+                CurrentComparison = (x, y) => comparison(y, x),
+                PreviousComparisonChain = wrap.UnWrap
             });
 
-        public ComparisonWrap<TComparisonChain, T> ThenBy<TKey>(Func<T, TKey> func)
+        public ComparisonWrap<TComparisonChain, T> ChainOrderBy<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey> =>
-            wrap.Then((x, y) => func(x).CompareTo(func(y)));
+            wrap.ChainOrder((x, y) => func(x).CompareTo(func(y)));
 
-        public ComparisonWrap<TComparisonChain, T> ThenByDescending<TKey>(Func<T, TKey> func)
+        public ComparisonWrap<TComparisonChain, T> ChainOrderByDescending<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey> =>
-            wrap.ThenDescending((x, y) => func(x).CompareTo(func(y)));
+            wrap.ChainOrderDescending((x, y) => func(x).CompareTo(func(y)));
+
+        public IEnumerable<IComparisonChain<T>> GetComparisonChains()
+        {
+            var stack = new Stack<IComparisonChain<T>>();
+            IComparisonChain<T>? current = wrap.UnWrap;
+            while (current is not null)
+            {
+                stack.Push(current);
+                current = current.PreviousComparisonChain;
+            }
+            return stack;
+        }
     }
 }

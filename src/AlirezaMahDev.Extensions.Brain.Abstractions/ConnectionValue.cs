@@ -19,7 +19,7 @@ public record struct ConnectionValue<TLink> :
     public DataOffset Next;
     public DataOffset Previous;
 
-    public int ChildCount;
+    public int NextCount;
     public uint Weight;
     public float Score;
 
@@ -27,7 +27,7 @@ public record struct ConnectionValue<TLink> :
     {
         Neuron = DataOffset.Null,
         Next = DataOffset.Null,
-        ChildCount = 0,
+        NextCount = 0,
         Child = DataOffset.Null,
         Previous = DataOffset.Null,
         Score = 1f,

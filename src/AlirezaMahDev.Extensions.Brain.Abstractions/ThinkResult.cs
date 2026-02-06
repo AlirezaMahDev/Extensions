@@ -13,15 +13,13 @@ public sealed class ThinkResult<TData, TLink> : IDisposable
 {
     private readonly ReaderWriterLockSlim _lock = new();
 
-
     private readonly MemoryList<Think<TData, TLink>> _memoryList = [];
     public Memory<Think<TData, TLink>> Thinks => _memoryList.Memory;
 
     public Memory<Think<TData, TLink>> GetBestThinks(int depth)
     {
-        using var scoreSortComparer = Thinks.AsScoreSort();
-        return Thinks[..scoreSortComparer
-            .BestScoreSort(depth, NerveHelper<TData, TLink>.ThinkComparisons)];
+        Thinks.Span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
+        return Thinks[..Math.Min(Thinks.Length, depth)];
     }
 
     public bool Add(Think<TData, TLink> think, int depth)
@@ -70,8 +68,7 @@ public sealed class ThinkResult<TData, TLink> : IDisposable
 
         Span<Think<TData, TLink>> span = memory.Span;
         span[^1] = think;
-        using var memoryWrapComparer = memory.AsScoreSort();
-        memoryWrapComparer.ScoreSort(NerveHelper<TData, TLink>.ThinkComparisons);
+        span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
         return span[^1] != think;
     }
 

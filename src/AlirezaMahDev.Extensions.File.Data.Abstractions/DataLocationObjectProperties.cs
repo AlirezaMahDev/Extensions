@@ -16,8 +16,9 @@ public readonly record struct DataLocationObjectProperties : IEnumerable<DataLoc
                            BindingFlags.SetProperty |
                            BindingFlags.Public |
                            BindingFlags.Instance)
-            .Where(x => x.SetMethod is not null && x.GetMethod is not null)
-            .Where(x => x.GetCustomAttribute<NotMappedAttribute>() is null)
+            .Where(x => x.SetMethod is not null &&
+                        x.GetMethod is not null &&
+                        x.GetCustomAttribute<NotMappedAttribute>() is null)
             .ToArray();
         PropertyInfos = [.. properties.Where(x => x.PropertyType.IsUnmanaged)];
         OtherPropertyInfos = [.. properties.Where(x => !x.PropertyType.IsUnmanaged)];

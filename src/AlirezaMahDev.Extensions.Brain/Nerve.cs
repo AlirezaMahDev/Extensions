@@ -5,16 +5,19 @@ using AlirezaMahDev.Extensions.Brain.Abstractions;
 using AlirezaMahDev.Extensions.DataManager;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
+using Microsoft.Extensions.Caching.Memory;
+
 namespace AlirezaMahDev.Extensions.Brain;
 
 class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TData,
+TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TLink> : INerve<TData, TLink>
+TLink> : INerve<TData, TLink>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
+    public IMemoryCache MemoryCache { get; }
     public IDataAccess Access { get; }
     public INerveCache Cache { get; }
 
@@ -30,10 +33,15 @@ class Nerve<
     public Connection Connection { get; }
     public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; }
 
-    public Nerve(IDataManager dataManager, string name)
+    public DataLocation<DataPath> CounterLocation { get; }
+
+    public DataWrap<NerveCounter> Counter { get; }
+
+    public Nerve(IDataManager dataManager,IMemoryCache memoryCache, string name)
     {
         Cache = new NerveCache();
 
+        MemoryCache = memoryCache;
         Name = name;
         Access = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
         Debug.WriteLine($"open access {Name} {Access.Path}");
@@ -41,6 +49,7 @@ class Nerve<
         Location = Access.Root.Wrap(Access, x => x.Dictionary()).GetOrAdd(".nerve");
         ConnectionLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".connection");
         NeuronLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".neuron");
+        CounterLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".counter");
 
         var neuron = NeuronLocation
             .Wrap(Access, x => x.Storage())
@@ -48,6 +57,10 @@ class Nerve<
         var connection = ConnectionLocation
             .Wrap(Access, x => x.Storage())
             .GetOrCreateData(ConnectionValue<TLink>.Default with { Neuron = neuron.Offset });
+        Counter = CounterLocation
+            .Wrap(Access, x => x.Storage())
+            .GetOrCreateData(NerveCounter.Default)
+            .Wrap(Access);
 
         Neuron = new(neuron.Offset);
         Debug.WriteLine($"detect root neuron at {neuron.Offset}");

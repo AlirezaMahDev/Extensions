@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj"/>
+    <ProjectReference Include="..\AlirezaMahDev.Extensions.Progress.Abstractions\AlirezaMahDev.Extensions.Progress.Abstractions.csproj"/>
   </ItemGroup>
 
 </Project>

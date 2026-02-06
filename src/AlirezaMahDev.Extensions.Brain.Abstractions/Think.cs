@@ -1,19 +1,33 @@
 using System.Collections;
 
+using JetBrains.Annotations;
+
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public record Think<TData, TLink>(
-    TData Data,
-    TLink Link,
-    CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> Connection,
-    Think<TData, TLink>? Previous)
-    : IEnumerable<Think<TData, TLink>>
+public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    public Guid Id { get; } = Guid.CreateVersion7();
+    private readonly Think<TData, TLink>? _previous;
+    private readonly TLink _link;
+    private readonly CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> _connectionWrap;
 
+    public Think(
+        TData data,
+        TLink link,
+        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
+        Think<TData, TLink>? previous)
+    {
+        _link = link;
+        _connectionWrap = connectionWrap;
+        _previous = previous;
+        ConnectionWrap = connectionWrap;
+    }
+
+    public Guid Id { get; } = Guid.CreateVersion7();
     public int Count { get; private init; }
+
+    public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; }
 
     public TLink DifferenceLink { get; private init; }
     public TData DifferenceData { get; private init; }
@@ -22,8 +36,11 @@ public record Think<TData, TLink>(
     public TData AllDifferenceData { get; private init; }
     public ulong AllDifferenceWeight { get; private init; }
 
-    public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetNextConnectionWrap(int depth) =>
-        Connection.GetConnectionsWrap().ToArray().AsMemory().Near(Link, depth);
+    public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetNextConnectionWrap(int depth)
+    {
+        using var cellMemory = _connectionWrap.GetConnectionsWrapCache();
+        return cellMemory.Memory.Near(_link, depth);
+    }
 
     public Think<TData, TLink> Append(TData data,
         TLink link,
@@ -51,7 +68,7 @@ public record Think<TData, TLink>(
         while (current is not null)
         {
             stack.Push(current);
-            current = current.Previous;
+            current = current._previous;
         }
 
         return stack.GetEnumerator();
@@ -64,7 +81,7 @@ public record Think<TData, TLink>(
         return Id.GetHashCode();
     }
 
-    public virtual bool Equals(Think<TData, TLink>? other)
+    public bool Equals(Think<TData, TLink>? other)
     {
         return Id == other?.Id;
     }

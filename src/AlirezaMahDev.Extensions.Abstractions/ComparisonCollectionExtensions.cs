@@ -19,11 +19,11 @@ public static class ComparisonCollectionExtensions
 
         public ComparisonWrap<TComparisonCollection, T> With(Comparison<T> comparison,
             ComparisonBuilder<ComparisonChain<T>, T> builder) =>
-            wrap.With(builder(ComparisonChain<T>.Order(comparison).Wrap()).UnWrap.Comparison);
+            wrap.With(builder(ComparisonChain<T>.ChainOrder(comparison)).UnWrap.Comparison);
 
         public ComparisonWrap<TComparisonCollection, T> WithDescending(Comparison<T> comparison,
             ComparisonBuilder<ComparisonChain<T>, T> builder) =>
-            wrap.With(builder(ComparisonChain<T>.OrderDescending(comparison).Wrap()).UnWrap.Comparison);
+            wrap.With(builder(ComparisonChain<T>.ChainOrderDescending(comparison)).UnWrap.Comparison);
 
         public ComparisonWrap<TComparisonCollection, T> WithBy<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey> =>

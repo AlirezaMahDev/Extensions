@@ -4,7 +4,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
 public readonly record struct CellWrap<TCell, TValue, TData, TLink>(INerve<TData, TLink> Nerve, TCell Cell)
     : ICellWrap<TCell, TValue, TData, TLink>
     where TCell : ICell
@@ -15,7 +15,7 @@ public readonly record struct CellWrap<TCell, TValue, TData, TLink>(INerve<TData
     public TCell Cell { get; } = Cell;
     public INerve<TData, TLink> Nerve { get; } = Nerve;
 
-    private DataWrap<TValue> Location => new(Nerve.Access, new(Cell.Offset));
+    public DataWrap<TValue> Location => new(Nerve.Access, new(Cell.Offset));
     public ref readonly TValue RefValue => ref Location.RefValue;
 
     public void Lock(DataWrapAction<TValue> action) => Location.Lock(action);
