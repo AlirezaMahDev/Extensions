@@ -1,6 +1,6 @@
 using System.Collections;
 
-using JetBrains.Annotations;
+using AlirezaMahDev.Extensions.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
@@ -12,7 +12,8 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     private readonly CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> _connectionWrap;
 
     public Think(
-        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap, Think<TData, TLink>? previous)
+        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
+        Think<TData, TLink>? previous)
     {
         _connectionWrap = connectionWrap;
         _previous = previous;
@@ -26,32 +27,36 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
 
     public TLink DifferenceLink { get; private init; }
     public TData DifferenceData { get; private init; }
+    public double DifferenceScore { get; private init; }
     public ulong DifferenceWeight { get; private init; }
     public TLink AllDifferenceLink { get; private init; }
     public TData AllDifferenceData { get; private init; }
+    public double AllDifferenceScore { get; private init; }
     public ulong AllDifferenceWeight { get; private init; }
 
-    public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetNextConnectionWrap(TLink link, int depth)
-    {
-        var cellMemory = _connectionWrap.GetConnectionsWrapCache();
-        return cellMemory.Memory.NearConnection(link, depth);
-    }
+    public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetNextConnectionWrap(
+        PredictValue<TLink> link,
+        int depth) =>
+        _connectionWrap.GetConnectionsWrapCache().Memory.NearConnection(link, depth);
 
-    public Think<TData, TLink> Append(TData data,
-        TLink link,
+    public Think<TData, TLink> Append(ReadOnlyMemoryValue<TData> data,
+        ReadOnlyMemoryValue<TLink> link,
         CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection)
     {
-        var differenceData = NerveHelper.Difference(data, connection.NeuronWrap.RefData);
-        var differenceLink = NerveHelper.Difference(link, connection.RefLink);
+        var differenceData = NerveHelper.Difference(data.Value, connection.NeuronWrap.RefData);
+        var differenceLink = NerveHelper.Difference(link.Value, connection.RefLink);
         var differenceWeight = connection.RefValue.Weight;
+        var differenceScore = connection.RefValue.Score;
         return new(connection, this)
         {
             Count = Count + 1,
             DifferenceData = differenceData,
             DifferenceLink = differenceLink,
+            DifferenceScore = differenceScore,
             DifferenceWeight = differenceWeight,
             AllDifferenceData = AllDifferenceData + differenceData,
             AllDifferenceLink = AllDifferenceLink + differenceLink,
+            AllDifferenceScore = AllDifferenceScore + differenceScore,
             AllDifferenceWeight = AllDifferenceWeight + differenceWeight
         };
     }
@@ -83,6 +88,7 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
 
     public override string ToString()
     {
-        return $"Count:{Count} AllDifferenceData:{AllDifferenceData} AllDifferenceLink:{AllDifferenceLink} DifferenceData:{DifferenceData} DifferenceLink:{DifferenceLink}";
+        return $"Count:{Count} AllDifferenceData:{AllDifferenceData} AllDifferenceLink:{AllDifferenceLink
+        } DifferenceData:{DifferenceData} DifferenceLink:{DifferenceLink}";
     }
 }

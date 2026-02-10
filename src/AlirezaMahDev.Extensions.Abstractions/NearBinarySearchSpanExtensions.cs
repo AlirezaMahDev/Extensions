@@ -7,16 +7,16 @@ public static class NearBinarySearchSpanExtensions
     extension<T>(ReadOnlyMemory<T> readonlyMemory)
     {
         public IEnumerable<T> Near(T value,
-            ComparisonWrap<ComparisonChain<T>, T> comparisonChainWrap,
+            ComparisonChain<T> comparisonChain,
             int depth)
         {
             List<ReadOnlyMemory<T>> result = [readonlyMemory];
-            foreach (var comparisonChain in comparisonChainWrap.GetComparisonChains())
+            foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
                 List<ReadOnlyMemory<T>> newResult = [];
                 foreach (var item in result)
                 {
-                    newResult.AddRange(item.NearCore(value, comparisonChain.CurrentComparison, depth));
+                    newResult.AddRange(item.NearCore(value, comparison.CurrentComparison, depth));
                 }
 
                 result = newResult;
@@ -84,17 +84,18 @@ public static class NearBinarySearchSpanExtensions
             }
         }
 
-        public IEnumerable<T> Near<TBridge>(TBridge value, Func<T, TBridge> func,
-            ComparisonWrap<ComparisonChain<TBridge>, TBridge> comparisonChainWrap,
+        public IEnumerable<T> Near<TBridge>(TBridge value,
+            Func<T, TBridge> func,
+            ComparisonChain<TBridge> comparisonChain,
             int depth)
         {
             List<ReadOnlyMemory<T>> result = [readonlyMemory];
-            foreach (var comparisonChain in comparisonChainWrap.GetComparisonChains())
+            foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
                 List<ReadOnlyMemory<T>> newResult = [];
                 foreach (var item in result)
                 {
-                    newResult.AddRange(item.NearCore(value, func, comparisonChain.CurrentComparison, depth));
+                    newResult.AddRange(item.NearCore(value, func, comparison.CurrentComparison, depth));
                 }
 
                 result = newResult;
@@ -166,9 +167,13 @@ public static class NearBinarySearchSpanExtensions
 
     extension<T>(Memory<T> memory)
     {
-        public IEnumerable<T> Near(T value, ComparisonWrap<ComparisonChain<T>, T> comparisonChainWrap, int depth) =>
+        public IEnumerable<T> Near(T value, ComparisonChain<T> comparisonChainWrap, int depth) =>
             ((ReadOnlyMemory<T>)memory).Near(value, comparisonChainWrap, depth);
-        public IEnumerable<T> Near<TBridge>(TBridge value, Func<T, TBridge> func, ComparisonWrap<ComparisonChain<TBridge>, TBridge> comparisonChainWrap, int depth) =>
+
+        public IEnumerable<T> Near<TBridge>(TBridge value,
+            Func<T, TBridge> func,
+            ComparisonChain<TBridge> comparisonChainWrap,
+            int depth) =>
             ((ReadOnlyMemory<T>)memory).Near(value, func, comparisonChainWrap, depth);
     }
 }

@@ -1,3 +1,4 @@
+using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
@@ -15,8 +16,8 @@ public static class NerveLearnExtensions
             var connectionWrap = nerve.ConnectionWrap;
             for (var i = 0; i < data.Length; i++)
             {
-                var neuron = await nerve.FindOrAddNeuronAsync(data.Span[i], cancellationToken);
-                var connection = await connectionWrap.FindOrAddAsync(neuron, linkFunc(data[i..]), cancellationToken);
+                var neuron = await nerve.FindOrAddNeuronAsync(data.ElementAt(i), cancellationToken);
+                var connection = await connectionWrap.FindOrAddAsync(neuron, linkFunc(data[..i]), cancellationToken);
                 connectionWrap = connection.Wrap(nerve);
                 Interlocked.Increment(ref connectionWrap.Location.RefValue.Weight);
                 Interlocked.Increment(ref connectionWrap.NeuronWrap.Location.RefValue.Weight);

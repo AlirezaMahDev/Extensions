@@ -18,6 +18,7 @@ class ProgressLoggerOptions
 
     private int _count;
     public ref int RefCount => ref _count;
+
     public int Count
     {
         get => Volatile.Read(ref _count);
@@ -32,5 +33,18 @@ class ProgressLoggerOptions
 
     public Progress<ProgressLoggerState> Progress { get; } = new();
     public IProgress<ProgressLoggerState> ProgressInterface => Progress;
-    public ProgressLoggerState State => new(Name, Message, Count, Length);
+    public ProgressLoggerState State => new(Name, Message, Count, Length, LastState);
+
+    public ProgressLoggerState? LastState
+    {
+        get => Volatile.Read(ref field);
+        set => Interlocked.Exchange(ref field, value);
+    }
+
+    public ProgressLoggerState GenerateState()
+    {
+        var result = State;
+        LastState = result;
+        return result;
+    }
 }

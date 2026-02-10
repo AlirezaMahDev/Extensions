@@ -1,16 +1,15 @@
 using AlirezaMahDev.Extensions.Abstractions;
 using AlirezaMahDev.Extensions.Progress.Abstractions;
 
+using JetBrains.Annotations;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AlirezaMahDev.Extensions.Progress;
 
-partial class ProgressLogger<T>(ILogger<T> logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
-    : ProgressLogger(logger, optionsMonitor), IProgressLogger<T>
-{
-
-}
+class ProgressLogger<T>(ILogger<T> logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
+    : ProgressLogger(logger, optionsMonitor), IProgressLogger<T>;
 
 partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
     : IDisposable, IProgressLogger
@@ -21,6 +20,7 @@ partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptio
 
     public ProgressLoggerState State => _options.State;
 
+    [MustDisposeResource]
     public Disposable Listener(EventHandler<ProgressLoggerState> action)
     {
         _options.Progress.ProgressChanged += action;
@@ -44,7 +44,7 @@ partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptio
             _options.Length = length.Value;
         }
 
-        ProgressLoggerState value = new(_options.Name, _options.Message, _options.Count, _options.Length);
+        ProgressLoggerState value = _options.GenerateState();
         LogInformation(logger, value.ToString());
         _options.ProgressInterface.Report(value);
     }

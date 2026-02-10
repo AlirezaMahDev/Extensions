@@ -68,8 +68,9 @@ public sealed class ThinkResult<TData, TLink> : IDisposable
 
         Span<Think<TData, TLink>> span = memory.Span;
         span[^1] = think;
-        span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
-        return span[^1] != think;
+        var thinkComparisonsComparison = NerveHelper<TData, TLink>.ThinkComparisons.Comparison;
+        span.Sort(thinkComparisonsComparison);
+        return thinkComparisonsComparison(span[^2],span[^1]) == 0 || span[^1] != think;
     }
 
     public void Dispose()

@@ -1,7 +1,8 @@
 using System.Buffers;
-using System.Diagnostics;
 
 using AlirezaMahDev.Extensions.Abstractions;
+
+using CommunityToolkit.HighPerformance.Buffers;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
@@ -11,60 +12,6 @@ public static class NerveThinkExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        // public Memory<Think<TData, TLink>> Think(int depth,
-        //     Func<ReadOnlyMemory<TData>, TLink> linkFunc,
-        //     ReadOnlyMemory<TData> data)
-        // {
-        //     var result = new ThinkResult<TData, TLink>();
-        //
-        //     INerve<TData, TLink>.ThinkCore(
-        //         depth,
-        //         linkFunc,
-        //         data,
-        //         new(default, linkFunc(data), nerve.ConnectionWrap, null),
-        //         result
-        //     );
-        //
-        //     return result.Thinks;
-        // }
-        //
-        // private static void ThinkCore(
-        //     int depth,
-        //     Func<ReadOnlyMemory<TData>, TLink> linkFunc,
-        //     ReadOnlyMemory<TData> input,
-        //     Think<TData, TLink> think,
-        //     ThinkResult<TData, TLink> result)
-        // {
-        //     if (INerve<TData, TLink>.CheckResultAvailable(depth, input, think, result))
-        //     {
-        //         return;
-        //     }
-        //
-        //     Thread.Yield();
-        //
-        //     var link = linkFunc(input).AsReadonlyMemoryValue();
-        //     if (INerve<TData, TLink>.FindNextConnections(
-        //             depth,
-        //             link,
-        //             input,
-        //             think,
-        //             out TData data,
-        //             out Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> memory))
-        //     {
-        //         return;
-        //     }
-        //
-        //     Thread.Yield();
-        //
-        //     var nextInput = input[1..];
-        //     Parallel.ForEach(MemoryMarshal
-        //             .ToEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>(memory)
-        //             .Select(innerConnection => think.Append(data, link.Value, innerConnection))
-        //             .TakeWhile(result.CanAdd),
-        //         innerThink =>
-        //             INerve<TData, TLink>.ThinkCore(depth, linkFunc, nextInput, innerThink, result));
-        // }
-
         public async ValueTask<Memory<Think<TData, TLink>>> ThinkAsync(
             int depth,
             Func<ReadOnlyMemory<TData>, TLink> linkFunc,
@@ -77,6 +24,7 @@ public static class NerveThinkExtensions
             await INerve<TData, TLink>.ThinkCoreAsync(depth,
                     linkFunc,
                     data,
+                    0,
                     think,
                     result,
                     cancellationToken)
@@ -89,7 +37,8 @@ public static class NerveThinkExtensions
         private static async Task<bool> ThinkCoreAsync(
             int depth,
             Func<ReadOnlyMemory<TData>, TLink> linkFunc,
-            ReadOnlyMemory<TData> input,
+            ReadOnlyMemory<TData> data,
+            int index,
             Think<TData, TLink> think,
             ThinkResult<TData, TLink> result,
             CancellationToken cancellationToken = default)
@@ -97,7 +46,10 @@ public static class NerveThinkExtensions
             if (cancellationToken.IsCancellationRequested)
                 await Task.FromCanceled(cancellationToken);
 
-            if (input.IsEmpty)
+            var previousData = data[..index];
+            var nextData = data[index..];
+
+            if (nextData.IsEmpty)
             {
                 if (think.ConnectionWrap.ChildWrap.HasValue)
                 {
@@ -114,12 +66,13 @@ public static class NerveThinkExtensions
                 await Task.FromCanceled(cancellationToken);
             await Task.Yield();
 
-            var link = linkFunc(input).AsReadonlyMemoryValue();
-            var data = input.Span[0];
+            ReadOnlyMemoryValue<TLink> linkValue = linkFunc(previousData);
+            ReadOnlyMemoryValue<TData> dataValue = nextData.ElementAt(0);
 
-            var pair = new DataPairLink<TData, TLink>(data, link.Value);
+            var pair = new ThinkValue<TData, TLink>(dataValue, linkValue);
             var cellMemory = think.ConnectionWrap.GetConnectionsWrapCache();
-            Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> memory = cellMemory.Memory.NearConnection(pair, depth);
+            Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> memory =
+                cellMemory.Memory.NearConnection(pair, depth);
 
             if (memory.IsEmpty)
             {
@@ -130,20 +83,20 @@ public static class NerveThinkExtensions
                 await Task.FromCanceled(cancellationToken);
             await Task.Yield();
 
-            var nextInput = input[1..];
             using var tasks = MemoryPool<Task<bool>>.Shared.Rent(memory.Length);
             var tasksSpan = tasks.Memory[..memory.Length].Span;
             var taskCount = 0;
             for (var i = 0; i < memory.Length; i++)
             {
-                var innerConnection = memory.Span[i];
-                var innerThink = think.Append(data, link.Value, innerConnection);
-                if (result.CanAdd(innerThink, depth))
+                var nextConnection = memory.Span[i];
+                var nextThink = think.Append(dataValue, linkValue, nextConnection);
+                if (result.CanAdd(nextThink, depth))
                 {
                     tasksSpan[i] = INerve<TData, TLink>.ThinkCoreAsync(depth,
                         linkFunc,
-                        nextInput,
-                        innerThink,
+                        data,
+                        index + 1,
+                        nextThink,
                         result,
                         cancellationToken);
                     taskCount++;
@@ -155,12 +108,7 @@ public static class NerveThinkExtensions
             }
 
             var whenAll = await Task.WhenAll(tasksSpan[..taskCount]);
-            if (whenAll.Any(x => x))
-            {
-                return true;
-            }
-
-            return false;
+            return whenAll.Any(x => x);
         }
     }
 }
