@@ -1,10 +1,12 @@
 namespace AlirezaMahDev.Extensions.Abstractions;
 
-public readonly record struct ComparableComparerBridge<T, TBridge, TComparer>(
-    TBridge Value,
-    Func<T, TBridge> Func,
-    TComparer Comparer) : IComparable<T>
+public readonly ref struct ComparableComparerBridge<T, TBridge, TComparer>(
+    TBridge value,
+    Func<T, TBridge> func,
+    TComparer comparer) : IComparable<T>
     where TComparer : IComparer<TBridge>
+    where TBridge : allows ref struct
 {
-    public int CompareTo(T? other) => other is null ? 1 : Comparer.Compare(Value, Func(other));
+    private readonly TBridge _value = value;
+    public int CompareTo(T? other) => other is null ? 1 : comparer.Compare(_value, func(other));
 }

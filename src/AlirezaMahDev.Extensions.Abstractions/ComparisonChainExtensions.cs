@@ -3,6 +3,7 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 public static class ComparisonChainExtensions
 {
     extension<T>(ComparisonChain<T>)
+        where T : allows ref struct
     {
         public static ComparisonWrap<ComparisonChain<T>, T> ChainOrder(Comparison<T> comparison) =>
             new ComparisonChain<T>(comparison, comparison, null).Wrap();
@@ -20,6 +21,7 @@ public static class ComparisonChainExtensions
     }
 
     extension<T>(ComparisonChain<T> unwrap)
+        where T : allows ref struct
     {
         public ComparisonWrap<ComparisonChain<T>, T> Wrap() =>
             new(unwrap);
@@ -27,12 +29,13 @@ public static class ComparisonChainExtensions
 
     extension<TComparisonChain, T>(ComparisonWrap<TComparisonChain, T> wrap)
         where TComparisonChain : struct, IComparisonChain<T>
+        where T : allows ref struct
     {
         public ComparisonWrap<TComparisonChain, T> ChainOrder(Comparison<T> comparison) =>
             new(wrap.UnWrap with
             {
                 Comparison = (x, y) => wrap.UnWrap.Comparison(x, y) is var z && z != 0 ? z : comparison(x, y),
-                CurrentComparison = (x, y) => comparison(x, y),
+                CurrentComparison = comparison,
                 PreviousComparisonChain = wrap.UnWrap
             });
 
@@ -61,7 +64,16 @@ public static class ComparisonChainExtensions
                 stack.Push(current);
                 current = current.PreviousComparisonChain;
             }
+
             return stack;
         }
+
+        public ComparisonWrap<TComparisonChain, T> Merge() =>
+            new(wrap.UnWrap with
+            {
+                Comparison = wrap.UnWrap.Comparison,
+                CurrentComparison = wrap.UnWrap.Comparison,
+                PreviousComparisonChain = null
+            });
     }
 }

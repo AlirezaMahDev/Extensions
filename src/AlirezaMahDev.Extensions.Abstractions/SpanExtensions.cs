@@ -1,7 +1,5 @@
 using System.Runtime.CompilerServices;
 
-using CommunityToolkit.HighPerformance;
-
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class SpanExtensions

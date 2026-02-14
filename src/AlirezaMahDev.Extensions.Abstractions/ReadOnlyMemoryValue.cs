@@ -25,4 +25,6 @@ public readonly struct ReadOnlyMemoryValue<T>
 
     public static implicit operator ReadOnlyMemory<T>(in ReadOnlyMemoryValue<T> memoryValue) =>
         memoryValue._readOnlyMemory;
+    public static implicit operator ReadOnlySpanValue<T>(ReadOnlyMemoryValue<T> readOnlyMemory) => new(in readOnlyMemory.Value);
+
 }

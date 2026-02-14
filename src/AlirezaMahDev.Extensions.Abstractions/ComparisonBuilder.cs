@@ -1,4 +1,5 @@
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public delegate ComparisonWrap<TComparisonTarget, T> ComparisonBuilder<TComparisonTarget, T>(
-    ComparisonWrap<TComparisonTarget, T> comparisonChain);
+    ComparisonWrap<TComparisonTarget, T> comparisonChain)
+    where T : allows ref struct;

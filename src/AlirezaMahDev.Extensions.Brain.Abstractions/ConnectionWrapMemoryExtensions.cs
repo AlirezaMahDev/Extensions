@@ -1,5 +1,7 @@
 using AlirezaMahDev.Extensions.Abstractions;
 
+using JetBrains.Annotations;
+
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class ConnectionWrapMemoryExtensions
@@ -8,32 +10,34 @@ public static class ConnectionWrapMemoryExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> NearConnection(
-            ThinkValue<TData, TLink> pair,
-            int depth) =>
+        [MustDisposeResource]
+        public IMemoryReadonlyList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
+            NearConnection(
+                ThinkValueRef<TData, TLink> pair,
+                int depth) =>
             memory.Near(pair,
-                    x =>
-                        new(x.NeuronWrap.RefData,
-                            x.RefLink,
-                            x.RefValue.RefScore,
-                            x.RefValue.RefWeight),
-                    NerveHelper<TData, TLink>.NearComparisons,
-                    depth)
-                .ToArray();
+                x =>
+                    new(in x.NeuronWrap.RefData,
+                        in x.RefLink,
+                        in x.RefValue.RefScore,
+                        in x.RefValue.RefWeight),
+                NerveHelper<TData, TLink>.SleepComparisons,
+                depth);
 
-        public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>
-            NearConnection(PredictValue<TLink> link, int depth)
+        [MustDisposeResource]
+        public IMemoryReadonlyList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
+            NearConnection(PredictValueRef<TLink> link, int depth)
         {
-            var asMemory = memory.ToArray().AsMemory();
-            asMemory.Span.Sort(x =>
-                    new PredictValue<TLink>(x.RefLink, x.RefValue.RefScore, x.RefValue.RefWeight),
+            using MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> memoryList = memory;
+            var cloneMemory = memoryList.Memory;
+            cloneMemory.Span.Sort(x =>
+                    new PredictValueRef<TLink>(in x.RefLink, in x.RefValue.RefScore, in x.RefValue.RefWeight),
                 NerveHelper<TData, TLink>.NearNextComparisons);
-            return asMemory
+            return cloneMemory
                 .Near(link,
-                    x => new(x.RefLink, x.RefValue.RefScore, x.RefValue.RefWeight),
+                    x => new(in x.RefLink, in x.RefValue.RefScore, in x.RefValue.RefWeight),
                     NerveHelper<TData, TLink>.NearNextComparisons,
-                    depth)
-                .ToArray();
+                    depth);
         }
     }
 }

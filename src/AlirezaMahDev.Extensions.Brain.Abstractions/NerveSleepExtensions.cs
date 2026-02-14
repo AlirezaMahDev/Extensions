@@ -25,7 +25,7 @@ public static class NerveSleepExtensions
         private static async Task SleepAsyncCore(
             IProgressLogger progressLogger,
             CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> cellWrap,
-            ComparisonChain<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> comparisonChain,
+            ComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
             CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -39,13 +39,21 @@ public static class NerveSleepExtensions
                 case 1:
                     break;
                 default:
-                    cellMemory.Memory.Span.Sort(comparisonChain.Comparison);
-                    await cellWrap.LockAsync(location =>
-                        {
-                            location.RefValue.Child = cellMemory.Memory.Span[0].Cell.Offset;
-                            progressLogger.IncrementCount();
-                        },
-                        CancellationToken.None);
+                    cellMemory.Memory.Span.Sort(wrap => new(
+                            in wrap.NeuronWrap.RefData,
+                            in wrap.RefLink,
+                            in wrap.RefValue.RefScore,
+                            in wrap.RefValue.RefWeight),
+                        comparisonChain.Comparison);
+                    if (cellWrap.RefValue.Child != cellMemory.Memory.Span[0].Cell.Offset)
+                    {
+                        await cellWrap.LockAsync(location =>
+                            {
+                                location.RefValue.Child = cellMemory.Memory.Span[0].Cell.Offset;
+                                progressLogger.IncrementCount();
+                            },
+                            CancellationToken.None);
+                    }
 
                     CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> second = default;
                     for (int index = 0; index < cellMemory.Count - 1; index++)

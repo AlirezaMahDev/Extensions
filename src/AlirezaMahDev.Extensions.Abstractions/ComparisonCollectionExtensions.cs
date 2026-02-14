@@ -10,6 +10,7 @@ public static class ComparisonCollectionExtensions
 
     extension<TComparisonCollection, T>(ComparisonWrap<TComparisonCollection, T> wrap)
         where TComparisonCollection : struct, IComparisonCollection<T>
+        where T : allows ref struct
     {
         public ComparisonWrap<TComparisonCollection, T> With(Comparison<T> comparison) =>
             new(wrap.UnWrap with { Enumerable = wrap.UnWrap.Enumerable.Append(comparison) });

@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 
 namespace AlirezaMahDev.Extensions.Abstractions;
 
@@ -6,49 +6,46 @@ public static class NearBinarySearchSpanExtensions
 {
     extension<T>(ReadOnlyMemory<T> readonlyMemory)
     {
-        public IEnumerable<T> Near(T value,
+        [MustDisposeResource]
+        public IMemoryReadonlyList<ReadOnlyMemory<T>> Near(T value,
             ComparisonChain<T> comparisonChain,
             int depth)
         {
-            List<ReadOnlyMemory<T>> result = [readonlyMemory];
+            MemoryList<ReadOnlyMemory<T>> result = [readonlyMemory];
             foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
-                List<ReadOnlyMemory<T>> newResult = [];
+                MemoryList<ReadOnlyMemory<T>> newResult = [];
                 foreach (var item in result)
                 {
-                    newResult.AddRange(item.NearCore(value, comparison.CurrentComparison, depth));
+                    item.NearCore(newResult, value, comparison.CurrentComparison, depth);
                 }
 
+                result.Dispose();
                 result = newResult;
             }
 
-            foreach (var item in result)
-            {
-                foreach (var subItem in MemoryMarshal.ToEnumerable(item))
-                {
-                    yield return subItem;
-                }
-            }
+            return result;
         }
 
-        private IEnumerable<ReadOnlyMemory<T>> NearCore(T value,
+        private void NearCore(MemoryList<ReadOnlyMemory<T>> result,
+            T value,
             Comparison<T> comparison,
             int depth)
         {
             if (readonlyMemory.IsEmpty)
             {
-                yield break;
+                return;
             }
 
             var binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, comparison);
             if (binarySearchRange.TryGetRange(out var range))
             {
-                yield return readonlyMemory[range];
+                result.Add(readonlyMemory[range]);
             }
 
             if (depth == 0)
             {
-                yield break;
+                return;
             }
 
             int before, after;
@@ -67,68 +64,61 @@ public static class NearBinarySearchSpanExtensions
 
             if (before >= 0 && before < readonlyMemory.Length)
             {
-                foreach (var item in readonlyMemory[..(before + 1)]
-                             .NearCore(readonlyMemory.Span[before], comparison, depth - 1))
-                {
-                    yield return item;
-                }
+                readonlyMemory[..(before + 1)]
+                    .NearCore(result, readonlyMemory.Span[before], comparison, depth - 1);
             }
 
             if (after >= 0 && after < readonlyMemory.Length)
             {
-                foreach (var item in readonlyMemory[after..]
-                             .NearCore(readonlyMemory.Span[after], comparison, depth - 1))
-                {
-                    yield return item;
-                }
+                readonlyMemory[after..]
+                    .NearCore(result, readonlyMemory.Span[after], comparison, depth - 1);
             }
         }
 
-        public IEnumerable<T> Near<TBridge>(TBridge value,
+        [MustDisposeResource]
+        public IMemoryReadonlyList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
             Func<T, TBridge> func,
             ComparisonChain<TBridge> comparisonChain,
             int depth)
+            where TBridge : allows ref struct
         {
-            List<ReadOnlyMemory<T>> result = [readonlyMemory];
+            MemoryList<ReadOnlyMemory<T>> result = [readonlyMemory];
             foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
-                List<ReadOnlyMemory<T>> newResult = [];
+                MemoryList<ReadOnlyMemory<T>> newResult = [];
                 foreach (var item in result)
                 {
-                    newResult.AddRange(item.NearCore(value, func, comparison.CurrentComparison, depth));
+                    item.NearCore(newResult, value, func, comparison.CurrentComparison, depth);
                 }
 
+                result.Dispose();
                 result = newResult;
             }
 
-            foreach (var item in result)
-            {
-                foreach (var subItem in MemoryMarshal.ToEnumerable(item))
-                {
-                    yield return subItem;
-                }
-            }
+            return result;
         }
 
-        private IEnumerable<ReadOnlyMemory<T>> NearCore<TBridge>(TBridge value,
+        private void NearCore<TBridge>(MemoryList<ReadOnlyMemory<T>> result,
+            TBridge value,
             Func<T, TBridge> func,
             Comparison<TBridge> comparison,
             int depth)
+            where TBridge : allows ref struct
         {
             if (readonlyMemory.IsEmpty)
             {
-                yield break;
+                return;
             }
 
             var binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, func, comparison);
             if (binarySearchRange.TryGetRange(out var range))
             {
-                yield return readonlyMemory[range];
+                result.Add(readonlyMemory[range]);
             }
 
             if (depth == 0)
             {
-                yield break;
+                return;
             }
 
             int before, after;
@@ -147,33 +137,30 @@ public static class NearBinarySearchSpanExtensions
 
             if (before >= 0 && before < readonlyMemory.Length)
             {
-                foreach (var item in readonlyMemory[..(before + 1)]
-                             .NearCore(func(readonlyMemory.Span[before]), func, comparison, depth - 1))
-                {
-                    yield return item;
-                }
+                readonlyMemory[..(before + 1)]
+                    .NearCore(result, func(readonlyMemory.Span[before]), func, comparison, depth - 1);
             }
 
             if (after >= 0 && after < readonlyMemory.Length)
             {
-                foreach (var item in readonlyMemory[after..]
-                             .NearCore(func(readonlyMemory.Span[after]), func, comparison, depth - 1))
-                {
-                    yield return item;
-                }
+                readonlyMemory[after..]
+                    .NearCore(result, func(readonlyMemory.Span[after]), func, comparison, depth - 1);
             }
         }
     }
 
     extension<T>(Memory<T> memory)
     {
-        public IEnumerable<T> Near(T value, ComparisonChain<T> comparisonChainWrap, int depth) =>
+        [MustDisposeResource]
+        public IMemoryReadonlyList<ReadOnlyMemory<T>> Near(T value, ComparisonChain<T> comparisonChainWrap, int depth) =>
             ((ReadOnlyMemory<T>)memory).Near(value, comparisonChainWrap, depth);
 
-        public IEnumerable<T> Near<TBridge>(TBridge value,
+        [MustDisposeResource]
+        public IMemoryReadonlyList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
             Func<T, TBridge> func,
             ComparisonChain<TBridge> comparisonChainWrap,
-            int depth) =>
+            int depth)
+            where TBridge : allows ref struct =>
             ((ReadOnlyMemory<T>)memory).Near(value, func, comparisonChainWrap, depth);
     }
 }

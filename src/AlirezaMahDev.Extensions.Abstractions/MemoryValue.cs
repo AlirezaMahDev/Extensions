@@ -28,4 +28,7 @@ public readonly struct MemoryValue<T>
 
     public static implicit operator ReadOnlyMemoryValue<T>(in MemoryValue<T> memoryValue) =>
         new(memoryValue);
+
+    public static implicit operator SpanValue<T>(MemoryValue<T> memoryValue) => new(ref memoryValue.Value);
+    public static implicit operator ReadOnlySpanValue<T>(MemoryValue<T> memoryValue) => new(in memoryValue.Value);
 }

@@ -2,62 +2,66 @@ using System.Collections;
 
 using AlirezaMahDev.Extensions.Abstractions;
 
+using JetBrains.Annotations;
+
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
+public sealed class Think<TData, TLink>(
+    ReadOnlyMemoryValue<TData> data,
+    ReadOnlyMemoryValue<TLink> link,
+    CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
+    Think<TData, TLink>? previous)
+    : IEnumerable<Think<TData, TLink>>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    private readonly Think<TData, TLink>? _previous;
-    private readonly CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> _connectionWrap;
-
-    public Think(
-        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
-        Think<TData, TLink>? previous)
-    {
-        _connectionWrap = connectionWrap;
-        _previous = previous;
-        ConnectionWrap = connectionWrap;
-    }
+    private readonly Think<TData, TLink>? _previous = previous;
+    private readonly CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> _connectionWrap = connectionWrap;
 
     public Guid Id { get; } = Guid.CreateVersion7();
     public int Count { get; private init; }
 
-    public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; }
+    public ReadOnlyMemoryValue<TData> Data { get; } = data;
+    public ReadOnlyMemoryValue<TLink> Link { get; } = link;
+    public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; } = connectionWrap;
 
     public TLink DifferenceLink { get; private init; }
     public TData DifferenceData { get; private init; }
-    public double DifferenceScore { get; private init; }
-    public ulong DifferenceWeight { get; private init; }
+
+    public double Score { get; private init; }
+    public ulong Weight { get; private init; }
+
     public TLink AllDifferenceLink { get; private init; }
     public TData AllDifferenceData { get; private init; }
-    public double AllDifferenceScore { get; private init; }
-    public ulong AllDifferenceWeight { get; private init; }
+    public double AllScore { get; private init; }
+    public ulong AllWeight { get; private init; }
 
-    public Memory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetNextConnectionWrap(
-        PredictValue<TLink> link,
-        int depth) =>
+    [MustDisposeResource]
+    public IMemoryReadonlyList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
+        GetNextConnectionWrap(
+            PredictValueRef<TLink> link,
+            int depth) =>
         _connectionWrap.GetConnectionsWrapCache().Memory.NearConnection(link, depth);
 
-    public Think<TData, TLink> Append(ReadOnlyMemoryValue<TData> data,
-        ReadOnlyMemoryValue<TLink> link,
+    public Think<TData, TLink> Append(ReadOnlySpanValue<TData> data,
+        ReadOnlySpanValue<TLink> link,
         CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection)
     {
-        var differenceData = NerveHelper.Difference(data.Value, connection.NeuronWrap.RefData);
-        var differenceLink = NerveHelper.Difference(link.Value, connection.RefLink);
-        var differenceWeight = connection.RefValue.Weight;
-        var differenceScore = connection.RefValue.Score;
-        return new(connection, this)
+        var differenceData = NerveHelper.Difference(in data.Value, in connection.NeuronWrap.RefData);
+        var differenceLink = NerveHelper.Difference(in link.Value, in connection.RefLink);
+        var weight = connection.RefValue.Weight;
+        var score = connection.RefValue.Score;
+        return new(data.Value, link.Value, connection, this)
         {
             Count = Count + 1,
             DifferenceData = differenceData,
             DifferenceLink = differenceLink,
-            DifferenceScore = differenceScore,
-            DifferenceWeight = differenceWeight,
+            Score = score,
+            Weight = weight,
             AllDifferenceData = AllDifferenceData + differenceData,
             AllDifferenceLink = AllDifferenceLink + differenceLink,
-            AllDifferenceScore = AllDifferenceScore + differenceScore,
-            AllDifferenceWeight = AllDifferenceWeight + differenceWeight
+            AllScore = AllScore + score,
+            AllWeight = AllWeight + weight
         };
     }
 
