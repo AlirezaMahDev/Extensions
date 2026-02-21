@@ -6,6 +6,7 @@ public interface IProgressLogger
 {
     ProgressLoggerState State { get; }
 
+    void AddLength(int length);
     void AddCount(int count);
     Task AutoReportAsync(Func<IProgressLogger, CancellationToken, ValueTask> func, CancellationToken cancellationToken = default);
     void DecrementCount();

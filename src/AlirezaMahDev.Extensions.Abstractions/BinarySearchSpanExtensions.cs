@@ -7,7 +7,7 @@ public static class BinarySearchSpanExtensions
         public int BinarySearchLowerBound<TComparable>(TComparable value)
             where TComparable : IComparable<T>, allows ref struct
         {
-            int lower = readonlySpan.LowerBound(value);
+            var lower = readonlySpan.LowerBound(value);
 
             return lower < readonlySpan.Length && value.CompareTo(readonlySpan[lower]) == 0
                 ? lower
@@ -38,12 +38,12 @@ public static class BinarySearchSpanExtensions
         public int BinarySearchUpperBound<TComparable>(TComparable value)
             where TComparable : IComparable<T>, allows ref struct
         {
-            int lower = readonlySpan.LowerBound(value);
+            var lower = readonlySpan.LowerBound(value);
 
             if (lower >= readonlySpan.Length || value.CompareTo(readonlySpan[lower]) != 0)
                 return ~lower;
 
-            int upper = readonlySpan[lower..].UpperBound(value) + lower;
+            var upper = readonlySpan[lower..].UpperBound(value) + lower;
 
             return upper - 1;
         }
@@ -72,12 +72,12 @@ public static class BinarySearchSpanExtensions
         public int LowerBound<TComparable>(TComparable value)
             where TComparable : IComparable<T>, allows ref struct
         {
-            int lo = 0;
-            int hi = readonlySpan.Length;
+            var lo = 0;
+            var hi = readonlySpan.Length;
 
             while (lo < hi)
             {
-                int mid = lo + (hi - lo >> 1);
+                var mid = lo + (hi - lo >> 1);
 
                 if (value.CompareTo(readonlySpan[mid]) > 0)
                     lo = mid + 1;
@@ -108,12 +108,12 @@ public static class BinarySearchSpanExtensions
         public int UpperBound<TComparable>(TComparable value)
             where TComparable : IComparable<T>, allows ref struct
         {
-            int lo = 0;
-            int hi = readonlySpan.Length;
+            var lo = 0;
+            var hi = readonlySpan.Length;
 
             while (lo < hi)
             {
-                int mid = lo + (hi - lo >> 1);
+                var mid = lo + (hi - lo >> 1);
 
                 if (value.CompareTo(readonlySpan[mid]) >= 0)
                     lo = mid + 1;
@@ -145,14 +145,19 @@ public static class BinarySearchSpanExtensions
         public BinarySearchRange BinarySearchRange<TComparable>(TComparable value)
             where TComparable : IComparable<T>, allows ref struct
         {
-            int lower = readonlySpan.BinarySearchLowerBound(value);
+            var lower = readonlySpan.BinarySearchLowerBound(value);
 
             if (lower < 0)
                 return new(lower, lower);
 
-            int upper = readonlySpan[lower..].BinarySearchUpperBound(value) + lower;
+            var upper = readonlySpan[lower..].BinarySearchUpperBound(value);
 
-            return new(lower, upper);
+            if (upper < 0)
+            {
+                upper = ~upper - 1;
+            }
+
+            return new(lower, lower + upper);
         }
 
         public BinarySearchRange BinarySearchRange(T value, Comparison<T> comparison) =>
@@ -234,7 +239,7 @@ public static class BinarySearchSpanExtensions
             Comparison<TBridge> comparison)
             where TBridge : allows ref struct =>
             readonlySpan.BinarySearchRangeSlice(new ComparableComparisonBridge<T, TBridge>(value, func, comparison));
-        
+
         public ReadOnlySpan<T> BinarySearchRangeSlice<TBridge, TComparer>(TBridge value,
             Func<T, TBridge> func,
             TComparer comparison)
@@ -291,14 +296,14 @@ public static class BinarySearchSpanExtensions
             span.TryBinarySearchRangeSlice(value, out var values)
                 ? values
                 : throw new("not found in slice");
-        
+
         public Span<T> BinarySearchRangeSlice(T value, Comparison<T> comparison) =>
             span.BinarySearchRangeSlice(new ComparableComparison<T>(value, comparison));
 
         public Span<T> BinarySearchRangeSlice<TComparer>(T value, TComparer comparison)
             where TComparer : IComparer<T> =>
             span.BinarySearchRangeSlice(new ComparableComparer<T, TComparer>(value, comparison));
-        
+
         public Span<T> BinarySearchRangeSlice<TBridge>(TBridge value,
             Func<T, TBridge> func,
             Comparison<TBridge> comparison)

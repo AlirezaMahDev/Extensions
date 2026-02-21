@@ -25,11 +25,14 @@ class ProgressLoggerOptions
         set => Interlocked.Exchange(ref _count, value);
     }
 
+    private int _length;
+    public ref int RefLength => ref _length;
+
     public int Length
     {
-        get => Volatile.Read(ref field);
-        set => Interlocked.Exchange(ref field, value);
-    } = 0;
+        get => Volatile.Read(ref _length);
+        set => Interlocked.Exchange(ref _length, value);
+    }
 
     public Progress<ProgressLoggerState> Progress { get; } = new();
     public IProgress<ProgressLoggerState> ProgressInterface => Progress;

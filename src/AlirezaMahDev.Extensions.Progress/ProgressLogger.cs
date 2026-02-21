@@ -44,7 +44,7 @@ partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptio
             _options.Length = length.Value;
         }
 
-        ProgressLoggerState value = _options.GenerateState();
+        var value = _options.GenerateState();
         LogInformation(logger, value.ToString());
         _options.ProgressInterface.Report(value);
     }
@@ -100,6 +100,11 @@ partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptio
     public void SetLength(int length)
     {
         _options.Length = length;
+    }
+
+    public void AddLength(int length)
+    {
+        Interlocked.Add(ref _options.RefLength, length);
     }
 
     public void AddCount(int count)

@@ -37,7 +37,7 @@ public sealed class Think<TData, TLink>(
     public ulong AllWeight { get; private init; }
 
     [MustDisposeResource]
-    public IMemoryReadonlyList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
+    public IReadonlyMemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
         GetNextConnectionWrap(
             PredictValueRef<TLink> link,
             int depth) =>
@@ -47,8 +47,15 @@ public sealed class Think<TData, TLink>(
         ReadOnlySpanValue<TLink> link,
         CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection)
     {
-        var differenceData = NerveHelper.Difference(in data.Value, in connection.NeuronWrap.RefData);
-        var differenceLink = NerveHelper.Difference(in link.Value, in connection.RefLink);
+        var differenceData = NerveHelper.Difference(
+            TData.Normalize(in data.Value),
+            TData.Normalize(in connection.NeuronWrap.RefData)
+        );
+        var differenceLink = NerveHelper.Difference(
+            TLink.Normalize(in link.Value),
+            TLink.Normalize(in connection.RefLink)
+        );
+
         var weight = connection.RefValue.Weight;
         var score = connection.RefValue.Score;
         return new(data.Value, link.Value, connection, this)
@@ -92,7 +99,6 @@ public sealed class Think<TData, TLink>(
 
     public override string ToString()
     {
-        return $"Count:{Count} AllDifferenceData:{AllDifferenceData} AllDifferenceLink:{AllDifferenceLink
-        } DifferenceData:{DifferenceData} DifferenceLink:{DifferenceLink}";
+        return $"Count:{Count} AllDifferenceData:{AllDifferenceData} AllDifferenceLink:{AllDifferenceLink} DifferenceData:{DifferenceData} DifferenceLink:{DifferenceLink}";
     }
 }

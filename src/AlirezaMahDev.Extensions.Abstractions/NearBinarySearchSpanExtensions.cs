@@ -7,7 +7,7 @@ public static class NearBinarySearchSpanExtensions
     extension<T>(ReadOnlyMemory<T> readonlyMemory)
     {
         [MustDisposeResource]
-        public IMemoryReadonlyList<ReadOnlyMemory<T>> Near(T value,
+        public IReadonlyMemoryList<ReadOnlyMemory<T>> Near(T value,
             ComparisonChain<T> comparisonChain,
             int depth)
         {
@@ -76,7 +76,7 @@ public static class NearBinarySearchSpanExtensions
         }
 
         [MustDisposeResource]
-        public IMemoryReadonlyList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
+        public IReadonlyMemoryList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
             Func<T, TBridge> func,
             ComparisonChain<TBridge> comparisonChain,
             int depth)
@@ -152,11 +152,11 @@ public static class NearBinarySearchSpanExtensions
     extension<T>(Memory<T> memory)
     {
         [MustDisposeResource]
-        public IMemoryReadonlyList<ReadOnlyMemory<T>> Near(T value, ComparisonChain<T> comparisonChainWrap, int depth) =>
+        public IReadonlyMemoryList<ReadOnlyMemory<T>> Near(T value, ComparisonChain<T> comparisonChainWrap, int depth) =>
             ((ReadOnlyMemory<T>)memory).Near(value, comparisonChainWrap, depth);
 
         [MustDisposeResource]
-        public IMemoryReadonlyList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
+        public IReadonlyMemoryList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
             Func<T, TBridge> func,
             ComparisonChain<TBridge> comparisonChainWrap,
             int depth)

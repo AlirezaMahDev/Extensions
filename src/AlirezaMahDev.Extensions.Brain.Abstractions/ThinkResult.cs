@@ -63,7 +63,7 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
 
     private bool CanAddCore(Think<TData, TLink> think) =>
         _memoryList.Count <= Math.Max(1, depth) ||
-        NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]) <= 0;
+            NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]) <= 0;
 
     public void Dispose()
     {

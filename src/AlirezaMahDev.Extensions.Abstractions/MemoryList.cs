@@ -7,30 +7,29 @@ using JetBrains.Annotations;
 
 namespace AlirezaMahDev.Extensions.Abstractions;
 
-public interface IMemoryList<T> : IDisposable, IList<T>
-{
-    Memory<T> Memory { get; }
-    MemoryList<T> Clone();
-}
-
-public interface IMemoryReadonlyList<T> : IDisposable, IReadOnlyList<T>
-{
-    ReadOnlyMemory<T> Memory { get; }
-    IMemoryReadonlyList<T> Clone();
-}
-
 [MustDisposeResource]
 [DebuggerDisplay("Count = {Count}")]
-public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>, IMemoryReadonlyList<T>
+public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
 {
     [MustDisposeResource]
     public static implicit operator MemoryList<T>(ReadOnlySpan<T> values) => new(values);
+
     [MustDisposeResource]
     public static implicit operator MemoryList<T>(Span<T> values) => new(values);
+
     [MustDisposeResource]
     public static implicit operator MemoryList<T>(ReadOnlyMemory<T> values) => new(values);
+
     [MustDisposeResource]
     public static implicit operator MemoryList<T>(Memory<T> values) => new(values);
+
+    [MustDisposeResource]
+    public static MemoryList<T> Create(int length)
+    {
+        var memoryList = new MemoryList<T>(length);
+        memoryList.Count = length;
+        return memoryList;
+    }
 
     public MemoryList(ReadOnlySpan<T> values) : this(values.Length)
     {
@@ -63,14 +62,6 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>, IMemoryRe
     private int OriginalCount => OriginalMemory.Length;
 
     public Memory<T> Memory => OriginalMemory[..Count];
-
-    ReadOnlyMemory<T> IMemoryReadonlyList<T>.Memory => Memory;
-
-    [MustDisposeResource]
-    IMemoryReadonlyList<T> IMemoryReadonlyList<T>.Clone()
-    {
-        return Clone();
-    }
 
     public int Count { get; private set; }
 
@@ -116,10 +107,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>, IMemoryRe
 
     public void CopyTo(T[] array, int arrayIndex)
     {
-        for (int i = 0; i < Count; i++)
-        {
-            array[arrayIndex + i] = this[i];
-        }
+        Memory.CopyTo(array.AsMemory());
     }
 
     public bool Remove(T item)
@@ -151,20 +139,17 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>, IMemoryRe
             OriginalMemory[(index + 1)..].CopyTo(OriginalMemory[index..]);
     }
 
-
     [MustDisposeResource]
     public MemoryList<T> Clone()
     {
-        MemoryList<T> memoryList = new(Count);
-        memoryList.Count = Count;
+        MemoryList<T> memoryList = MemoryList<T>.Create(Count);
         Memory.CopyTo(memoryList.Memory);
         return memoryList;
     }
 
-    public T this[int index]
+    public ref T this[int index]
     {
-        get => Memory.Span[index];
-        set => Memory.Span[index] = value;
+        get => ref Memory.Span[index];
     }
 
     private void Dispose(bool disposing)

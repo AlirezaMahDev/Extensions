@@ -29,7 +29,7 @@ public static class ScoreSortExtensions
         {
             ref var target = ref input[0];
             var count = 1;
-            for (int i = 1; i < input.Length; i++)
+            for (var i = 1; i < input.Length; i++)
             {
                 ref var current = ref input[i];
                 if (comparer(target, current) != 0)
@@ -82,7 +82,7 @@ public static class ScoreSortExtensions
             span.Sort(comparison);
             var score = 0;
             ref var target = ref span[0];
-            for (int i = 1; i < span.Length; i++)
+            for (var i = 1; i < span.Length; i++)
             {
                 ref var current = ref span[i];
                 var comparable = comparison(target, current);

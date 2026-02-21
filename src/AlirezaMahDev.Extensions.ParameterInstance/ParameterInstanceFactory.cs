@@ -91,9 +91,11 @@ public class ParameterInstanceFactory<
     {
         if (typeof(TInstance).IsAssignableTo(typeof(IDisposable)))
         {
-            foreach (var keyValuePair in _instances.Values.Select(x => x.Value).Cast<IDisposable>())
+            foreach (var keyValuePair in _instances.Values
+                         .Where(x => x.IsValueCreated)
+                         .Select(x => x.Value as IDisposable))
             {
-                keyValuePair.Dispose();
+                keyValuePair?.Dispose();
             }
         }
 
@@ -116,9 +118,14 @@ public class ParameterInstanceFactory<
     {
         if (typeof(TInstance).IsAssignableTo(typeof(IAsyncDisposable)))
         {
-            foreach (var keyValuePair in _instances.Values.Select(x => x.Value).Cast<IAsyncDisposable>())
+            foreach (var keyValuePair in _instances.Values
+                         .Where(x => x.IsValueCreated)
+                         .Select(x => x.Value as IAsyncDisposable))
             {
-                await keyValuePair.DisposeAsync();
+                if (keyValuePair != null)
+                {
+                    await keyValuePair.DisposeAsync();
+                }
             }
         }
 

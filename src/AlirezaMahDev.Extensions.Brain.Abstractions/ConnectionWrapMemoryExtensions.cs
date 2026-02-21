@@ -11,7 +11,7 @@ public static class ConnectionWrapMemoryExtensions
         where TLink : unmanaged, ICellLink<TLink>
     {
         [MustDisposeResource]
-        public IMemoryReadonlyList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
+        public IReadonlyMemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
             NearConnection(
                 ThinkValueRef<TData, TLink> pair,
                 int depth) =>
@@ -25,7 +25,7 @@ public static class ConnectionWrapMemoryExtensions
                 depth);
 
         [MustDisposeResource]
-        public IMemoryReadonlyList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
+        public IReadonlyMemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
             NearConnection(PredictValueRef<TLink> link, int depth)
         {
             using MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> memoryList = memory;

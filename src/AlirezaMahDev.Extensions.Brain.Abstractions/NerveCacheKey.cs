@@ -20,11 +20,11 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
         var s1 = AsReadOnlySpan(in t1);
         var s2 = AsReadOnlySpan(in t2);
 
-        int length = s1.Length + s2.Length;
+        var length = s1.Length + s2.Length;
 
         Span<byte> destination = stackalloc byte[length];
 
-        int offset = 0;
+        var offset = 0;
         s1.CopyTo(destination[offset..]);
         offset += s1.Length;
         s2.CopyTo(destination[offset..]);
@@ -41,11 +41,11 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
         var s2 = AsReadOnlySpan(in t2);
         var s3 = AsReadOnlySpan(in t3);
 
-        int length = s1.Length + s2.Length + s3.Length;
+        var length = s1.Length + s2.Length + s3.Length;
 
         Span<byte> destination = stackalloc byte[length];
 
-        int offset = 0;
+        var offset = 0;
         s1.CopyTo(destination[offset..]);
         offset += s1.Length;
         s2.CopyTo(destination[offset..]);
@@ -66,11 +66,11 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
         var s3 = AsReadOnlySpan(in t3);
         var s4 = AsReadOnlySpan(in t4);
 
-        int length = s1.Length + s2.Length + s3.Length + s4.Length;
+        var length = s1.Length + s2.Length + s3.Length + s4.Length;
 
         Span<byte> destination = stackalloc byte[length];
 
-        int offset = 0;
+        var offset = 0;
         s1.CopyTo(destination[offset..]);
         offset += s1.Length;
         s2.CopyTo(destination[offset..]);

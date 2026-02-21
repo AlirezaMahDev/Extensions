@@ -1,6 +1,6 @@
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
+using System.Collections.Concurrent;
 
-using Microsoft.Extensions.Caching.Memory;
+using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
@@ -9,7 +9,7 @@ public interface INerve<TData, TLink>
     where TLink : unmanaged, ICellLink<TLink>
 {
     INerveCache Cache { get; }
-    IMemoryCache MemoryCache { get; }
+    ConcurrentDictionary<DataOffset, Lazy<CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>> MemoryCache { get; }
 
     IDataAccess Access { get; }
     string Name { get; }

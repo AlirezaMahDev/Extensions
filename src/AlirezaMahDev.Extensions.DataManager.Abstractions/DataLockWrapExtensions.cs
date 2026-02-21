@@ -73,7 +73,7 @@ public static class DataLockWrapExtensions
 
         public TResult Lock<TResult>(DataWrapFunc<TValue, TResult> func)
         {
-            using DataLockDisposable<TValue> lockScope = wrap.Lock();
+            using var lockScope = wrap.Lock();
             return func(wrap);
         }
 

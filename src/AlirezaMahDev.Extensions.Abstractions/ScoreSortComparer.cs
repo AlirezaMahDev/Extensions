@@ -20,7 +20,7 @@ public sealed class ScoreSortComparer<T> : IDisposable, IComparer<T>
 
         var srcSpan = Memory.Span;
         var distSpan = _memoryOwner.Memory.Span;
-        for (int i = 0; i < srcSpan.Length; i++)
+        for (var i = 0; i < srcSpan.Length; i++)
         {
             distSpan[i] = new(srcSpan[i]);
         }
@@ -46,7 +46,7 @@ public sealed class ScoreSortComparer<T> : IDisposable, IComparer<T>
         var dist = new T[source.Length].AsMemory();
         var sourceSpan = source.Span;
         var distSpan = dist.Span;
-        for (int i = 0; i < sourceSpan.Length; i++)
+        for (var i = 0; i < sourceSpan.Length; i++)
         {
             distSpan[i] = sourceSpan[i].Value;
         }
@@ -74,7 +74,7 @@ public sealed class ScoreSortComparer<T> : IDisposable, IComparer<T>
     {
         var wrapMemorySpan = WrapMemory.Span;
         var memorySpan = Memory.Span;
-        for (int i = 0; i < wrapMemorySpan.Length; i++)
+        for (var i = 0; i < wrapMemorySpan.Length; i++)
         {
             memorySpan[i] = wrapMemorySpan[i].Value;
         }

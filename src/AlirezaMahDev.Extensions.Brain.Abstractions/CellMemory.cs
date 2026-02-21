@@ -53,7 +53,7 @@ public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>,
 
     public IEnumerator<T> GetEnumerator()
     {
-        for (int i = 0; i < Memory.Length; ++i)
+        for (var i = 0; i < Memory.Length; ++i)
             yield return Memory.Span[i];
     }
 

@@ -1,22 +1,23 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
 using AlirezaMahDev.Extensions.Brain.Abstractions;
 using AlirezaMahDev.Extensions.DataManager;
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-using Microsoft.Extensions.Caching.Memory;
-
 namespace AlirezaMahDev.Extensions.Brain;
 
 class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-TData,
+    TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-TLink> : INerve<TData, TLink>
+    TLink> : INerve<TData, TLink>, IDisposable
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    public IMemoryCache MemoryCache { get; }
+    public ConcurrentDictionary<DataOffset,
+        Lazy<CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>> MemoryCache { get; }
+
     public IDataAccess Access { get; }
     public INerveCache Cache { get; }
 
@@ -36,11 +37,11 @@ TLink> : INerve<TData, TLink>
 
     public DataWrap<NerveCounter> Counter { get; }
 
-    public Nerve(IDataManager dataManager,IMemoryCache memoryCache, string name)
+    public Nerve(IDataManager dataManager, string name)
     {
         Cache = new NerveCache();
 
-        MemoryCache = memoryCache;
+        MemoryCache = new();
         Name = name;
         Access = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
         Location = Access.Root.Wrap(Access, x => x.Dictionary()).GetOrAdd(".nerve");
@@ -68,5 +69,10 @@ TLink> : INerve<TData, TLink>
     public void Flush()
     {
         Access.Flush();
+    }
+
+    public void Dispose()
+    {
+        this.CleanThink();
     }
 }
