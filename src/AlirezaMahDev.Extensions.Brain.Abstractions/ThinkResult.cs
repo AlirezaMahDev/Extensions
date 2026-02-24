@@ -14,10 +14,10 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
     private readonly MemoryList<Think<TData, TLink>> _memoryList = [];
     public Memory<Think<TData, TLink>> Thinks => _memoryList.Memory;
 
-    public Memory<Think<TData, TLink>> GetBestThinks()
+    public Memory<Think<TData, TLink>> GetBestThinks(InFunc<Think<TData, TLink>, bool>? checker = null)
     {
         Thinks.Span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
-        return Thinks.ToArray();
+        return checker is not null ? Thinks.TakeWhile(checker).ToArray() : Thinks.ToArray();
     }
 
     public bool Add(Think<TData, TLink> think)

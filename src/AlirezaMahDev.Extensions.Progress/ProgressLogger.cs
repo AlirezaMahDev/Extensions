@@ -11,8 +11,7 @@ namespace AlirezaMahDev.Extensions.Progress;
 class ProgressLogger<T>(ILogger<T> logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
     : ProgressLogger(logger, optionsMonitor), IProgressLogger<T>;
 
-partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
-    : IDisposable, IProgressLogger
+partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor) : IProgressLogger
 {
     [LoggerMessage(LogLevel.Information, "{message}")]
     private static partial void LogInformation(ILogger logger, string message);
@@ -25,11 +24,6 @@ partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptio
     {
         _options.Progress.ProgressChanged += action;
         return new(() => _options.Progress.ProgressChanged -= action);
-    }
-
-    public void Dispose()
-    {
-        ReportStop();
     }
 
     public void Report(int? count = null, int? length = null)

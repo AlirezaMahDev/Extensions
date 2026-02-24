@@ -6,71 +6,104 @@ using JetBrains.Annotations;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public sealed class Think<TData, TLink>(
-    ReadOnlyMemoryValue<TData> data,
-    ReadOnlyMemoryValue<TLink> link,
-    CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
-    Think<TData, TLink>? previous)
-    : IEnumerable<Think<TData, TLink>>
+public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    private readonly Think<TData, TLink>? _previous = previous;
-    private readonly CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> _connectionWrap = connectionWrap;
+    public Guid Id { get; }
+    public int Count { get; }
 
-    public Guid Id { get; } = Guid.CreateVersion7();
-    public int Count { get; private init; }
+    public ReadOnlyMemoryValue<TData> Data { get; }
+    public ReadOnlyMemoryValue<TLink> Link { get; }
+    public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; }
+    private Think<TData, TLink>? Previous { get; }
 
-    public ReadOnlyMemoryValue<TData> Data { get; } = data;
-    public ReadOnlyMemoryValue<TLink> Link { get; } = link;
-    public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; } = connectionWrap;
+    public TData AllDifferenceData { get; }
+    public TLink AllDifferenceLink { get; }
 
-    public TLink DifferenceLink { get; private init; }
-    public TData DifferenceData { get; private init; }
+    public TData AvgDifferenceData { get; }
+    public TLink AvgDifferenceLink { get; }
 
-    public double Score { get; private init; }
-    public ulong Weight { get; private init; }
+    public double AllScore { get; }
+    public ulong AllWeight { get; }
 
-    public TLink AllDifferenceLink { get; private init; }
-    public TData AllDifferenceData { get; private init; }
-    public double AllScore { get; private init; }
-    public ulong AllWeight { get; private init; }
+    private Think(
+           ReadOnlyMemoryValue<TData> data,
+           ReadOnlyMemoryValue<TLink> link,
+           CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
+    {
+        Id = Guid.CreateVersion7();
+        Count = 1;
+
+        Data = data;
+        Link = link;
+
+        ConnectionWrap = connectionWrap;
+        Previous = null;
+
+        AllDifferenceData = NerveHelper.Difference(
+            TData.Normalize(in data.Value),
+            TData.Normalize(in connectionWrap.NeuronWrap.RefData)
+        );
+        AllDifferenceLink = NerveHelper.Difference(
+            TLink.Normalize(in link.Value),
+            TLink.Normalize(in connectionWrap.RefLink)
+        );
+
+        AvgDifferenceData = AllDifferenceData / Count;
+        AvgDifferenceLink = AllDifferenceLink / Count;
+
+        AllScore = connectionWrap.RefValue.Score;
+        AllWeight = connectionWrap.RefValue.Weight;
+    }
+
+    private Think(
+        ReadOnlyMemoryValue<TData> data,
+        ReadOnlyMemoryValue<TLink> link,
+        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
+        Think<TData, TLink> previous)
+    {
+        Id = Guid.CreateVersion7();
+        Count = previous.Count + 1;
+
+        Data = data;
+        Link = link;
+
+        ConnectionWrap = connectionWrap;
+        Previous = previous;
+
+        AllDifferenceData = previous.AllDifferenceData + NerveHelper.Difference(
+            TData.Normalize(in data.Value),
+            TData.Normalize(in connectionWrap.NeuronWrap.RefData)
+        );
+        AllDifferenceLink = previous.AllDifferenceLink + NerveHelper.Difference(
+            TLink.Normalize(in link.Value),
+            TLink.Normalize(in connectionWrap.RefLink)
+        );
+
+        AvgDifferenceData = AllDifferenceData / Count;
+        AvgDifferenceLink = AllDifferenceLink / Count;
+
+        AllScore = previous.AllScore + connectionWrap.RefValue.Score;
+        AllWeight = previous.AllWeight + connectionWrap.RefValue.Weight;
+    }
+
+    public static Think<TData, TLink> Create(ReadOnlyMemoryValue<TData> data,
+        ReadOnlyMemoryValue<TLink> link,
+        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection) =>
+            new(data, link, connection);
+
+    public Think<TData, TLink> Append(ReadOnlyMemoryValue<TData> data,
+        ReadOnlyMemoryValue<TLink> link,
+        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection) =>
+            new(data, link, connection, this);
 
     [MustDisposeResource]
     public IReadonlyMemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
         GetNextConnectionWrap(
             PredictValueRef<TLink> link,
             int depth) =>
-        _connectionWrap.GetConnectionsWrapCache().Memory.NearConnection(link, depth);
-
-    public Think<TData, TLink> Append(ReadOnlySpanValue<TData> data,
-        ReadOnlySpanValue<TLink> link,
-        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection)
-    {
-        var differenceData = NerveHelper.Difference(
-            TData.Normalize(in data.Value),
-            TData.Normalize(in connection.NeuronWrap.RefData)
-        );
-        var differenceLink = NerveHelper.Difference(
-            TLink.Normalize(in link.Value),
-            TLink.Normalize(in connection.RefLink)
-        );
-
-        var weight = connection.RefValue.Weight;
-        var score = connection.RefValue.Score;
-        return new(data.Value, link.Value, connection, this)
-        {
-            Count = Count + 1,
-            DifferenceData = differenceData,
-            DifferenceLink = differenceLink,
-            Score = score,
-            Weight = weight,
-            AllDifferenceData = AllDifferenceData + differenceData,
-            AllDifferenceLink = AllDifferenceLink + differenceLink,
-            AllScore = AllScore + score,
-            AllWeight = AllWeight + weight
-        };
-    }
+        ConnectionWrap.GetConnectionsWrapCache().Memory.NearConnection(link, depth);
 
     public IEnumerator<Think<TData, TLink>> GetEnumerator()
     {
@@ -79,7 +112,7 @@ public sealed class Think<TData, TLink>(
         while (current is not null)
         {
             stack.Push(current);
-            current = current._previous;
+            current = current.Previous;
         }
 
         return stack.GetEnumerator();
@@ -99,6 +132,10 @@ public sealed class Think<TData, TLink>(
 
     public override string ToString()
     {
-        return $"Count:{Count} AllDifferenceData:{AllDifferenceData} AllDifferenceLink:{AllDifferenceLink} DifferenceData:{DifferenceData} DifferenceLink:{DifferenceLink}";
+        return $"Count:{Count}" + " " +
+        $"AllDifferenceData:{AllDifferenceData}" + " " +
+        $"AllDifferenceLink:{AllDifferenceLink}" + " " +
+        $"AvgDifferenceData:{AvgDifferenceData}" + " " +
+        $"AvgDifferenceLink:{AvgDifferenceLink}";
     }
 }

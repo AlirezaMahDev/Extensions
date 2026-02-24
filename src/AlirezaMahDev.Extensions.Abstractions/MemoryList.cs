@@ -1,46 +1,46 @@
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using JetBrains.Annotations;
 
 namespace AlirezaMahDev.Extensions.Abstractions;
 
+public static class MemoryListBuilder
+{
+    public static MemoryList<T> Create<T>(ReadOnlySpan<T> values) => new(values);
+}
+
 [MustDisposeResource]
 [DebuggerDisplay("Count = {Count}")]
+[CollectionBuilder(typeof(MemoryListBuilder), nameof(MemoryListBuilder.Create))]
 public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
 {
     [MustDisposeResource]
-    public static implicit operator MemoryList<T>(ReadOnlySpan<T> values) => new(values);
+    public static implicit operator MemoryList<T>(ReadOnlySpan<T> values) => [.. values];
 
     [MustDisposeResource]
-    public static implicit operator MemoryList<T>(Span<T> values) => new(values);
+    public static implicit operator MemoryList<T>(Span<T> values) => [.. values];
 
     [MustDisposeResource]
-    public static implicit operator MemoryList<T>(ReadOnlyMemory<T> values) => new(values);
+    public static implicit operator MemoryList<T>(ReadOnlyMemory<T> values) => [.. values.Span];
 
     [MustDisposeResource]
-    public static implicit operator MemoryList<T>(Memory<T> values) => new(values);
+    public static implicit operator MemoryList<T>(Memory<T> values) => [.. values.Span];
 
     [MustDisposeResource]
-    public static MemoryList<T> Create(int length)
-    {
-        var memoryList = new MemoryList<T>(length);
-        memoryList.Count = length;
-        return memoryList;
-    }
+    public static MemoryList<T> Create(int length) =>
+        new(length)
+        {
+            Count = length
+        };
 
     public MemoryList(ReadOnlySpan<T> values) : this(values.Length)
     {
         Count = values.Length;
         values.CopyTo(Memory.Span);
-    }
-
-    public MemoryList(ReadOnlyMemory<T> values) : this(values.Length)
-    {
-        Count = values.Length;
-        values.CopyTo(Memory);
     }
 
     public MemoryList(int capacity, IEnumerable<T> values) : this(capacity)

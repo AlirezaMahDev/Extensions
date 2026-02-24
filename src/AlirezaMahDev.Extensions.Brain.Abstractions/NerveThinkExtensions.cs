@@ -21,22 +21,25 @@ public static class NerveThinkExtensions
             int depth,
             Func<ReadOnlyMemory<TData>, TLink> linkFunc,
             ReadOnlyMemory<TData> data,
+            InFunc<Think<TData, TLink>, bool>? checker = null,
             CancellationToken cancellationToken = default)
         {
             using var result = new ThinkResult<TData, TLink>(depth);
 
-            Think<TData, TLink> think = new(default, default, nerve.ConnectionWrap, null);
             await INerve<TData, TLink>.ThinkCoreAsync(depth,
                     linkFunc,
                     data,
                     0,
-                    think,
+                    Think<TData, TLink>.Create(
+                        new(default(TData)),
+                        new(default(TLink)),
+                        nerve.ConnectionWrap),
                     result,
                     cancellationToken)
                 .AsTaskRun()
                 .ConfigureAwait(false);
 
-            return result.GetBestThinks();
+            return result.GetBestThinks(checker);
         }
 
         private static async Task<bool> ThinkCoreAsync(
