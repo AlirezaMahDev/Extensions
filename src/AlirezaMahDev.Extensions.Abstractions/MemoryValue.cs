@@ -15,6 +15,7 @@ public readonly struct MemoryValue<T>
         _memory = memory[..1];
     }
 
+    public bool HasValue => !_memory.IsEmpty;
     public ref T Value => ref _memory.Span[0];
 
     public static implicit operator MemoryValue<T>(in T value) =>

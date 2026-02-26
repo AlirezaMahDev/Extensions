@@ -9,7 +9,9 @@ public interface INerve<TData, TLink>
     where TLink : unmanaged, ICellLink<TLink>
 {
     INerveCache Cache { get; }
-    ConcurrentDictionary<DataOffset, Lazy<CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>> MemoryCache { get; }
+
+    ConcurrentDictionary<DataOffset, Lazy<CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>>
+        MemoryCache { get; }
 
     IDataAccess Access { get; }
     string Name { get; }

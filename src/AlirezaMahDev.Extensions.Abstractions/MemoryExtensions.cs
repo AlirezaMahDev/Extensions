@@ -26,5 +26,16 @@ public static class MemoryExtensions
 
             return memory;
         }
+
+        public IEnumerable<T> Where(InFunc<T, bool> predicate)
+        {
+            for (var index = 0; index <= memory.Length; index++)
+            {
+                if (predicate(in memory.Span[index]))
+                {
+                    yield return memory.Span[index];
+                }
+            }
+        }
     }
 }

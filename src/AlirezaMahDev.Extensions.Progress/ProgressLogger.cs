@@ -15,6 +15,7 @@ partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptio
 {
     [LoggerMessage(LogLevel.Information, "{message}")]
     private static partial void LogInformation(ILogger logger, string message);
+
     private readonly ProgressLoggerOptions _options = optionsMonitor.CurrentValue;
 
     public ProgressLoggerState State => _options.State;

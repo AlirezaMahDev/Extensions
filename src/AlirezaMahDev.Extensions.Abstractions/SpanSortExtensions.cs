@@ -11,7 +11,7 @@ public static class SpanSortExtensions
 
         public void Sort<TBridge, TComparer>(Func<T, TBridge> func, TComparer comparison)
             where TComparer : IComparer<TBridge>
-            where TBridge : allows ref struct  =>
+            where TBridge : allows ref struct =>
             span.Sort(new ComparerBridge<T, TBridge, TComparer>(func, comparison));
     }
 }

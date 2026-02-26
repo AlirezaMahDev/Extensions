@@ -8,11 +8,6 @@ using JetBrains.Annotations;
 
 namespace AlirezaMahDev.Extensions.Abstractions;
 
-public static class MemoryListBuilder
-{
-    public static MemoryList<T> Create<T>(ReadOnlySpan<T> values) => new(values);
-}
-
 [MustDisposeResource]
 [DebuggerDisplay("Count = {Count}")]
 [CollectionBuilder(typeof(MemoryListBuilder), nameof(MemoryListBuilder.Create))]
@@ -32,10 +27,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
 
     [MustDisposeResource]
     public static MemoryList<T> Create(int length) =>
-        new(length)
-        {
-            Count = length
-        };
+        new(length) { Count = length };
 
     public MemoryList(ReadOnlySpan<T> values) : this(values.Length)
     {

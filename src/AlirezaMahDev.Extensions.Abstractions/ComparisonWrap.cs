@@ -2,4 +2,4 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 // ReSharper disable once UnusedTypeParameter
 public record struct ComparisonWrap<TComparisonTarget, T>(TComparisonTarget UnWrap)
-        where T : allows ref struct;
+    where T : allows ref struct;

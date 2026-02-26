@@ -57,10 +57,11 @@ public static class ConnectionWrapExtensions
 
         public CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCache() =>
             wrap.Nerve.MemoryCache.GetOrAdd(wrap.Cell.Offset,
-                static (_, wrap) => new(() =>
-                        wrap.GetConnectionsWrap().ToCellMemory(),
-                    LazyThreadSafetyMode.ExecutionAndPublication),
-                wrap).Value;
+                    static (_, wrap) => new(() =>
+                            wrap.GetConnectionsWrap().ToCellMemory(),
+                        LazyThreadSafetyMode.ExecutionAndPublication),
+                    wrap)
+                .Value;
 
         public IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapRaw() =>
             wrap.ChildWrap is { } childWrap

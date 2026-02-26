@@ -116,9 +116,9 @@ public static class DataCollectionWrapExtensions
 
                         await dataLocation.Wrap(wrap.Access)
                             .LockAsync(innerDataLocation =>
-                                wrap.Wrap.ItemWrap.SetNext(
-                                    ref innerDataLocation.RefValue,
-                                    child),
+                                    wrap.Wrap.ItemWrap.SetNext(
+                                        ref innerDataLocation.RefValue,
+                                        child),
                                 token);
 
                         wrap.Wrap.SetChild(ref innerWrap.RefValue, dataLocation.Offset);
@@ -171,18 +171,18 @@ public static class DataCollectionWrapExtensions
                     {
                         await previous.Value.Wrap(wrap.Access)
                             .LockAsync(location =>
-                                wrap.Wrap.ItemWrap.SetNext(ref location.RefValue,
-                                    wrap.Wrap.ItemWrap.GetNext(
-                                        dataLocation.GetRefValue(wrap.Access))),
+                                    wrap.Wrap.ItemWrap.SetNext(ref location.RefValue,
+                                        wrap.Wrap.ItemWrap.GetNext(
+                                            dataLocation.GetRefValue(wrap.Access))),
                                 cancellationToken);
                     }
                     else
                     {
                         _ = await wrap.Location.Wrap(wrap.Access)
                             .LockAsync(location =>
-                                wrap.Wrap.SetChild(ref location.RefValue,
-                                    wrap.Wrap.ItemWrap.GetNext(
-                                        dataLocation.GetRefValue(wrap.Access))),
+                                    wrap.Wrap.SetChild(ref location.RefValue,
+                                        wrap.Wrap.ItemWrap.GetNext(
+                                            dataLocation.GetRefValue(wrap.Access))),
                                 cancellationToken);
                     }
 

@@ -28,9 +28,9 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     public ulong AllWeight { get; }
 
     private Think(
-           ReadOnlyMemoryValue<TData> data,
-           ReadOnlyMemoryValue<TLink> link,
-           CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
+        ReadOnlyMemoryValue<TData> data,
+        ReadOnlyMemoryValue<TLink> link,
+        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
     {
         Id = Guid.CreateVersion7();
         Count = 1;
@@ -72,14 +72,16 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         ConnectionWrap = connectionWrap;
         Previous = previous;
 
-        AllDifferenceData = previous.AllDifferenceData + NerveHelper.Difference(
-            TData.Normalize(in data.Value),
-            TData.Normalize(in connectionWrap.NeuronWrap.RefData)
-        );
-        AllDifferenceLink = previous.AllDifferenceLink + NerveHelper.Difference(
-            TLink.Normalize(in link.Value),
-            TLink.Normalize(in connectionWrap.RefLink)
-        );
+        AllDifferenceData = previous.AllDifferenceData +
+                            NerveHelper.Difference(
+                                TData.Normalize(in data.Value),
+                                TData.Normalize(in connectionWrap.NeuronWrap.RefData)
+                            );
+        AllDifferenceLink = previous.AllDifferenceLink +
+                            NerveHelper.Difference(
+                                TLink.Normalize(in link.Value),
+                                TLink.Normalize(in connectionWrap.RefLink)
+                            );
 
         AvgDifferenceData = AllDifferenceData / Count;
         AvgDifferenceLink = AllDifferenceLink / Count;
@@ -91,12 +93,12 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     public static Think<TData, TLink> Create(ReadOnlyMemoryValue<TData> data,
         ReadOnlyMemoryValue<TLink> link,
         CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection) =>
-            new(data, link, connection);
+        new(data, link, connection);
 
     public Think<TData, TLink> Append(ReadOnlyMemoryValue<TData> data,
         ReadOnlyMemoryValue<TLink> link,
         CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection) =>
-            new(data, link, connection, this);
+        new(data, link, connection, this);
 
     [MustDisposeResource]
     public IReadonlyMemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
@@ -132,10 +134,14 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
 
     public override string ToString()
     {
-        return $"Count:{Count}" + " " +
-        $"AllDifferenceData:{AllDifferenceData}" + " " +
-        $"AllDifferenceLink:{AllDifferenceLink}" + " " +
-        $"AvgDifferenceData:{AvgDifferenceData}" + " " +
-        $"AvgDifferenceLink:{AvgDifferenceLink}";
+        return $"Count:{Count}" +
+               " " +
+               $"AllDifferenceData:{AllDifferenceData}" +
+               " " +
+               $"AllDifferenceLink:{AllDifferenceLink}" +
+               " " +
+               $"AvgDifferenceData:{AvgDifferenceData}" +
+               " " +
+               $"AvgDifferenceLink:{AvgDifferenceLink}";
     }
 }

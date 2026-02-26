@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AlirezaMahDev.Extensions.Progress;
+
 public static class ProgressLoggerExtensions
 {
     extension(IServiceCollection services)

@@ -8,7 +8,10 @@ public interface IProgressLogger
 
     void AddLength(int length);
     void AddCount(int count);
-    Task AutoReportAsync(Func<IProgressLogger, CancellationToken, ValueTask> func, CancellationToken cancellationToken = default);
+
+    Task AutoReportAsync(Func<IProgressLogger, CancellationToken, ValueTask> func,
+        CancellationToken cancellationToken = default);
+
     void DecrementCount();
     void IncrementCount();
     void Report(int? count = null, int? length = null);

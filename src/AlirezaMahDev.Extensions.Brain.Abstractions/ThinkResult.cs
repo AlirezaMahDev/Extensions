@@ -14,10 +14,10 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
     private readonly MemoryList<Think<TData, TLink>> _memoryList = [];
     public Memory<Think<TData, TLink>> Thinks => _memoryList.Memory;
 
-    public Memory<Think<TData, TLink>> GetBestThinks(InFunc<Think<TData, TLink>, bool>? checker = null)
+    public Memory<Think<TData, TLink>> GetBestThinks()
     {
         Thinks.Span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
-        return checker is not null ? Thinks.TakeWhile(checker).ToArray() : Thinks.ToArray();
+        return Thinks.ToArray();
     }
 
     public bool Add(Think<TData, TLink> think)
@@ -25,13 +25,16 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
         _lock.EnterUpgradeableReadLock();
         try
         {
-            if (CanAddCore(think))
+            var canAddCore = CanAddCore(think);
+            if (canAddCore != false)
             {
                 _lock.EnterWriteLock();
                 try
                 {
                     _memoryList.Add(think);
                     _memoryList.Memory.Span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
+                    if (canAddCore != null)
+                        _memoryList.RemoveAt(_memoryList.Count - 1);
                     return true;
                 }
                 finally
@@ -53,7 +56,7 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
         _lock.EnterReadLock();
         try
         {
-            return CanAddCore(think);
+            return CanAddCore(think) != false;
         }
         finally
         {
@@ -61,9 +64,13 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
         }
     }
 
-    private bool CanAddCore(Think<TData, TLink> think) =>
-        _memoryList.Count <= Math.Max(1, depth) ||
-            NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]) <= 0;
+    private bool? CanAddCore(Think<TData, TLink> think)
+    {
+        if (_memoryList.Count <= Math.Max(1, depth))
+            return null;
+        var comparison = NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]);
+        return comparison == 0 ? null : comparison < 0;
+    }
 
     public void Dispose()
     {

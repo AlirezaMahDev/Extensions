@@ -11,13 +11,3 @@ public interface ICellLink<TSelf> : IEquatable<TSelf>,
 {
     static abstract TSelf Normalize(in TSelf self);
 }
-
-public static class CellLinkExtensions
-{
-    extension<T>(ref T value)
-        where T : unmanaged, ICellLink<T>
-    {
-        public T Normalize() =>
-            T.Normalize(in value);
-    }
-}

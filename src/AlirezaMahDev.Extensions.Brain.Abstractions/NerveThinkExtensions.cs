@@ -1,5 +1,3 @@
-using System.Buffers;
-
 using AlirezaMahDev.Extensions.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
@@ -21,28 +19,25 @@ public static class NerveThinkExtensions
             int depth,
             Func<ReadOnlyMemory<TData>, TLink> linkFunc,
             ReadOnlyMemory<TData> data,
-            InFunc<Think<TData, TLink>, bool>? checker = null,
             CancellationToken cancellationToken = default)
         {
             using var result = new ThinkResult<TData, TLink>(depth);
 
             await INerve<TData, TLink>.ThinkCoreAsync(depth,
-                    linkFunc,
-                    data,
-                    0,
-                    Think<TData, TLink>.Create(
-                        new(default(TData)),
-                        new(default(TLink)),
-                        nerve.ConnectionWrap),
-                    result,
-                    cancellationToken)
-                .AsTaskRun()
-                .ConfigureAwait(false);
+                linkFunc,
+                data,
+                0,
+                Think<TData, TLink>.Create(
+                    new(default(TData)),
+                    new(default(TLink)),
+                    nerve.ConnectionWrap),
+                result,
+                cancellationToken);
 
-            return result.GetBestThinks(checker);
+            return result.GetBestThinks();
         }
 
-        private static async Task<bool> ThinkCoreAsync(
+        private static ValueTask ThinkCoreAsync(
             int depth,
             Func<ReadOnlyMemory<TData>, TLink> linkFunc,
             ReadOnlyMemory<TData> input,
@@ -51,9 +46,6 @@ public static class NerveThinkExtensions
             ThinkResult<TData, TLink> resultThink,
             CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.IsCancellationRequested)
-                await Task.FromCanceled(cancellationToken);
-
             var previousData = input[..inputIndex];
             var nextData = input[inputIndex..];
 
@@ -61,64 +53,76 @@ public static class NerveThinkExtensions
             {
                 if (currentThink.ConnectionWrap.ChildWrap.HasValue)
                 {
-                    if (resultThink.Add(currentThink))
-                    {
-                        return true;
-                    }
+                    resultThink.Add(currentThink);
                 }
 
-                return false;
+                return ValueTask.CompletedTask;
             }
-
-            if (cancellationToken.IsCancellationRequested)
-                await Task.FromCanceled(cancellationToken);
-            await Task.Yield();
 
             ReadOnlyMemoryValue<TLink> linkValue = linkFunc(previousData);
             var dataValue = nextData.ElementAt(0);
 
             var pair = new ThinkValueRef<TData, TLink>(in dataValue.Value, in linkValue.Value);
             var cellMemory = currentThink.ConnectionWrap.GetConnectionsWrapCache();
-            using var memory = cellMemory.Memory.NearConnection(pair, depth);
 
-            if (memory.Count == 0)
+            if (cellMemory.Count == 0)
             {
-                return false;
+                return ValueTask.CompletedTask;
             }
 
-            if (cancellationToken.IsCancellationRequested)
-                await Task.FromCanceled(cancellationToken);
-            await Task.Yield();
-
-            var returnResult = false;
-            foreach (var readOnlyMemory in memory)
+            using var memoryList = cellMemory.Memory.NearConnection(pair, depth);
+            if (memoryList.Count == 0)
             {
-                if (cancellationToken.IsCancellationRequested)
-                    await Task.FromCanceled(cancellationToken);
+                return ValueTask.CompletedTask;
+            }
 
-                using var tasks = MemoryPool<Task<bool>>.Shared.Rent(readOnlyMemory.Length);
-                var tasksSpan = tasks.Memory[..readOnlyMemory.Length].Span;
-                for (var i = 0; i < readOnlyMemory.Length; i++)
+            return SmartParallel.ForAsync(0,
+                memoryList.Count,
+                cancellationToken,
+                (memoryIndex, token) => INerve<TData, TLink>.ThinkCoreAsyncCore(depth,
+                    linkFunc,
+                    input,
+                    inputIndex,
+                    currentThink,
+                    resultThink,
+                    memoryList[memoryIndex],
+                    dataValue,
+                    linkValue,
+                    token));
+        }
+
+        private static async ValueTask ThinkCoreAsyncCore(int depth,
+            Func<ReadOnlyMemory<TData>, TLink> linkFunc,
+            ReadOnlyMemory<TData> input,
+            int inputIndex,
+            Think<TData, TLink> currentThink,
+            ThinkResult<TData, TLink> resultThink,
+            ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> readOnlyMemory,
+            ReadOnlyMemoryValue<TData> dataValue,
+            ReadOnlyMemoryValue<TLink> linkValue,
+            CancellationToken token)
+        {
+            for (int readOnlyMemoryIndex = 0;
+                 readOnlyMemoryIndex < readOnlyMemory.Length;
+                 readOnlyMemoryIndex++)
+            {
+                var nextConnection = readOnlyMemory.Span[readOnlyMemoryIndex];
+                var nextThink = currentThink.Append(dataValue, linkValue, nextConnection);
+                if (resultThink.CanAdd(nextThink))
                 {
-                    var nextConnection = readOnlyMemory.Span[i];
-                    var nextThink = currentThink.Append(dataValue, linkValue, nextConnection);
-                    if (resultThink.CanAdd(nextThink))
-                    {
-                        tasksSpan[i] = INerve<TData, TLink>.ThinkCoreAsync(depth,
-                            linkFunc,
-                            input,
-                            inputIndex + 1,
-                            nextThink,
-                            resultThink,
-                            cancellationToken);
-                    }
+                    await INerve<TData, TLink>.ThinkCoreAsync(depth,
+                        linkFunc,
+                        input,
+                        inputIndex + 1,
+                        nextThink,
+                        resultThink,
+                        token);
                 }
-
-                var all = await Task.WhenAll(tasksSpan);
-                returnResult = returnResult || all.Any(x => x);
+                else
+                {
+                    break;
+                }
             }
-
-            return returnResult;
         }
     }
 }

@@ -17,37 +17,44 @@ public static class NerveReCountExtensions
             {
                 if (wraps.Count == 0)
                     return;
-                Parallel.For(0, wraps.Count, (index) =>
-                   {
-                       wraps[index].Lock(location =>
-                           location.RefValue.NextCount = wraps.Count - index - 1);
-                       progressLogger.IncrementCount();
-                   });
+                Parallel.For(0,
+                    wraps.Count,
+                    (index) =>
+                    {
+                        wraps[index]
+                            .Lock(location =>
+                                location.RefValue.NextCount = wraps.Count - index - 1);
+                        progressLogger.IncrementCount();
+                    });
                 Interlocked.Add(ref nerve.Counter.RefValue.NeuronCount, wraps.Count);
             }
 
             nerve.Counter.RefValue.ConnectionCount = 0;
             var connectionWrap = nerve.ConnectionWrap;
             INerve<TData, TLink>.ReCountCore(progressLogger, connectionWrap);
-
         }
 
-        public static void ReCountCore(IProgressLogger progressLogger, CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
+        public static void ReCountCore(IProgressLogger progressLogger,
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
         {
             using (var wraps = connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
                     return;
-                Parallel.For(0, wraps.Count, (index) =>
-                   {
-                       wraps[index].Lock(location =>
-                           location.RefValue.NextCount = wraps.Count - index - 1);
-                       progressLogger.IncrementCount();
-                   });
+                Parallel.For(0,
+                    wraps.Count,
+                    (index) =>
+                    {
+                        wraps[index]
+                            .Lock(location =>
+                                location.RefValue.NextCount = wraps.Count - index - 1);
+                        progressLogger.IncrementCount();
+                    });
                 Interlocked.Add(ref connectionWrap.Nerve.Counter.RefValue.ConnectionCount, wraps.Count);
             }
 
-            Parallel.ForEach(connectionWrap.GetConnectionsWrapRaw(), (item) =>
+            Parallel.ForEach(connectionWrap.GetConnectionsWrapRaw(),
+                (item) =>
                     INerve<TData, TLink>.ReCountCore(progressLogger, item));
         }
 
@@ -58,14 +65,17 @@ public static class NerveReCountExtensions
             {
                 if (wraps.Count == 0)
                     return;
-                await Parallel.ForAsync(0, wraps.Count,
+                await Parallel.ForAsync(0,
+                    wraps.Count,
                     cancellationToken,
                     async (index, token) =>
-                   {
-                       await wraps[index].LockAsync(location =>
-                           location.RefValue.NextCount = wraps.Count - index - 1, token);
-                       progressLogger.IncrementCount();
-                   });
+                    {
+                        await wraps[index]
+                            .LockAsync(location =>
+                                    location.RefValue.NextCount = wraps.Count - index - 1,
+                                token);
+                        progressLogger.IncrementCount();
+                    });
                 Interlocked.Add(ref nerve.Counter.RefValue.NeuronCount, wraps.Count);
             }
 
@@ -74,23 +84,30 @@ public static class NerveReCountExtensions
             await INerve<TData, TLink>.ReCountAsyncCore(progressLogger, connectionWrap, cancellationToken);
         }
 
-        private static async Task ReCountAsyncCore(IProgressLogger progressLogger, CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap, CancellationToken cancellationToken)
+        private static async Task ReCountAsyncCore(IProgressLogger progressLogger,
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
+            CancellationToken cancellationToken)
         {
             using (var wraps = connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
                     return;
-                await Parallel.ForAsync(0, wraps.Count, cancellationToken,
+                await Parallel.ForAsync(0,
+                    wraps.Count,
+                    cancellationToken,
                     async (index, token) =>
                     {
-                        await wraps[index].LockAsync(location =>
-                            location.RefValue.NextCount = wraps.Count - index - 1, token);
+                        await wraps[index]
+                            .LockAsync(location =>
+                                    location.RefValue.NextCount = wraps.Count - index - 1,
+                                token);
                         progressLogger.IncrementCount();
                     });
                 Interlocked.Add(ref connectionWrap.Nerve.Counter.RefValue.ConnectionCount, wraps.Count);
             }
 
-            await Parallel.ForEachAsync(connectionWrap.GetConnectionsWrapRaw(), cancellationToken,
+            await Parallel.ForEachAsync(connectionWrap.GetConnectionsWrapRaw(),
+                cancellationToken,
                 async (item, token) =>
                     await INerve<TData, TLink>.ReCountAsyncCore(progressLogger, item, token));
         }

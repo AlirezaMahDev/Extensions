@@ -9,6 +9,7 @@ public record struct NerveCounter : IDataValue<NerveCounter>, IDataValueDefault<
 {
     public int NeuronCount;
     public int ConnectionCount;
+
     public static NerveCounter Default => new()
     {
         NeuronCount = 0,
