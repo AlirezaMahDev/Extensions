@@ -27,8 +27,7 @@ public static class DataLocationStorageExtensions
                     ? new(wrap.Location
                         .GetRefValue(wrap.Access)
                         .Data)
-                    : throw new InvalidDataException($"{typeof(TDataValue).Name} size must be {
-                        wrap.Location.GetRefValue(wrap.Access).Data.Length}");
+                    : throw new InvalidDataException($"{typeof(TDataValue).Name} size must be {wrap.Location.GetRefValue(wrap.Access).Data.Length}");
         }
 
 
@@ -36,7 +35,10 @@ public static class DataLocationStorageExtensions
         {
             var dataLocation = wrap.TryGetData();
             if (dataLocation.HasValue)
+            {
                 wrap.Access.GetTrash().Add(wrap.Access, dataLocation.Value);
+            }
+
             var newDataLocation = wrap.Access.Create(length);
             wrap.Location.GetRefValue(wrap.Access).Data = newDataLocation.Offset;
             return newDataLocation;
@@ -47,7 +49,10 @@ public static class DataLocationStorageExtensions
         {
             var dataLocation = wrap.TryGetData();
             if (dataLocation.HasValue)
+            {
                 wrap.Access.GetTrash().Add(wrap.Access, dataLocation.Value);
+            }
+
             var newDataLocation = wrap.Access.Create<TDataValue>();
             wrap.Location.GetRefValue(wrap.Access).Data = newDataLocation.Offset;
             return newDataLocation;
@@ -58,7 +63,10 @@ public static class DataLocationStorageExtensions
         {
             var dataLocation = wrap.TryGetData();
             if (dataLocation.HasValue)
+            {
                 wrap.Access.GetTrash().Add(wrap.Access, dataLocation.Value);
+            }
+
             var newDataLocation = wrap.Access.Create(@default);
             wrap.Location.GetRefValue(wrap.Access).Data = newDataLocation.Offset;
             return newDataLocation;

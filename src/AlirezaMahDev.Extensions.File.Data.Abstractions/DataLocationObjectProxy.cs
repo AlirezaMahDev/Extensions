@@ -20,7 +20,9 @@ public class DataLocationObjectProxy<[DynamicallyAccessedMembers(DynamicallyAcce
         }
 
         if (properties.OtherPropertyInfos.Length != 0)
+        {
             throw new NotSupportedException("in non location object other properties not supported");
+        }
     }
 
     [RequiresUnreferencedCode(

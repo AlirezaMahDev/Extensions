@@ -15,7 +15,10 @@ public readonly struct CellEnumerable<T>(int count, IEnumerable<T> enumerable) :
     public IEnumerator<T> GetEnumerator()
     {
         if (count == 0)
+        {
             yield break;
+        }
+
         foreach (var item in enumerable)
         {
             yield return item;

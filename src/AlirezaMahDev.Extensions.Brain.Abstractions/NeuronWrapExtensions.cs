@@ -56,7 +56,9 @@ public static class NeuronWrapExtensions
         {
             var unloaded = wrap.LastLoadedConnection;
             if (unloaded?.IsNull == true)
+            {
                 yield break;
+            }
 
             var connection = unloaded.HasValue ? new Connection(unloaded.Value) : wrap.Connection;
             while (connection.HasValue)
@@ -75,7 +77,9 @@ public static class NeuronWrapExtensions
             in TLink link)
         {
             if (wrap.Nerve.TryGetNeuronConnectionCacheCore(in cacheKey, out var connectionOffset))
+            {
                 return new(connectionOffset.Value);
+            }
 
             var localNeuron = neuron;
             var localLink = link;
@@ -89,7 +93,9 @@ public static class NeuronWrapExtensions
                 ?.Cell;
 
             if (result.HasValue)
+            {
                 wrap.Nerve.SetNeuronConnectionCacheCore(in cacheKey, result.Value.Offset);
+            }
 
             return result;
         }
@@ -113,7 +119,9 @@ public static class NeuronWrapExtensions
             return await wrap.LockAsync(valueWrap =>
                 {
                     if (wrap.FindCore(in cacheKey.Value, in neuron, in link.Value) is { } connection)
+                    {
                         return connection;
+                    }
 
                     var connectionValue = wrap.Nerve.Access
                         .Create(ConnectionValue<TLink>.Default with

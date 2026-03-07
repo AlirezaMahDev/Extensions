@@ -15,9 +15,7 @@ sealed class DataMap(string path) : IDisposable
                 new Lazy<DataMapFile>(() =>
                     {
                         var directoryPath = Path.GetDirectoryName(path)!;
-                        if (!Directory.Exists(directoryPath))
-                            Directory.CreateDirectory(directoryPath);
-                        return new(MemoryMappedFile.CreateFromFile(
+                        if (!Directory.Exists(directoryPath)) { Directory.CreateDirectory(directoryPath); } return new(MemoryMappedFile.CreateFromFile(
                             string.Format(path, id),
                             FileMode.OpenOrCreate,
                             null,

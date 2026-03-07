@@ -34,7 +34,10 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
                     _memoryList.Add(think);
                     _memoryList.Memory.Span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
                     if (canAddCore != null)
+                    {
                         _memoryList.RemoveAt(_memoryList.Count - 1);
+                    }
+
                     return true;
                 }
                 finally
@@ -67,7 +70,10 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
     private bool? CanAddCore(Think<TData, TLink> think)
     {
         if (_memoryList.Count <= Math.Max(1, depth))
+        {
             return null;
+        }
+
         var comparison = NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]);
         return comparison == 0 ? null : comparison < 0;
     }

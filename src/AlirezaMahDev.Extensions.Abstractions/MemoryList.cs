@@ -106,7 +106,10 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
     {
         var index = IndexOf(item);
         if (index == -1)
+        {
             return false;
+        }
+
         RemoveAt(index);
         return true;
     }
@@ -128,7 +131,9 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
     {
         Count--;
         if (index != Count - 1)
+        {
             OriginalMemory[(index + 1)..].CopyTo(OriginalMemory[index..]);
+        }
     }
 
     [MustDisposeResource]

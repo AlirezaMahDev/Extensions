@@ -10,15 +10,13 @@ public static class NerveSleepExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public async Task SleepAsync(
+        public ValueTask SleepAsync(
             IProgressLogger progressLogger,
-            CancellationToken cancellationToken = default)
-        {
-            await INerve<TData, TLink>.SleepAsyncCore(progressLogger,
-                nerve.ConnectionWrap,
-                NerveHelper<TData, TLink>.SleepComparisons,
-                cancellationToken);
-        }
+            CancellationToken cancellationToken = default) =>
+                INerve<TData, TLink>.SleepAsyncCore(progressLogger,
+                    nerve.ConnectionWrap,
+                    NerveHelper<TData, TLink>.SleepComparisons,
+                    cancellationToken);
 
         private static async ValueTask SleepAsyncCore(
             IProgressLogger progressLogger,
@@ -26,39 +24,35 @@ public static class NerveSleepExtensions
             ComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
             CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.IsCancellationRequested)
-                return;
+            cancellationToken.ThrowIfCancellationRequested();
+            var cellEnumerable = cellWrap.GetConnectionsWrap();
 
-            using var cellMemory = cellWrap.GetConnectionsWrap().ToCellMemory();
-            switch (cellMemory.Count)
+            if (cellEnumerable.Count == 0)
             {
-                case 0:
-                    return;
-                case 1:
-                    await INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, cancellationToken)
-                        ;
-                    break;
-                default:
-                    await Task.WhenAll([
-                            INerve<TData, TLink>.SelfSleep(progressLogger, cellWrap, comparisonChain, cellMemory)
-                                .AsTask()
-                                .AsTaskRun(),
-                            INerve<TData, TLink>.SubSleep(progressLogger,
-                                    comparisonChain,
-                                    cellMemory,
-                                    cancellationToken)
-                                .AsTask()
-                                .AsTaskRun()
-                        ])
-                        ;
-                    break;
+                return;
             }
+
+            using var cellMemory = cellEnumerable.ToCellMemory();
+
+            if (cellMemory.Count == 1)
+            {
+                await INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, cancellationToken);
+                return;
+            }
+
+            await SmartParallel.InvokeAsync(cancellationToken,
+                (token) => INerve<TData, TLink>
+                    .SelfSleep(progressLogger, cellWrap, comparisonChain, cellMemory, cancellationToken: token),
+                (token) => INerve<TData, TLink>
+                    .SubSleep(progressLogger, comparisonChain, cellMemory, token)
+                );
         }
 
-        private static async ValueTask SelfSleep(IProgressLogger progressLogger,
+        private static ValueTask SelfSleep(IProgressLogger progressLogger,
             CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> cellWrap,
             ComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
-            CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellMemory)
+            CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellMemory,
+            CancellationToken cancellationToken = default)
         {
             cellMemory.Memory.Span.Sort(wrap => new(
                     in wrap.NeuronWrap.RefData,
@@ -66,62 +60,66 @@ public static class NerveSleepExtensions
                     in wrap.RefValue.RefScore,
                     in wrap.RefValue.RefWeight),
                 comparisonChain.Comparison);
-            if (cellWrap.RefValue.Child != cellMemory.Memory.Span[0].Cell.Offset)
-            {
-                await cellWrap.LockAsync(location =>
-                    {
-                        location.RefValue.Child = cellMemory.Memory.Span[0].Cell.Offset;
-                        progressLogger.IncrementCount();
-                    },
-                    CancellationToken.None);
-            }
-
-            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> second = default;
-            for (var index = 0; index < cellMemory.Count - 1; index++)
-            {
-                var first = cellMemory.Memory.Span[index];
-                second = cellMemory.Memory.Span[index + 1];
-
-                if (first.RefValue.Next != second.Cell.Offset ||
-                    first.RefValue.NextCount != cellMemory.Count - index - 1)
+            return SmartParallel.InvokeAsync(cancellationToken,
+                 async (_) =>
                 {
-                    await first.LockAsync(location =>
-                        {
-                            location.RefValue.Next = second.Cell.Offset;
-                            location.RefValue.NextCount = cellMemory.Count - index - 1;
-                            progressLogger.IncrementCount();
-                        },
-                        CancellationToken.None);
-                }
-            }
-
-            if (second.RefValue.Next != DataOffset.Null ||
-                second.RefValue.NextCount != 0)
-            {
-                await second.LockAsync(location =>
+                    if (cellWrap.RefValue.Child != cellMemory.Memory.Span[0].Cell.Offset)
                     {
-                        location.RefValue.Next = DataOffset.Null;
-                        location.RefValue.NextCount = 0;
-                        progressLogger.IncrementCount();
-                    },
-                    CancellationToken.None);
-            }
-        }
+                        await cellWrap.LockAsync(location =>
+                            {
+                                location.RefValue.Child = cellMemory.Memory.Span[0].Cell.Offset;
+                                progressLogger.IncrementCount();
+                            },
+                            CancellationToken.None);
+                    }
+                },
+                async (_) =>
+                {
+                    CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> second = default;
+                    for (var index = 0; index < cellMemory.Count - 1; index++)
+                    {
+                        var first = cellMemory.Memory.Span[index];
+                        second = cellMemory.Memory.Span[index + 1];
 
-        private static async ValueTask SubSleep(IProgressLogger progressLogger,
-            ComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
-            CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellMemory,
-            CancellationToken cancellationToken)
-        {
-            await SmartParallel.ForAsync(0,
-                cellMemory.Count,
-                cancellationToken,
-                async (index, token) =>
-                    await INerve<TData, TLink>.SleepAsyncCore(progressLogger,
-                        cellMemory.Memory.Span[index],
-                        comparisonChain,
-                        token)
+                        if (first.RefValue.Next != second.Cell.Offset ||
+                            first.RefValue.NextCount != cellMemory.Count - index - 1)
+                        {
+                            await first.LockAsync(location =>
+                                {
+                                    location.RefValue.Next = second.Cell.Offset;
+                                    location.RefValue.NextCount = cellMemory.Count - index - 1;
+                                    progressLogger.IncrementCount();
+                                },
+                                CancellationToken.None);
+                        }
+                    }
+                    if (second.RefValue.Next != DataOffset.Null ||
+                        second.RefValue.NextCount != 0)
+                    {
+                        await second.LockAsync(location =>
+                            {
+                                location.RefValue.Next = DataOffset.Null;
+                                location.RefValue.NextCount = 0;
+                                progressLogger.IncrementCount();
+                            },
+                            CancellationToken.None);
+                    }
+                }
             );
         }
+
+        private static ValueTask SubSleep(IProgressLogger progressLogger,
+            ComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
+            CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellMemory,
+            CancellationToken cancellationToken) =>
+                SmartParallel.ForAsync(0,
+                    cellMemory.Count,
+                    cancellationToken,
+                    async (index, token) =>
+                        await INerve<TData, TLink>.SleepAsyncCore(progressLogger,
+                            cellMemory.Memory.Span[index],
+                            comparisonChain,
+                            token)
+                );
     }
 }

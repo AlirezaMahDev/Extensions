@@ -148,7 +148,9 @@ internal partial class DataLocation : IDataLocation
     {
         _value.BlockMemory.Accessor.Save();
         if (_lazy.IsValueCreated)
+        {
             _lazy.Value.Save();
+        }
     }
 
     private string GetDebuggerDisplay()

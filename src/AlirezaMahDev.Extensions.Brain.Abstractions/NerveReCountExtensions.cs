@@ -16,7 +16,10 @@ public static class NerveReCountExtensions
             using (var wraps = nerve.NeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
+                {
                     return;
+                }
+
                 Parallel.For(0,
                     wraps.Count,
                     (index) =>
@@ -40,7 +43,10 @@ public static class NerveReCountExtensions
             using (var wraps = connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
+                {
                     return;
+                }
+
                 Parallel.For(0,
                     wraps.Count,
                     (index) =>
@@ -64,8 +70,11 @@ public static class NerveReCountExtensions
             using (var wraps = nerve.NeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
+                {
                     return;
-                await Parallel.ForAsync(0,
+                }
+
+                await SmartParallel.ForAsync(0,
                     wraps.Count,
                     cancellationToken,
                     async (index, token) =>
@@ -91,8 +100,11 @@ public static class NerveReCountExtensions
             using (var wraps = connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
+                {
                     return;
-                await Parallel.ForAsync(0,
+                }
+
+                await SmartParallel.ForAsync(0,
                     wraps.Count,
                     cancellationToken,
                     async (index, token) =>

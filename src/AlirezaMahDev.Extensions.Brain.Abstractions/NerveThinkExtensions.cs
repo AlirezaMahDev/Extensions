@@ -27,17 +27,14 @@ public static class NerveThinkExtensions
                 linkFunc,
                 data,
                 0,
-                Think<TData, TLink>.Create(
-                    new(default(TData)),
-                    new(default(TLink)),
-                    nerve.ConnectionWrap),
+                Think<TData, TLink>.Create(nerve.ConnectionWrap),
                 result,
                 cancellationToken);
 
             return result.GetBestThinks();
         }
 
-        private static ValueTask ThinkCoreAsync(
+        private static async ValueTask ThinkCoreAsync(
             int depth,
             Func<ReadOnlyMemory<TData>, TLink> linkFunc,
             ReadOnlyMemory<TData> input,
@@ -56,7 +53,7 @@ public static class NerveThinkExtensions
                     resultThink.Add(currentThink);
                 }
 
-                return ValueTask.CompletedTask;
+                return;
             }
 
             ReadOnlyMemoryValue<TLink> linkValue = linkFunc(previousData);
@@ -67,16 +64,16 @@ public static class NerveThinkExtensions
 
             if (cellMemory.Count == 0)
             {
-                return ValueTask.CompletedTask;
+                return;
             }
 
             using var memoryList = cellMemory.Memory.NearConnection(pair, depth);
             if (memoryList.Count == 0)
             {
-                return ValueTask.CompletedTask;
+                return;
             }
 
-            return SmartParallel.ForAsync(0,
+            await SmartParallel.ForAsync(0,
                 memoryList.Count,
                 cancellationToken,
                 (memoryIndex, token) => INerve<TData, TLink>.ThinkCoreAsyncCore(depth,

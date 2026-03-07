@@ -41,7 +41,9 @@ public static class BinarySearchSpanExtensions
             var lower = readonlySpan.LowerBound(value);
 
             if (lower >= readonlySpan.Length || value.CompareTo(readonlySpan[lower]) != 0)
+            {
                 return ~lower;
+            }
 
             var upper = readonlySpan[lower..].UpperBound(value) + lower;
 
@@ -80,9 +82,13 @@ public static class BinarySearchSpanExtensions
                 var mid = lo + (hi - lo >> 1);
 
                 if (value.CompareTo(readonlySpan[mid]) > 0)
+                {
                     lo = mid + 1;
+                }
                 else
+                {
                     hi = mid;
+                }
             }
 
             return lo;
@@ -116,9 +122,13 @@ public static class BinarySearchSpanExtensions
                 var mid = lo + (hi - lo >> 1);
 
                 if (value.CompareTo(readonlySpan[mid]) >= 0)
+                {
                     lo = mid + 1;
+                }
                 else
+                {
                     hi = mid;
+                }
             }
 
             return lo;
@@ -148,7 +158,9 @@ public static class BinarySearchSpanExtensions
             var lower = readonlySpan.BinarySearchLowerBound(value);
 
             if (lower < 0)
+            {
                 return new(lower, lower);
+            }
 
             var upper = readonlySpan[lower..].BinarySearchUpperBound(value);
 

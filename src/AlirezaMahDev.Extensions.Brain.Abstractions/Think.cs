@@ -18,43 +18,31 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; }
     private Think<TData, TLink>? Previous { get; }
 
-    public TData AllDifferenceData { get; }
-    public TLink AllDifferenceLink { get; }
+    public TData DataDifferenceSum { get; }
+    public TLink LinkDifference { get; }
+    public TLink LinkDifferenceSum { get; }
 
-    public TData AvgDifferenceData { get; }
-    public TLink AvgDifferenceLink { get; }
-
-    public double AllScore { get; }
-    public ulong AllWeight { get; }
+    public double ScoreSum { get; }
+    public ulong WeightSum { get; }
 
     private Think(
-        ReadOnlyMemoryValue<TData> data,
-        ReadOnlyMemoryValue<TLink> link,
         CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
     {
         Id = Guid.CreateVersion7();
         Count = 1;
 
-        Data = data;
-        Link = link;
+        Data = default;
+        Link = default;
 
         ConnectionWrap = connectionWrap;
         Previous = null;
 
-        AllDifferenceData = NerveHelper.Difference(
-            TData.Normalize(in data.Value),
-            TData.Normalize(in connectionWrap.NeuronWrap.RefData)
-        );
-        AllDifferenceLink = NerveHelper.Difference(
-            TLink.Normalize(in link.Value),
-            TLink.Normalize(in connectionWrap.RefLink)
-        );
+        DataDifferenceSum = default;
+        LinkDifference = default;
+        LinkDifferenceSum = default;
 
-        AvgDifferenceData = AllDifferenceData / Count;
-        AvgDifferenceLink = AllDifferenceLink / Count;
-
-        AllScore = connectionWrap.RefValue.Score;
-        AllWeight = connectionWrap.RefValue.Weight;
+        ScoreSum = connectionWrap.RefValue.Score;
+        WeightSum = connectionWrap.RefValue.Weight;
     }
 
     private Think(
@@ -72,28 +60,19 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         ConnectionWrap = connectionWrap;
         Previous = previous;
 
-        AllDifferenceData = previous.AllDifferenceData +
-                            NerveHelper.Difference(
-                                TData.Normalize(in data.Value),
-                                TData.Normalize(in connectionWrap.NeuronWrap.RefData)
-                            );
-        AllDifferenceLink = previous.AllDifferenceLink +
-                            NerveHelper.Difference(
-                                TLink.Normalize(in link.Value),
-                                TLink.Normalize(in connectionWrap.RefLink)
-                            );
+        DataDifferenceSum = previous.DataDifferenceSum + NerveHelper.AbsSubtraction(data.Value.Normalize(), connectionWrap.NeuronWrap.RefData.Normalize());
+        if (Count > 2)
+        {
+            LinkDifference = NerveHelper.AbsSubtraction(link.Value.Normalize(), connectionWrap.RefLink.Normalize());
+            LinkDifferenceSum = previous.LinkDifferenceSum + LinkDifference;
+        }
 
-        AvgDifferenceData = AllDifferenceData / Count;
-        AvgDifferenceLink = AllDifferenceLink / Count;
-
-        AllScore = previous.AllScore + connectionWrap.RefValue.Score;
-        AllWeight = previous.AllWeight + connectionWrap.RefValue.Weight;
+        ScoreSum = previous.ScoreSum + connectionWrap.RefValue.Score;
+        WeightSum = previous.WeightSum + connectionWrap.RefValue.Weight;
     }
 
-    public static Think<TData, TLink> Create(ReadOnlyMemoryValue<TData> data,
-        ReadOnlyMemoryValue<TLink> link,
-        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection) =>
-        new(data, link, connection);
+    public static Think<TData, TLink> Create(CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection) =>
+        new(connection);
 
     public Think<TData, TLink> Append(ReadOnlyMemoryValue<TData> data,
         ReadOnlyMemoryValue<TLink> link,
@@ -136,12 +115,8 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     {
         return $"Count:{Count}" +
                " " +
-               $"AllDifferenceData:{AllDifferenceData}" +
+               $"AllDifferenceData:{DataDifferenceSum}" +
                " " +
-               $"AllDifferenceLink:{AllDifferenceLink}" +
-               " " +
-               $"AvgDifferenceData:{AvgDifferenceData}" +
-               " " +
-               $"AvgDifferenceLink:{AvgDifferenceLink}";
+               $"AllDifferenceLink:{LinkDifferenceSum}";
     }
 }

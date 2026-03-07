@@ -36,7 +36,9 @@ class DataAccess : IDisposable, IDataAccess
     private DataOffset AllocateOffset(int length)
     {
         if (length > DataDefaults.PartSize)
+        {
             throw new($"length > {DataDefaults.PartSize}");
+        }
 
         long offset;
         long lastOffset;
@@ -46,9 +48,14 @@ class DataAccess : IDisposable, IDataAccess
             offset = lastOffset;
 
             if (DataHelper.PartIndex(offset) != DataHelper.PartIndex(offset + length - 1))
+            {
                 offset += DataDefaults.PartSize - (offset % DataDefaults.PartSize);
+            }
+
             if (DataHelper.FileId(offset) != DataHelper.FileId(offset + length - 1))
+            {
                 offset += DataDefaults.FileSize - (offset % DataDefaults.FileSize);
+            }
         } while (Interlocked.CompareExchange(ref LastOffset, offset + length, lastOffset) != lastOffset);
 
         return DataOffset.Create(offset, length);

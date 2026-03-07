@@ -54,7 +54,9 @@ public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>,
     public IEnumerator<T> GetEnumerator()
     {
         for (var i = 0; i < Memory.Length; ++i)
+        {
             yield return Memory.Span[i];
+        }
     }
 
     IEnumerator IEnumerable.GetEnumerator()

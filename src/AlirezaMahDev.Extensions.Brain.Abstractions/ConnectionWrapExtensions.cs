@@ -89,7 +89,9 @@ public static class ConnectionWrapExtensions
         {
             var unloaded = wrap.LastLoadedConnection;
             if (unloaded?.IsNull == true)
+            {
                 yield break;
+            }
 
             var connection = unloaded.HasValue ? new Connection(unloaded.Value) : wrap.Child;
             while (connection.HasValue)
@@ -108,7 +110,9 @@ public static class ConnectionWrapExtensions
             in TLink link)
         {
             if (wrap.Nerve.TryGetConnectionCacheCore(in cacheKey, out var connectionOffset))
+            {
                 return new(connectionOffset.Value);
+            }
 
             var localNeuron = neuron;
             var localLink = link;
@@ -119,7 +123,9 @@ public static class ConnectionWrapExtensions
                 .NullWhenDefault();
 
             if (result.HasValue)
+            {
                 wrap.Nerve.TrySetConnectionCacheCore(in cacheKey, result.Value.Cell.Offset);
+            }
 
             return result?.Cell;
         }
@@ -142,7 +148,9 @@ public static class ConnectionWrapExtensions
             return await wrap.LockAsync(valueWrap =>
                 {
                     if (wrap.FindCore(in cacheKey, in neuron, in link.Value) is { } connection)
+                    {
                         return connection;
+                    }
 
                     var connectionValue = wrap.Nerve.Access
                         .Create(ConnectionValue<TLink>.Default with

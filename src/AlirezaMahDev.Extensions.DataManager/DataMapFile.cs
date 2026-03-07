@@ -48,7 +48,9 @@ sealed class DataMapFile(MemoryMappedFile file) : IDisposable
                 foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
                 {
                     if (dataPart.Value is IDisposable disposable)
+                    {
                         disposable.Dispose();
+                    }
                 }
 
                 file.Dispose();

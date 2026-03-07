@@ -12,7 +12,9 @@ public static class NerveExtensions
         public Neuron? FindNeuronCore(in NerveCacheKey cacheKey, in TData data)
         {
             if (nerve.TryGetNeuronCacheCore(in cacheKey, out var offset))
+            {
                 return new(offset.Value);
+            }
 
             var localData = data;
             var cellMemory = nerve.NeuronWrap
@@ -21,7 +23,9 @@ public static class NerveExtensions
                 .FirstOrDefault(x => x.Neuron.Wrap(nerve).RefData.Equals(localData))
                 .NullWhenDefault();
             if (!connection.HasValue)
+            {
                 return null;
+            }
 
             offset = connection.Value.RefValue.Neuron;
             nerve.TrySetNeuronCacheCore(in cacheKey, offset.Value);
@@ -44,7 +48,9 @@ public static class NerveExtensions
                 .LockAsync(valueWrap =>
                     {
                         if (nerve.FindNeuronCore(in cacheKey, in data.Value) is { } neuron)
+                        {
                             return neuron;
+                        }
 
                         var neuronValue =
                             nerve.Access.Create(NeuronValue<TData>.Default with { Data = data.Value });

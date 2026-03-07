@@ -43,7 +43,9 @@ unsafe class DataMapFilePart : MemoryManager<byte>
     public ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
+        {
             return ValueTask.FromCanceled(cancellationToken);
+        }
 
         _accessor.Flush();
         return ValueTask.CompletedTask;
@@ -52,7 +54,9 @@ unsafe class DataMapFilePart : MemoryManager<byte>
     protected override void Dispose(bool disposing)
     {
         if (_pinCount > 0)
+        {
             throw new InvalidOperationException("Cannot dispose while memory is pinned.");
+        }
 
         if (disposing)
         {

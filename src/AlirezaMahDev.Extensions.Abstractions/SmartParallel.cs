@@ -1,3 +1,7 @@
+#pragma warning disable CA1068 
+
+using System.Threading.Channels;
+
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class SmartParallel
@@ -6,16 +10,91 @@ public static class SmartParallel
 
     private static readonly AsyncLocal<MemoryValue<int>> HeldSlots = new();
 
+    public static async ValueTask ForEachAsync<T>(IAsyncEnumerable<T> values, CancellationToken cancellationToken, Func<T, CancellationToken, ValueTask> body)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            await ValueTask.FromCanceled(cancellationToken);
+            return;
+        }
+        await using var enumerator = values.GetAsyncEnumerator();
+        var innerSemaphoreSlim = new SemaphoreSlim(1, 1);
+        using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        await ForAsync(0, Environment.ProcessorCount, cancellationTokenSource.Token, async (_, token) =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await innerSemaphoreSlim.WaitAsync(token);
+                if (token.IsCancellationRequested)
+                {
+                    await ValueTask.FromCanceled(token);
+                    return;
+                }
+                if (!await enumerator.MoveNextAsync())
+                {
+                    cancellationTokenSource.Cancel();
+                    return;
+                }
+                var item = enumerator.Current;
+                innerSemaphoreSlim.Release();
+
+                await body(item, token);
+            }
+        });
+    }
+
+    public static async ValueTask ForEachAsync<T>(IEnumerable<T> values, CancellationToken cancellationToken, Func<T, CancellationToken, ValueTask> body)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            await ValueTask.FromCanceled(cancellationToken);
+            return;
+        }
+        using var enumerator = values.GetEnumerator();
+        var innerSemaphoreSlim = new SemaphoreSlim(1, 1);
+        using CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        await ForAsync(0, Environment.ProcessorCount, cancellationTokenSource.Token, async (_, token) =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await innerSemaphoreSlim.WaitAsync(token);
+                if (token.IsCancellationRequested)
+                {
+                    await ValueTask.FromCanceled(token);
+                    return;
+                }
+                if (!enumerator.MoveNext())
+                {
+                    cancellationTokenSource.Cancel();
+                    return;
+                }
+                var item = enumerator.Current;
+                innerSemaphoreSlim.Release();
+
+                await body(item, token);
+            }
+        });
+    }
+
+    public static ValueTask InvokeAsync(CancellationToken cancellationToken, params Func<CancellationToken, ValueTask>[] func) =>
+        ForAsync(0, func.Length, cancellationToken, (index, token) => func[index](token));
+
     public static ValueTask ForAsync(
         int fromInclusive,
         int toExclusive,
         CancellationToken cancellationToken,
         Func<int, CancellationToken, ValueTask> body)
     {
-        if (fromInclusive >= toExclusive)
-            return ValueTask.CompletedTask;
 
-        cancellationToken.ThrowIfCancellationRequested();
+        if (fromInclusive >= toExclusive)
+        {
+            return ValueTask.CompletedTask;
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return ValueTask.FromCanceled(cancellationToken);
+        }
 
         int count = toExclusive - fromInclusive;
         int desired = Math.Min(count, Environment.ProcessorCount);
@@ -26,7 +105,9 @@ public static class SmartParallel
             for (int i = 0; i < desired; i++)
             {
                 if (!Semaphore.Wait(0, cancellationToken))
+                {
                     break;
+                }
 
                 acquired++;
             }
@@ -34,7 +115,9 @@ public static class SmartParallel
         catch
         {
             if (acquired > 0)
+            {
                 Semaphore.Release(acquired);
+            }
 
             throw;
         }
@@ -49,14 +132,17 @@ public static class SmartParallel
         if (acquiredSlots <= 1)
         {
             if (acquired > 0)
+            {
                 Semaphore.Release(acquired);
-            return RunSequentialAsync(fromInclusive, toExclusive, body, cancellationToken);
+            }
+
+            return ForAsyncRunSequentialAsync(fromInclusive, toExclusive, body, cancellationToken);
         }
 
-        return RunParallelAsync(fromInclusive, toExclusive, acquired, acquiredSlots, body, cancellationToken);
+        return ForAsyncRunParallelAsync(fromInclusive, toExclusive, acquired, acquiredSlots, body, cancellationToken);
     }
 
-    private static async ValueTask RunSequentialAsync(
+    private static async ValueTask ForAsyncRunSequentialAsync(
         int fromInclusive,
         int toExclusive,
         Func<int, CancellationToken, ValueTask> body,
@@ -64,12 +150,15 @@ public static class SmartParallel
     {
         for (int i = fromInclusive; i < toExclusive; i++)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
             await body(i, cancellationToken);
         }
     }
 
-    private static async ValueTask RunParallelAsync(
+    private static async ValueTask ForAsyncRunParallelAsync(
         int fromInclusive,
         int toExclusive,
         int acquired,
@@ -91,7 +180,7 @@ public static class SmartParallel
 
             for (int w = 0; w < acquiredSlots; w++)
             {
-                workers[w] = RunParallelWorkerAsync(nextIndex, toExclusive, body, cancellationToken);
+                workers[w] = ForAsyncRunParallelAsyncWorkerAsync(nextIndex, toExclusive, body, cancellationToken);
             }
 
             Task whenAll = Task.WhenAll(workers);
@@ -105,12 +194,21 @@ public static class SmartParallel
                 await cancellationTokenSource.CancelAsync().ConfigureAwait(false);
                 await whenAll.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
 
-                throw new AggregateException(
-                    workers
-                        .Where(t => t.IsFaulted)
-                        .Select(t => t.Exception)
-                        .Cast<Exception>()
-                );
+                var exceptions = workers
+                    .Where(t => t.IsFaulted)
+                    .Where(x => !x.IsCanceled)
+                    .Select(t => t.Exception)
+                    .Cast<Exception>()
+                    .ToArray();
+
+                if (exceptions.Length == 1)
+                {
+                    throw exceptions[0];
+                }
+                else
+                {
+                    throw new AggregateException(exceptions);
+                }
             }
         }
         finally
@@ -120,7 +218,7 @@ public static class SmartParallel
         }
     }
 
-    private static async Task RunParallelWorkerAsync(
+    private static async Task ForAsyncRunParallelAsyncWorkerAsync(
         MemoryValue<int> nextIndex,
         int toExclusive,
         Func<int, CancellationToken, ValueTask> body,
@@ -131,9 +229,14 @@ public static class SmartParallel
             int index = Interlocked.Increment(ref nextIndex.Value) - 1;
 
             if (index >= toExclusive)
+            {
                 return;
+            }
 
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
 
             await body(index, cancellationToken);
         }

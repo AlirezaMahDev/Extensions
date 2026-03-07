@@ -18,7 +18,9 @@ public static class DataLockWrapExtensions
         {
             var read = Volatile.Read(ref wrap.RefValue.RefLock);
             if (read != 0 && read != SessionLockKey)
+            {
                 Interlocked.CompareExchange(ref wrap.RefValue.RefLock, 0, read);
+            }
         }
 
         public DataLockDisposable<TValue> Lock()
