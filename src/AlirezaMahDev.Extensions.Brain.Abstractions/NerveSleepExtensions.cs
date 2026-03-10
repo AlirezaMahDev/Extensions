@@ -24,7 +24,11 @@ public static class NerveSleepExtensions
             ComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
             CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             var cellEnumerable = cellWrap.GetConnectionsWrap();
 
             if (cellEnumerable.Count == 0)
@@ -37,15 +41,16 @@ public static class NerveSleepExtensions
             if (cellMemory.Count == 1)
             {
                 await INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, cancellationToken);
-                return;
             }
-
-            await SmartParallel.InvokeAsync(cancellationToken,
-                (token) => INerve<TData, TLink>
-                    .SelfSleep(progressLogger, cellWrap, comparisonChain, cellMemory, cancellationToken: token),
-                (token) => INerve<TData, TLink>
-                    .SubSleep(progressLogger, comparisonChain, cellMemory, token)
-                );
+            else
+            {
+                await SmartParallel.InvokeAsync(cancellationToken,
+                    (token) =>
+                        INerve<TData, TLink>.SelfSleep(progressLogger, cellWrap, comparisonChain, cellMemory, token),
+                    (token) =>
+                        INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, token)
+                    );
+            }
         }
 
         private static ValueTask SelfSleep(IProgressLogger progressLogger,
@@ -61,8 +66,9 @@ public static class NerveSleepExtensions
                     in wrap.RefValue.RefWeight),
                 comparisonChain.Comparison);
             return SmartParallel.InvokeAsync(cancellationToken,
-                 async (_) =>
+                async (_) =>
                 {
+                    progressLogger.IncrementLength();
                     if (cellWrap.RefValue.Child != cellMemory.Memory.Span[0].Cell.Offset)
                     {
                         await cellWrap.LockAsync(location =>
@@ -81,6 +87,7 @@ public static class NerveSleepExtensions
                         var first = cellMemory.Memory.Span[index];
                         second = cellMemory.Memory.Span[index + 1];
 
+                        progressLogger.IncrementLength();
                         if (first.RefValue.Next != second.Cell.Offset ||
                             first.RefValue.NextCount != cellMemory.Count - index - 1)
                         {
@@ -93,6 +100,8 @@ public static class NerveSleepExtensions
                                 CancellationToken.None);
                         }
                     }
+
+                    progressLogger.IncrementLength();
                     if (second.RefValue.Next != DataOffset.Null ||
                         second.RefValue.NextCount != 0)
                     {
@@ -115,8 +124,8 @@ public static class NerveSleepExtensions
                 SmartParallel.ForAsync(0,
                     cellMemory.Count,
                     cancellationToken,
-                    async (index, token) =>
-                        await INerve<TData, TLink>.SleepAsyncCore(progressLogger,
+                    (index, token) =>
+                        INerve<TData, TLink>.SleepAsyncCore(progressLogger,
                             cellMemory.Memory.Span[index],
                             comparisonChain,
                             token)

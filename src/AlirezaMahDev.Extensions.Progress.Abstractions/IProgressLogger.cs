@@ -6,6 +6,7 @@ public interface IProgressLogger
 {
     ProgressLoggerState State { get; }
 
+    void IncrementLength();
     void AddLength(int length);
     void AddCount(int count);
 

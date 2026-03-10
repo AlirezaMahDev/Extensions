@@ -1,19 +1,6 @@
-using System.Numerics;
-
 using AlirezaMahDev.Extensions.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
-
-public static class NerveHelper
-{
-    public static T Abs<T>(in T a)
-        where T : IComparable<T>, ISubtractionOperators<T, T, T> =>
-            a.CompareTo(default) >= 0 ? a : default(T)! - a;
-
-    public static T AbsSubtraction<T>(in T a, in T b)
-        where T : IComparable<T>, ISubtractionOperators<T, T, T> =>
-        a - b is { } da && da.CompareTo(default) >= 0 ? da : b - a;
-}
 
 public static class NerveHelper<TData, TLink>
     where TData : unmanaged, ICellData<TData>
@@ -21,23 +8,23 @@ public static class NerveHelper<TData, TLink>
 {
     public static ComparisonChain<ThinkValueRef<TData, TLink>> SleepComparisons { get; } =
         ComparisonChain<ThinkValueRef<TData, TLink>>
-            .ChainOrderBy(x => x.Data)
-            .ChainOrderBy(x => x.Link)
+            .ChainOrderBy(x => x.Data.Normalize())
+            .ChainOrderBy(x => x.Link.Normalize())
             .ChainOrderBy(x => x.Score)
             .ChainOrderBy(x => x.Weight)
             .UnWrap;
 
     public static ComparisonChain<Think<TData, TLink>> ThinkComparisons { get; } =
         ComparisonChain<Think<TData, TLink>>
-            .ChainOrderBy(x => x.LinkDifferenceSum)
-            .ChainOrderBy(x => x.DataDifferenceSum)
+            .ChainOrderBy(x => x.LinkDifference.Abs())
+            .ChainOrderBy(x => x.DataDifferenceSumAbs)
             .ChainOrderByDescending(x => x.ScoreSum)
             .ChainOrderByDescending(x => x.WeightSum)
             .UnWrap;
 
     public static ComparisonChain<PredictValueRef<TLink>> NearNextComparisons { get; } =
         ComparisonChain<PredictValueRef<TLink>>
-            .ChainOrderBy(x => NerveHelper.Abs(x.Link.Normalize()))
+            .ChainOrderBy(x => x.Link.Normalize())
             .ChainOrderByDescending(x => x.Score)
             .ChainOrderByDescending(x => x.Weight)
             .Merge()

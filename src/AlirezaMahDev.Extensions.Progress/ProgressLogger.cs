@@ -97,6 +97,11 @@ partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptio
         _options.Length = length;
     }
 
+    public void IncrementLength()
+    {
+        Interlocked.Increment(ref _options.RefLength);
+    }
+
     public void AddLength(int length)
     {
         Interlocked.Add(ref _options.RefLength, length);

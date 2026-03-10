@@ -29,11 +29,10 @@ public static class ConnectionWrapMemoryExtensions
             NearConnection(PredictValueRef<TLink> link, int depth)
         {
             using MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> memoryList = memory;
-            var cloneMemory = memoryList.Memory;
-            cloneMemory.Span.Sort(x =>
+            memoryList.Memory.Span.Sort(x =>
                     new PredictValueRef<TLink>(in x.RefLink, in x.RefValue.RefScore, in x.RefValue.RefWeight),
                 NerveHelper<TData, TLink>.NearNextComparisons);
-            return cloneMemory
+            return memoryList.Memory
                 .Near(link,
                     x => new(in x.RefLink, in x.RefValue.RefScore, in x.RefValue.RefWeight),
                     NerveHelper<TData, TLink>.NearNextComparisons,

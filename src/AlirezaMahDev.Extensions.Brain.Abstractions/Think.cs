@@ -19,8 +19,8 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     private Think<TData, TLink>? Previous { get; }
 
     public TData DataDifferenceSum { get; }
+    public TData DataDifferenceSumAbs { get; }
     public TLink LinkDifference { get; }
-    public TLink LinkDifferenceSum { get; }
 
     public double ScoreSum { get; }
     public ulong WeightSum { get; }
@@ -31,15 +31,8 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         Id = Guid.CreateVersion7();
         Count = 1;
 
-        Data = default;
-        Link = default;
-
         ConnectionWrap = connectionWrap;
         Previous = null;
-
-        DataDifferenceSum = default;
-        LinkDifference = default;
-        LinkDifferenceSum = default;
 
         ScoreSum = connectionWrap.RefValue.Score;
         WeightSum = connectionWrap.RefValue.Weight;
@@ -60,11 +53,14 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         ConnectionWrap = connectionWrap;
         Previous = previous;
 
-        DataDifferenceSum = previous.DataDifferenceSum + NerveHelper.AbsSubtraction(data.Value.Normalize(), connectionWrap.NeuronWrap.RefData.Normalize());
+        var dataDifference = data.Value.Normalize() - connectionWrap.NeuronWrap.RefData.Normalize();
+        DataDifferenceSum = previous.DataDifferenceSum + dataDifference;
+        var dataDifferenceAbs = dataDifference.Abs();
+        DataDifferenceSumAbs = previous.DataDifferenceSumAbs + dataDifferenceAbs;
+
         if (Count > 2)
         {
-            LinkDifference = NerveHelper.AbsSubtraction(link.Value.Normalize(), connectionWrap.RefLink.Normalize());
-            LinkDifferenceSum = previous.LinkDifferenceSum + LinkDifference;
+            LinkDifference = link.Value.Normalize() - connectionWrap.RefLink.Normalize();
         }
 
         ScoreSum = previous.ScoreSum + connectionWrap.RefValue.Score;
@@ -115,8 +111,8 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     {
         return $"Count:{Count}" +
                " " +
-               $"AllDifferenceData:{DataDifferenceSum}" +
+               $"DataDifferenceSum:{DataDifferenceSum}" +
                " " +
-               $"AllDifferenceLink:{LinkDifferenceSum}";
+               $"LinkDifference:{LinkDifference}";
     }
 }
