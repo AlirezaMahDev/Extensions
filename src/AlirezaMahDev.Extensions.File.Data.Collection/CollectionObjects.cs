@@ -28,7 +28,7 @@ internal class CollectionObjects : ICollectionObjects
 
     public bool TryGet(int index, [MaybeNullWhen(false)] out ICollectionObject item)
     {
-        if (_cache.TryGetValue(index, out var lazy))
+        if (_cache.TryGetValue(index, out Lazy<ICollectionObject>? lazy))
         {
             item = lazy.Value;
             return true;
@@ -84,7 +84,7 @@ internal class CollectionObjects : ICollectionObjects
     public void Save()
     {
         LocationValue.Save();
-        foreach (var collectionObject in _objectFactory)
+        foreach (CollectionObject collectionObject in _objectFactory)
         {
             collectionObject.Save();
         }

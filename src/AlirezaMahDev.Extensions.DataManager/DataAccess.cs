@@ -4,7 +4,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-class DataAccess : IDisposable, IDataAccess
+internal class DataAccess : IDisposable, IDataAccess
 {
     public string Path { get; }
 
@@ -61,8 +61,10 @@ class DataAccess : IDisposable, IDataAccess
         return DataOffset.Create(offset, length);
     }
 
-    private DataMapFilePart AccessPart(in DataOffset offset) =>
-        _map.File(in offset).Part(in offset);
+    private DataMapFilePart AccessPart(in DataOffset offset)
+    {
+        return _map.File(in offset).Part(in offset);
+    }
 
     public DataLocation<DataPath> Root { get; }
     public DataWrap<DataPath> RootWrap { get; }
@@ -78,7 +80,7 @@ class DataAccess : IDisposable, IDataAccess
 
     public async ValueTask<DataLocation<DataTrash>> GetTrashAsync(CancellationToken cancellationToken = default)
     {
-        var trashPath = await Root
+        DataLocation<DataPath> trashPath = await Root
             .Wrap(this, x => x.TreeDictionary())
             .GetOrAddAsync(".trash", cancellationToken);
         return trashPath
@@ -88,7 +90,7 @@ class DataAccess : IDisposable, IDataAccess
 
     public AllocateMemory<byte> AllocateMemory(int length)
     {
-        var offset = AllocateOffset(length);
+        DataOffset offset = AllocateOffset(length);
         return new(offset, AccessPart(offset).Memory.Slice(offset.Offset, offset.Length));
     }
 
@@ -117,7 +119,7 @@ class DataAccess : IDisposable, IDataAccess
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        Dispose(true);
         GC.SuppressFinalize(this);
     }
 }

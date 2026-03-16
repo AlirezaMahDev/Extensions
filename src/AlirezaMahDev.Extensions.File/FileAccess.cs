@@ -77,7 +77,7 @@ internal class FileAccess(
     {
         _semaphoreSlim.Wait();
         FileStream.Seek(0, SeekOrigin.Begin);
-        var result = func(FileStream);
+        TResult result = func(FileStream);
         FileStream.Flush();
         _semaphoreSlim.Release();
         return result;
@@ -98,7 +98,7 @@ internal class FileAccess(
     {
         await _semaphoreSlim.WaitAsync(cancellationToken);
         FileStream.Seek(0, SeekOrigin.Begin);
-        var result = await func(FileStream, cancellationToken);
+        TResult result = await func(FileStream, cancellationToken);
         await FileStream.FlushAsync(cancellationToken);
         _semaphoreSlim.Release();
         return result;
@@ -107,7 +107,7 @@ internal class FileAccess(
     public void Replace(Action<Stream> action)
     {
         _semaphoreSlim.Wait();
-        var newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, $"{name}.{NewFormat}");
+        string newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, $"{name}.{NewFormat}");
         using (FileStream newFileStream = new(newPath,
                    FileMode.Create,
                    System.IO.FileAccess.ReadWrite,
@@ -125,7 +125,7 @@ internal class FileAccess(
         CancellationToken cancellationToken = default)
     {
         await _semaphoreSlim.WaitAsync(cancellationToken);
-        var newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, $"{name}.{NewFormat}");
+        string newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, $"{name}.{NewFormat}");
         await using (FileStream newFileStream = new(newPath,
                          FileMode.Create,
                          System.IO.FileAccess.ReadWrite,
@@ -143,7 +143,7 @@ internal class FileAccess(
     public void Change(Action<Stream, Stream> action)
     {
         _semaphoreSlim.Wait();
-        var newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, $"{name}.{NewFormat}");
+        string newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, $"{name}.{NewFormat}");
         using (FileStream newFileStream = new(newPath,
                    FileMode.Create,
                    System.IO.FileAccess.ReadWrite,
@@ -162,7 +162,7 @@ internal class FileAccess(
         CancellationToken cancellationToken = default)
     {
         await _semaphoreSlim.WaitAsync(cancellationToken);
-        var newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, $"{name}.{NewFormat}");
+        string newPath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(Path)!, $"{name}.{NewFormat}");
         await using (FileStream newFileStream = new(newPath,
                          FileMode.Create,
                          System.IO.FileAccess.ReadWrite,

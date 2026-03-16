@@ -8,5 +8,9 @@ public readonly ref struct ComparableComparerBridge<T, TBridge, TComparer>(
     where TBridge : allows ref struct
 {
     private readonly TBridge _value = value;
-    public int CompareTo(T? other) => other is null ? 1 : comparer.Compare(_value, func(other));
+
+    public int CompareTo(T? other)
+    {
+        return other is null ? 1 : comparer.Compare(_value, func(other));
+    }
 }

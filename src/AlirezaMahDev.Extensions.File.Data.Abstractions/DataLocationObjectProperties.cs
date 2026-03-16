@@ -11,7 +11,7 @@ public readonly record struct DataLocationObjectProperties : IEnumerable<DataLoc
 
     private DataLocationObjectProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
     {
-        var properties = type
+        PropertyInfo[] properties = type
             .GetProperties(BindingFlags.GetProperty |
                            BindingFlags.SetProperty |
                            BindingFlags.Public |

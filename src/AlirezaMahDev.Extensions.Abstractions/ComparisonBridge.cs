@@ -5,5 +5,8 @@ public readonly record struct ComparisonBridge<T, TBridge>(
     Comparison<TBridge> Comparison) : IComparer<T>
     where TBridge : allows ref struct
 {
-    public int Compare(T? x, T? y) => Comparer<T>.NullDown(x, y) ?? Comparison(Func(x!), Func(y!));
+    public int Compare(T? x, T? y)
+    {
+        return Comparer<T>.NullDown(x, y) ?? Comparison(Func(x!), Func(y!));
+    }
 }

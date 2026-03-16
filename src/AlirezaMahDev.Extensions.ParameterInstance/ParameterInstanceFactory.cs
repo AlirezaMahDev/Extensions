@@ -47,7 +47,7 @@ public class ParameterInstanceFactory<
 
     public virtual bool TryRemove(TParameter parameter)
     {
-        if (!_instances.TryRemove(parameter, out var instance))
+        if (!_instances.TryRemove(parameter, out Lazy<TInstance>? instance))
         {
             return false;
         }
@@ -91,7 +91,7 @@ public class ParameterInstanceFactory<
     {
         if (typeof(TInstance).IsAssignableTo(typeof(IDisposable)))
         {
-            foreach (var keyValuePair in _instances.Values
+            foreach (IDisposable? keyValuePair in _instances.Values
                          .Where(x => x.IsValueCreated)
                          .Select(x => x.Value as IDisposable))
             {
@@ -118,7 +118,7 @@ public class ParameterInstanceFactory<
     {
         if (typeof(TInstance).IsAssignableTo(typeof(IAsyncDisposable)))
         {
-            foreach (var keyValuePair in _instances.Values
+            foreach (IAsyncDisposable? keyValuePair in _instances.Values
                          .Where(x => x.IsValueCreated)
                          .Select(x => x.Value as IAsyncDisposable))
             {

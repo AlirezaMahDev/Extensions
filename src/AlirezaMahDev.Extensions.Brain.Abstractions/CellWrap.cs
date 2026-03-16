@@ -18,26 +18,39 @@ public readonly record struct CellWrap<TCell, TValue, TData, TLink>(INerve<TData
     public DataWrap<TValue> Location => new(Nerve.Access, new(Cell.Offset));
     public ref readonly TValue RefValue => ref Location.RefValue;
 
-    public void Lock(DataWrapAction<TValue> action) => Location.Lock(action);
+    public void Lock(DataWrapAction<TValue> action)
+    {
+        Location.Lock(action);
+    }
 
-    public TResult Lock<TResult>(DataWrapFunc<TValue, TResult> func) =>
-        Location.Lock(func);
+    public TResult Lock<TResult>(DataWrapFunc<TValue, TResult> func)
+    {
+        return Location.Lock(func);
+    }
 
     public async ValueTask LockAsync(DataWrapAction<TValue> action,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default)
+    {
         await Location.LockAsync(action, cancellationToken);
+    }
 
     public async ValueTask LockAsync(DataWrapAsyncAction<TValue> action,
-        CancellationToken cancellationToken = default) =>
+        CancellationToken cancellationToken = default)
+    {
         await Location.LockAsync(action, cancellationToken);
+    }
 
     public ValueTask<TResult> LockAsync<TResult>(DataWrapFunc<TValue, TResult> func,
-        CancellationToken cancellationToken = default) =>
-        Location.LockAsync(func, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        return Location.LockAsync(func, cancellationToken);
+    }
 
     public ValueTask<TResult> LockAsync<TResult>(DataWrapAsyncFunc<TValue, TResult> func,
-        CancellationToken cancellationToken = default) =>
-        Location.LockAsync(func, cancellationToken);
+        CancellationToken cancellationToken = default)
+    {
+        return Location.LockAsync(func, cancellationToken);
+    }
 
     public override string ToString()
     {

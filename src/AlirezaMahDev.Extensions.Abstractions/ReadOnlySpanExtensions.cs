@@ -6,8 +6,8 @@ public static class ReadOnlySpanExtensions
     {
         public IEnumerable<TOut> Select<TOut>(InFunc<T, TOut> inFunc)
         {
-            var result = new TOut[readOnlySpan.Length];
-            for (var index = 0; index < readOnlySpan.Length; index++)
+            TOut[] result = new TOut[readOnlySpan.Length];
+            for (int index = 0; index < readOnlySpan.Length; index++)
             {
                 result[index] = inFunc(in readOnlySpan[index]);
             }

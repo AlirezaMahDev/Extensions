@@ -5,7 +5,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 namespace AlirezaMahDev.Extensions.DataManager;
 
 [StructLayout(LayoutKind.Sequential)]
-record struct DataAccessValue : IDataValue<DataAccessValue>
+internal record struct DataAccessValue : IDataValue<DataAccessValue>
 {
     public long LastOffset;
 }

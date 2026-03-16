@@ -18,8 +18,8 @@ internal class StackItem : IStackItem
         Capacity = (int)BitOperations.RoundUpToPowerOf2((uint)args.Index + 1) >> 1;
         SubIndex = args.Index - Capacity;
 
-        var size = Unsafe.SizeOf<StackItemValue>() + args.Items.StackAccess.Size;
-        var location = args.Items.LocationValue.Location.GetOrAdd(Capacity.ToString(), Capacity * size);
+        int size = Unsafe.SizeOf<StackItemValue>() + args.Items.StackAccess.Size;
+        IDataLocation location = args.Items.LocationValue.Location.GetOrAdd(Capacity.ToString(), Capacity * size);
 
         location.Data.AsMemory()
             .Slice(SubIndex * size, size)

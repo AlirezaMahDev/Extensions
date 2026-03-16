@@ -10,8 +10,10 @@ public static class DataCollectionWrapExtensions
     {
         public DataCollectionWrap<TValue, TItem> Collection(
             Expression<SelectValueFunc<TValue, DataOffset>> selectChildExpression,
-            Expression<SelectValueFunc<TItem, DataOffset>> selectNextExpression) =>
-            new(selectChildExpression, selectNextExpression);
+            Expression<SelectValueFunc<TItem, DataOffset>> selectNextExpression)
+        {
+            return new(selectChildExpression, selectNextExpression);
+        }
     }
 
     extension<TValue, TItem>(IDataValue<TValue> value)
@@ -19,37 +21,48 @@ public static class DataCollectionWrapExtensions
         where TItem : unmanaged, IDataValue<TItem>
     {
         public DataCollectionWrap<TValue, TItem> Collection(
-            Expression<SelectValueFunc<TItem, DataOffset>> selectNextExpression) =>
-            new(x => x.Child, selectNextExpression);
+            Expression<SelectValueFunc<TItem, DataOffset>> selectNextExpression)
+        {
+            return new(x => x.Child, selectNextExpression);
+        }
     }
 
     extension<TValue, TItem>(IDataCollection<TValue, TItem> value)
         where TValue : unmanaged, IDataCollection<TValue, TItem>
         where TItem : unmanaged, IDataCollectionItem<TItem>
     {
-        public DataCollectionWrap<TValue, TItem> Collection() =>
-            new(x => x.Child, x => x.Next);
+        public DataCollectionWrap<TValue, TItem> Collection()
+        {
+            return new(x => x.Child, x => x.Next);
+        }
     }
 
     extension<TValue>(IDataCollectionTree<TValue> value)
         where TValue : unmanaged, IDataCollectionTree<TValue>
     {
-        public IDataCollection<TValue, TValue> TreeCollection() => null!;
+        public IDataCollection<TValue, TValue> TreeCollection()
+        {
+            return null!;
+        }
     }
 
     extension<TValue>(IDataValue<TValue> value)
         where TValue : unmanaged, IDataValue<TValue>
     {
         public DataCollectionItemWrap<TValue>
-            CollectionItem(Expression<SelectValueFunc<TValue, DataOffset>> selectNextExpression) =>
-            new(selectNextExpression);
+            CollectionItem(Expression<SelectValueFunc<TValue, DataOffset>> selectNextExpression)
+        {
+            return new(selectNextExpression);
+        }
     }
 
     extension<TValue>(IDataCollectionItem<TValue> value)
         where TValue : unmanaged, IDataCollectionItem<TValue>
     {
-        public DataCollectionItemWrap<TValue> CollectionItem() =>
-            new(x => x.Next);
+        public DataCollectionItemWrap<TValue> CollectionItem()
+        {
+            return new(x => x.Next);
+        }
     }
 
     extension<TValue>(DataWrap<TValue, DataCollectionItemWrap<TValue>> wrap)
@@ -57,7 +70,7 @@ public static class DataCollectionWrapExtensions
     {
         public DataLocation<TValue>? GetNext()
         {
-            var next = wrap.Wrap.SelectNext(wrap.Location.GetRefValue(wrap.Access));
+            DataOffset next = wrap.Wrap.SelectNext(wrap.Location.GetRefValue(wrap.Access));
             return next.IsNull
                 ? null
                 : new DataLocation<TValue>(next);
@@ -70,7 +83,7 @@ public static class DataCollectionWrapExtensions
     {
         public DataLocation<TItem>? GetChild()
         {
-            var child = wrap.Wrap.GetChild(wrap.Location.GetRefValue(wrap.Access));
+            DataOffset child = wrap.Wrap.GetChild(wrap.Location.GetRefValue(wrap.Access));
             return child.IsNull
                 ? null
                 : new DataLocation<TItem>(child);
@@ -78,7 +91,7 @@ public static class DataCollectionWrapExtensions
 
         public IEnumerable<DataLocation<TItem>> GetChildren()
         {
-            var current = wrap.GetChild();
+            DataLocation<TItem>? current = wrap.GetChild();
             while (current.HasValue)
             {
                 yield return current.Value;
@@ -93,7 +106,7 @@ public static class DataCollectionWrapExtensions
             wrap.Wrap()
                 .Lock(innerWrap =>
                 {
-                    var child = wrap.Wrap.GetChild(innerWrap.RefValue);
+                    DataOffset child = wrap.Wrap.GetChild(innerWrap.RefValue);
 
                     dataLocation.Wrap(wrap.Access)
                         .Lock(innerDataLocation =>
@@ -112,7 +125,7 @@ public static class DataCollectionWrapExtensions
             await wrap.Wrap()
                 .LockAsync(async (innerWrap, token) =>
                     {
-                        var child = wrap.Wrap.GetChild(innerWrap.RefValue);
+                        DataOffset child = wrap.Wrap.GetChild(innerWrap.RefValue);
 
                         await dataLocation.Wrap(wrap.Access)
                             .LockAsync(innerDataLocation =>
@@ -123,14 +136,14 @@ public static class DataCollectionWrapExtensions
 
                         wrap.Wrap.SetChild(ref innerWrap.RefValue, dataLocation.Offset);
                     },
-                    cancellationToken: cancellationToken);
+                    cancellationToken);
             return dataLocation;
         }
 
         public DataLocation<TItem>? Remove(DataOffset offset)
         {
             DataLocation<TItem>? previous = null;
-            foreach (var dataLocation in wrap.GetChildren())
+            foreach (DataLocation<TItem> dataLocation in wrap.GetChildren())
             {
                 if (dataLocation.Offset == offset)
                 {
@@ -163,7 +176,7 @@ public static class DataCollectionWrapExtensions
             CancellationToken cancellationToken = default)
         {
             DataLocation<TItem>? previous = null;
-            foreach (var dataLocation in wrap.GetChildren())
+            foreach (DataLocation<TItem> dataLocation in wrap.GetChildren())
             {
                 if (dataLocation.Offset == offset)
                 {
@@ -197,17 +210,21 @@ public static class DataCollectionWrapExtensions
             return null;
         }
 
-        public DataLocation<TItem>? Remove(DataLocation<TItem> dataLocation) =>
-            wrap.Remove(dataLocation.Offset);
+        public DataLocation<TItem>? Remove(DataLocation<TItem> dataLocation)
+        {
+            return wrap.Remove(dataLocation.Offset);
+        }
 
         public async ValueTask<DataLocation<TItem>?> RemoveAsync(DataLocation<TItem> dataLocation,
-            CancellationToken cancellationToken = default) =>
-            await wrap.RemoveAsync(dataLocation.Offset, cancellationToken);
+            CancellationToken cancellationToken = default)
+        {
+            return await wrap.RemoveAsync(dataLocation.Offset, cancellationToken);
+        }
 
 
         public void Clear()
         {
-            foreach (var dataLocation in wrap.GetChildren())
+            foreach (DataLocation<TItem> dataLocation in wrap.GetChildren())
             {
                 wrap.Remove(dataLocation);
             }
@@ -215,7 +232,7 @@ public static class DataCollectionWrapExtensions
 
         public async ValueTask ClearAsync(CancellationToken cancellationToken = default)
         {
-            foreach (var dataLocation in wrap.GetChildren())
+            foreach (DataLocation<TItem> dataLocation in wrap.GetChildren())
             {
                 await wrap.RemoveAsync(dataLocation, cancellationToken);
             }

@@ -22,7 +22,7 @@ public class CollectionPropertiesBase(IDataLocation location) : ICollectionPrope
 
     public bool TryGet(String64 key, [MaybeNullWhen(false)] out ICollectionProperty property)
     {
-        if (_cache.TryGetValue(key, out var lazy))
+        if (_cache.TryGetValue(key, out Lazy<ICollectionProperty>? lazy))
         {
             property = lazy.Value;
             return true;
@@ -72,7 +72,7 @@ public class CollectionPropertiesBase(IDataLocation location) : ICollectionPrope
     public void Save()
     {
         Location.Save();
-        foreach (var keyValuePair in _cache)
+        foreach (KeyValuePair<String64, Lazy<ICollectionProperty>> keyValuePair in _cache)
         {
             keyValuePair.Value.Value.Save();
         }

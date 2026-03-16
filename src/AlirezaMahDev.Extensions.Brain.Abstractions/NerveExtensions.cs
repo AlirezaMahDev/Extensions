@@ -11,15 +11,15 @@ public static class NerveExtensions
     {
         public Neuron? FindNeuronCore(in NerveCacheKey cacheKey, in TData data)
         {
-            if (nerve.TryGetNeuronCacheCore(in cacheKey, out var offset))
+            if (nerve.TryGetNeuronCacheCore(in cacheKey, out DataOffset? offset))
             {
                 return new(offset.Value);
             }
 
-            var localData = data;
-            var cellMemory = nerve.NeuronWrap
+            TData localData = data;
+            IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellMemory = nerve.NeuronWrap
                 .GetUnloadedConnectionsWrap();
-            var connection = cellMemory
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>? connection = cellMemory
                 .FirstOrDefault(x => x.Neuron.Wrap(nerve).RefData.Equals(localData))
                 .NullWhenDefault();
             if (!connection.HasValue)
@@ -35,7 +35,7 @@ public static class NerveExtensions
         public async ValueTask<Neuron> FindOrAddNeuronAsync(ReadOnlyMemoryValue<TData> data,
             CancellationToken cancellationToken = default)
         {
-            var cacheKey = nerve.CreateNeuronCacheKey(in data.Value);
+            NerveCacheKey cacheKey = nerve.CreateNeuronCacheKey(in data.Value);
             return nerve.FindNeuronCore(in cacheKey, in data.Value) ??
                    await nerve.AddNeuronAsyncCore(cacheKey, data, cancellationToken);
         }
@@ -52,11 +52,11 @@ public static class NerveExtensions
                             return neuron;
                         }
 
-                        var neuronValue =
+                        DataLocation<NeuronValue<TData>> neuronValue =
                             nerve.Access.Create(NeuronValue<TData>.Default with { Data = data.Value });
                         Interlocked.Increment(ref nerve.Counter.RefValue.NeuronCount);
 
-                        var connectionValue = nerve.Access
+                        DataLocation<ConnectionValue<TLink>> connectionValue = nerve.Access
                             .Create(ConnectionValue<TLink>.Default with
                             {
                                 Neuron = neuronValue.Offset,

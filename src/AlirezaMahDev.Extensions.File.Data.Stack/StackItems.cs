@@ -26,7 +26,7 @@ internal class StackItems(StackAccess stackAccess, StackItemFactory itemFactory)
 
     public bool TryGet(int index, [MaybeNullWhen(false)] out IStackItem item)
     {
-        if (_cache.TryGetValue(index, out var lazy))
+        if (_cache.TryGetValue(index, out Lazy<IStackItem>? lazy))
         {
             item = lazy.Value;
             return true;
@@ -82,7 +82,7 @@ internal class StackItems(StackAccess stackAccess, StackItemFactory itemFactory)
     public void Save()
     {
         LocationValue.Location.Save();
-        foreach (var location in LocationValue.Location)
+        foreach (IDataLocation location in LocationValue.Location)
         {
             location.Save();
         }

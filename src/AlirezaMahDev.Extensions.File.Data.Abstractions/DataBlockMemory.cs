@@ -14,7 +14,10 @@ public readonly struct DataBlockMemory(IDataBlockAccessor accessor, Memory<byte>
 
     public DataBlockMemory this[Range range] => new(Accessor, Memory[range]);
 
-    public DataBlockMemory Slice(int start, int length) => new(Accessor, Memory.Slice(start, length));
+    public DataBlockMemory Slice(int start, int length)
+    {
+        return new(Accessor, Memory.Slice(start, length));
+    }
 
     public DataBlockMemory Reset()
     {

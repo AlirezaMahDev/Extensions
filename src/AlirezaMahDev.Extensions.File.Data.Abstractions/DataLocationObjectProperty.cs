@@ -19,9 +19,9 @@ public readonly record struct DataLocationObjectProperty
             throw new InvalidCastException($"property {propertyInfo.Name} is not unmanaged");
         }
 
-        var createMemoryValue = CreateMemoryValue(propertyInfo,
-            out var getValue,
-            out var valueSetter);
+        Func<DataBlockMemory, object> createMemoryValue = CreateMemoryValue(propertyInfo,
+            out Func<object, object> getValue,
+            out Action<object, object> valueSetter);
 
         _setValue = value =>
         {
@@ -30,13 +30,13 @@ public readonly record struct DataLocationObjectProperty
                 throw new NotSupportedException("Cannot set null value");
             }
 
-            var memoryValue = createMemoryValue(dataBlockMemory);
+            object memoryValue = createMemoryValue(dataBlockMemory);
             valueSetter(memoryValue, value);
         };
 
         _getValue = () =>
         {
-            var memoryValue = createMemoryValue(dataBlockMemory);
+            object memoryValue = createMemoryValue(dataBlockMemory);
             return getValue(memoryValue);
         };
     }
@@ -49,9 +49,9 @@ public readonly record struct DataLocationObjectProperty
             throw new InvalidCastException($"property {propertyInfo.Name} is not unmanaged");
         }
 
-        var createMemoryValue = CreateMemoryValue(propertyInfo,
-            out var getValue,
-            out var valueSetter);
+        Func<DataBlockMemory, object> createMemoryValue = CreateMemoryValue(propertyInfo,
+            out Func<object, object> getValue,
+            out Action<object, object> valueSetter);
 
         _setValue = value =>
         {
@@ -60,19 +60,19 @@ public readonly record struct DataLocationObjectProperty
                 throw new NotSupportedException("Cannot set null value");
             }
 
-            var memoryValue = createMemoryValue(location.NewData(Marshal.SizeOf(value)));
+            object memoryValue = createMemoryValue(location.NewData(Marshal.SizeOf(value)));
             valueSetter(memoryValue, value);
         };
 
         _getValue = () =>
         {
-            var dataBlockMemory = location.LastData();
+            DataBlockMemory? dataBlockMemory = location.LastData();
             if (!dataBlockMemory.HasValue || dataBlockMemory.Value.Memory.IsEmpty)
             {
                 return Activator.CreateInstance(propertyInfo.PropertyType);
             }
 
-            var memoryValue = createMemoryValue(dataBlockMemory.Value);
+            object memoryValue = createMemoryValue(dataBlockMemory.Value);
             return getValue(memoryValue);
         };
     }
@@ -81,11 +81,11 @@ public readonly record struct DataLocationObjectProperty
         out Func<object, object> getValue,
         out Action<object, object> setValue)
     {
-        var memoryValueType = typeof(DataBlockMemoryValue<>).MakeGenericType(propertyInfo.PropertyType);
-        var memoryValueProperty = memoryValueType.GetProperty(nameof(DataBlockMemoryValue<>.Value))!;
+        Type memoryValueType = typeof(DataBlockMemoryValue<>).MakeGenericType(propertyInfo.PropertyType);
+        PropertyInfo memoryValueProperty = memoryValueType.GetProperty(nameof(DataBlockMemoryValue<>.Value))!;
 
-        var parameter = Expression.Parameter(typeof(DataBlockMemory));
-        var createMemoryValue = Expression.Lambda<Func<DataBlockMemory, object>>(
+        ParameterExpression parameter = Expression.Parameter(typeof(DataBlockMemory));
+        Func<DataBlockMemory, object> createMemoryValue = Expression.Lambda<Func<DataBlockMemory, object>>(
                 Expression.Convert(
                     Expression.New(
                         memoryValueType.GetConstructor([typeof(DataBlockMemory)])!,
@@ -95,7 +95,7 @@ public readonly record struct DataLocationObjectProperty
             )
             .Compile();
 
-        var memoryValueParameter = Expression.Parameter(typeof(object));
+        ParameterExpression memoryValueParameter = Expression.Parameter(typeof(object));
         getValue = Expression.Lambda<Func<object, object>>(
                 Expression.Convert(
                     Expression.Property(
@@ -105,7 +105,7 @@ public readonly record struct DataLocationObjectProperty
                 memoryValueParameter)
             .Compile();
 
-        var valueParameter = Expression.Parameter(typeof(object));
+        ParameterExpression valueParameter = Expression.Parameter(typeof(object));
         setValue = Expression.Lambda<Action<object, object>>(
                 Expression.Assign(
                     Expression.Property(

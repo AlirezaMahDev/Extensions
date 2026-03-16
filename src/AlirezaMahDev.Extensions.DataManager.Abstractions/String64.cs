@@ -42,7 +42,7 @@ public readonly unsafe struct String64 : IEquatable<String64>, IString<String64>
 
         fixed (String64* pointer = &this)
         {
-            var span = new Span<char>(pointer, Length);
+            Span<char> span = new(pointer, Length);
             span.Clear();
             readOnlySpan.CopyTo(span);
         }

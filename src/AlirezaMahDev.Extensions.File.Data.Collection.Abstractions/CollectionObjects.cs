@@ -19,7 +19,7 @@ public readonly record struct CollectionObjects<TEntity>(ICollectionObjects Obje
 
     public bool TryGet(int index, out CollectionObject<TEntity> item)
     {
-        if (Objects.TryGet(index, out var collectionObject))
+        if (Objects.TryGet(index, out ICollectionObject? collectionObject))
         {
             item = collectionObject.As<TEntity>();
             return true;
@@ -36,7 +36,7 @@ public readonly record struct CollectionObjects<TEntity>(ICollectionObjects Obje
 
     public bool TryRemove(int index, out CollectionObject<TEntity> @object)
     {
-        if (Objects.TryRemove(index, out var collectionItem))
+        if (Objects.TryRemove(index, out ICollectionObject? collectionItem))
         {
             @object = collectionItem.As<TEntity>();
             return true;

@@ -12,10 +12,10 @@ public static class NearBinarySearchSpanExtensions
             int depth)
         {
             MemoryList<ReadOnlyMemory<T>> result = [readonlyMemory];
-            foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
+            foreach (IComparisonChain<T> comparison in comparisonChain.Wrap().GetComparisonChains())
             {
                 MemoryList<ReadOnlyMemory<T>> newResult = [];
-                foreach (var item in result)
+                foreach (ReadOnlyMemory<T> item in result)
                 {
                     item.NearCore(newResult, value, comparison.CurrentComparison, depth);
                 }
@@ -37,8 +37,8 @@ public static class NearBinarySearchSpanExtensions
                 return;
             }
 
-            var binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, comparison);
-            if (binarySearchRange.TryGetRange(out var range))
+            BinarySearchRange binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, comparison);
+            if (binarySearchRange.TryGetRange(out Range range))
             {
                 result.Add(readonlyMemory[range]);
             }
@@ -51,7 +51,7 @@ public static class NearBinarySearchSpanExtensions
             int before, after;
             if (binarySearchRange.Start < 0)
             {
-                var define = ~binarySearchRange.Start;
+                int define = ~binarySearchRange.Start;
                 before = define - 1;
                 after = define;
             }
@@ -83,10 +83,10 @@ public static class NearBinarySearchSpanExtensions
             where TBridge : allows ref struct
         {
             MemoryList<ReadOnlyMemory<T>> result = [readonlyMemory];
-            foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
+            foreach (IComparisonChain<TBridge> comparison in comparisonChain.Wrap().GetComparisonChains())
             {
                 MemoryList<ReadOnlyMemory<T>> newResult = [];
-                foreach (var item in result)
+                foreach (ReadOnlyMemory<T> item in result)
                 {
                     item.NearCore(newResult, value, func, comparison.CurrentComparison, depth);
                 }
@@ -110,8 +110,8 @@ public static class NearBinarySearchSpanExtensions
                 return;
             }
 
-            var binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, func, comparison);
-            if (binarySearchRange.TryGetRange(out var range))
+            BinarySearchRange binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, func, comparison);
+            if (binarySearchRange.TryGetRange(out Range range))
             {
                 result.Add(readonlyMemory[range]);
             }
@@ -124,7 +124,7 @@ public static class NearBinarySearchSpanExtensions
             int before, after;
             if (binarySearchRange.Start < 0)
             {
-                var define = ~binarySearchRange.Start;
+                int define = ~binarySearchRange.Start;
                 before = define - 1;
                 after = define;
             }
@@ -152,15 +152,19 @@ public static class NearBinarySearchSpanExtensions
     extension<T>(Memory<T> memory)
     {
         [MustDisposeResource]
-        public MemoryList<ReadOnlyMemory<T>> Near(T value, ComparisonChain<T> comparisonChainWrap, int depth) =>
-            ((ReadOnlyMemory<T>)memory).Near(value, comparisonChainWrap, depth);
+        public MemoryList<ReadOnlyMemory<T>> Near(T value, ComparisonChain<T> comparisonChainWrap, int depth)
+        {
+            return ((ReadOnlyMemory<T>)memory).Near(value, comparisonChainWrap, depth);
+        }
 
         [MustDisposeResource]
         public MemoryList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
             Func<T, TBridge> func,
             ComparisonChain<TBridge> comparisonChainWrap,
             int depth)
-            where TBridge : allows ref struct =>
-            ((ReadOnlyMemory<T>)memory).Near(value, func, comparisonChainWrap, depth);
+            where TBridge : allows ref struct
+        {
+            return ((ReadOnlyMemory<T>)memory).Near(value, func, comparisonChainWrap, depth);
+        }
     }
 }

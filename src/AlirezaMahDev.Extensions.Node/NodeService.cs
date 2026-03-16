@@ -31,7 +31,7 @@ public abstract class NodeService
     public virtual async Task<TResult?> InvokeAsync<TResult>(string name,
         CancellationToken cancellationToken = default)
     {
-        var jsonElement = await InvokeAsync(name, null, cancellationToken);
+        JsonElement? jsonElement = await InvokeAsync(name, null, cancellationToken);
         return jsonElement.HasValue
             ? jsonElement.Value.Deserialize<TResult>(NodeDefaults.JsonSerializerOptions)
             : default;
@@ -41,7 +41,7 @@ public abstract class NodeService
         TParameter? parameter,
         CancellationToken cancellationToken = default)
     {
-        var jsonElement = await InvokeAsync(name,
+        JsonElement? jsonElement = await InvokeAsync(name,
             parameter is null ? null : JsonSerializer.SerializeToElement(parameter, NodeDefaults.JsonSerializerOptions),
             cancellationToken);
         return jsonElement.HasValue
@@ -55,7 +55,7 @@ public abstract class NodeService
     {
         NodeTaskRequest nodeTaskRequest = new(name, parameter);
         await Channel.Writer.WriteAsync(nodeTaskRequest, cancellationToken);
-        var nodeTaskResponse = await nodeTaskRequest.TaskCompletionSource.Task;
+        NodeTaskResponse nodeTaskResponse = await nodeTaskRequest.TaskCompletionSource.Task;
         return nodeTaskResponse.Success ? nodeTaskResponse.Output : throw new(nodeTaskResponse.Error?.ToString());
     }
 }

@@ -18,7 +18,7 @@ public readonly struct StackItems<TEntity>(IStackItems items) : IDataCollection<
 
     public bool TryGet(int index, out StackItem<TEntity> item)
     {
-        if (Items.TryGet(index, out var stackItem))
+        if (Items.TryGet(index, out IStackItem? stackItem))
         {
             item = stackItem.As<TEntity>();
             return true;
@@ -35,7 +35,7 @@ public readonly struct StackItems<TEntity>(IStackItems items) : IDataCollection<
 
     public bool TryRemove(int index, out StackItem<TEntity> item)
     {
-        if (Items.TryRemove(index, out var stackItem))
+        if (Items.TryRemove(index, out IStackItem? stackItem))
         {
             item = stackItem.As<TEntity>();
             return true;

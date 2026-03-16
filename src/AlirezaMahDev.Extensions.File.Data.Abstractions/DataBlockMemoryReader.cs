@@ -7,7 +7,7 @@ public class DataBlockMemoryReader(DataBlockMemory memory)
 
     public DataBlockMemoryReader Read(int length, out DataBlockMemory result)
     {
-        var array = Memory;
+        DataBlockMemory array = Memory;
         result = array[..length];
         Memory = array[length..];
         return this;

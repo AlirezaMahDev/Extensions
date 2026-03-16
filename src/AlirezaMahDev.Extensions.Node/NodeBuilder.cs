@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace AlirezaMahDev.Extensions.Node;
 
@@ -10,7 +11,7 @@ public class NodeBuilder(IServiceCollection services) : BuilderBase(services)
         where TNodeServiceOptions : NodeOptions
     {
         Services.TryAddSingleton<TNodeService>();
-        var optionsBuilder = Services.AddOptions<TNodeServiceOptions>();
+        OptionsBuilder<TNodeServiceOptions> optionsBuilder = Services.AddOptions<TNodeServiceOptions>();
         optionsBuilder.Configure(options => options.Assembly = typeof(TNodeService).Assembly);
         if (action != null)
         {

@@ -47,7 +47,7 @@ public static class ConnectionWrapExtensions
 
         public CellEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrap()
         {
-            var childWrap = wrap.ChildWrap;
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>? childWrap = wrap.ChildWrap;
             return childWrap.HasValue
                 ? new(
                     childWrap.Value.RefValue.NextCount + 1,
@@ -55,18 +55,22 @@ public static class ConnectionWrapExtensions
                 : CellEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>.Empty;
         }
 
-        public CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCache() =>
-            wrap.Nerve.MemoryCache.GetOrAdd(wrap.Cell.Offset,
+        public CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCache()
+        {
+            return wrap.Nerve.MemoryCache.GetOrAdd(wrap.Cell.Offset,
                     static (_, wrap) => new(() =>
                             wrap.GetConnectionsWrap().ToCellMemory(),
                         LazyThreadSafetyMode.ExecutionAndPublication),
                     wrap)
                 .Value;
+        }
 
-        public IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapRaw() =>
-            wrap.ChildWrap is { } childWrap
+        public IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapRaw()
+        {
+            return wrap.ChildWrap is { } childWrap
                 ? CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>.GetConnectionsWrapCore(childWrap)
                 : [];
+        }
 
         private static IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCore(
             CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> cellWrap)
@@ -87,16 +91,16 @@ public static class ConnectionWrapExtensions
 
         public IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> GetUnloadedConnectionsWrap()
         {
-            var unloaded = wrap.LastLoadedConnection;
+            DataOffset? unloaded = wrap.LastLoadedConnection;
             if (unloaded?.IsNull == true)
             {
                 yield break;
             }
 
-            var connection = unloaded.HasValue ? new Connection(unloaded.Value) : wrap.Child;
+            Connection? connection = unloaded.HasValue ? new Connection(unloaded.Value) : wrap.Child;
             while (connection.HasValue)
             {
-                var connectionWrap = connection.Value.Wrap(wrap);
+                CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap = connection.Value.Wrap(wrap);
                 wrap.Nerve.TrySetConnectionCache(connectionWrap);
                 wrap.Nerve.TrySetNeuronCache(connectionWrap.NeuronWrap);
                 wrap.LastLoadedConnection = connectionWrap.RefValue.Next;
@@ -109,15 +113,16 @@ public static class ConnectionWrapExtensions
             in Neuron neuron,
             in TLink link)
         {
-            if (wrap.Nerve.TryGetConnectionCacheCore(in cacheKey, out var connectionOffset))
+            if (wrap.Nerve.TryGetConnectionCacheCore(in cacheKey, out DataOffset? connectionOffset))
             {
                 return new(connectionOffset.Value);
             }
 
-            var localNeuron = neuron;
-            var localLink = link;
-            var cellMemory = wrap.GetUnloadedConnectionsWrap();
-            var result = cellMemory
+            Neuron localNeuron = neuron;
+            TLink localLink = link;
+            IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellMemory =
+                wrap.GetUnloadedConnectionsWrap();
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>? result = cellMemory
                 .FirstOrDefault(x =>
                     x.RefValue.Neuron == localNeuron.Offset && x.RefLink.Equals(localLink))
                 .NullWhenDefault();
@@ -134,7 +139,7 @@ public static class ConnectionWrapExtensions
             ReadOnlyMemoryValue<TLink> link,
             CancellationToken cancellationToken = default)
         {
-            var cacheKey = wrap.Nerve.CreateConnectionCacheKey(in wrap, in neuron, in link.Value);
+            NerveCacheKey cacheKey = wrap.Nerve.CreateConnectionCacheKey(in wrap, in neuron, in link.Value);
             return wrap.FindCore(in cacheKey, in neuron, in link.Value) ??
                    await wrap.AddAsyncCore(cacheKey, neuron, link, cancellationToken);
         }
@@ -152,7 +157,7 @@ public static class ConnectionWrapExtensions
                         return connection;
                     }
 
-                    var connectionValue = wrap.Nerve.Access
+                    DataLocation<ConnectionValue<TLink>> connectionValue = wrap.Nerve.Access
                         .Create(ConnectionValue<TLink>.Default with
                         {
                             Previous = wrap.Cell.Offset,

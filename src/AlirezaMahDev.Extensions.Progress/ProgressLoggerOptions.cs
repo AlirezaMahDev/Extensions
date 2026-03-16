@@ -2,7 +2,7 @@ using AlirezaMahDev.Extensions.Progress.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Progress;
 
-class ProgressLoggerOptions
+internal class ProgressLoggerOptions
 {
     public string Name
     {
@@ -46,7 +46,7 @@ class ProgressLoggerOptions
 
     public ProgressLoggerState GenerateState()
     {
-        var result = State;
+        ProgressLoggerState result = State;
         LastState = result;
         return result;
     }

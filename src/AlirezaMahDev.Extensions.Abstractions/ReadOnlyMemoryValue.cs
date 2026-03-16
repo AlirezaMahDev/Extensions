@@ -21,12 +21,18 @@ public readonly struct ReadOnlyMemoryValue<T>
     public bool HasValue => !_readOnlyMemory.IsEmpty;
     public ref readonly T Value => ref _readOnlyMemory.Span[0];
 
-    public static implicit operator ReadOnlyMemoryValue<T>(in T value) =>
-        new(in value);
+    public static implicit operator ReadOnlyMemoryValue<T>(in T value)
+    {
+        return new(in value);
+    }
 
-    public static implicit operator ReadOnlyMemory<T>(in ReadOnlyMemoryValue<T> memoryValue) =>
-        memoryValue._readOnlyMemory;
+    public static implicit operator ReadOnlyMemory<T>(in ReadOnlyMemoryValue<T> memoryValue)
+    {
+        return memoryValue._readOnlyMemory;
+    }
 
-    public static implicit operator ReadOnlySpanValue<T>(ReadOnlyMemoryValue<T> readOnlyMemory) =>
-        new(in readOnlyMemory.Value);
+    public static implicit operator ReadOnlySpanValue<T>(ReadOnlyMemoryValue<T> readOnlyMemory)
+    {
+        return new(in readOnlyMemory.Value);
+    }
 }

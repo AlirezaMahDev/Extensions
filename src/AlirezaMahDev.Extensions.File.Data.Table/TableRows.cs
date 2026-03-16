@@ -32,7 +32,7 @@ internal class TableRows : ITableRows
 
     public bool TryGet(int index, [MaybeNullWhen(false)] out ITableRow item)
     {
-        if (_cache.TryGetValue(index, out var lazy))
+        if (_cache.TryGetValue(index, out Lazy<ITableRow>? lazy))
         {
             item = lazy.Value;
             return true;

@@ -5,18 +5,24 @@ public static class DataWrapExtensions
     extension<TValue>(DataLocation<TValue> location)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public DataWrap<TValue> Wrap(IDataAccess access) =>
-            new(access, location);
+        public DataWrap<TValue> Wrap(IDataAccess access)
+        {
+            return new(access, location);
+        }
     }
 
     extension<TValue, TWrap>(DataLocation<TValue> location)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public DataWrap<TValue, TWrap> Wrap(IDataAccess access, Func<TValue, TWrap> wrap) =>
-            new(access, location, wrap(location.GetRefValue(access)));
+        public DataWrap<TValue, TWrap> Wrap(IDataAccess access, Func<TValue, TWrap> wrap)
+        {
+            return new(access, location, wrap(location.GetRefValue(access)));
+        }
 
-        public DataWrap<TValue, TWrap> Wrap(IDataAccess access, TWrap wrap) =>
-            new(access, location, wrap);
+        public DataWrap<TValue, TWrap> Wrap(IDataAccess access, TWrap wrap)
+        {
+            return new(access, location, wrap);
+        }
     }
 
     extension<TValue>(DataWrap<TValue> wrap)
@@ -29,23 +35,33 @@ public static class DataWrapExtensions
     extension<TValue, TWrap>(DataWrap<TValue> wrap)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public DataWrap<TValue, TWrap> Wrap(Func<TValue, TWrap> func) =>
-            new(wrap.Access, wrap.Location, func(wrap.Location.GetRefValue(wrap.Access)));
+        public DataWrap<TValue, TWrap> Wrap(Func<TValue, TWrap> func)
+        {
+            return new(wrap.Access, wrap.Location, func(wrap.Location.GetRefValue(wrap.Access)));
+        }
 
-        public DataWrap<TValue, TWrap> Wrap(TWrap innerWrap) =>
-            new(wrap.Access, wrap.Location, innerWrap);
+        public DataWrap<TValue, TWrap> Wrap(TWrap innerWrap)
+        {
+            return new(wrap.Access, wrap.Location, innerWrap);
+        }
     }
 
     extension<TValue, TWrap>(DataWrap<TValue, TWrap> wrap)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public DataWrap<TValue> Wrap() =>
-            new(wrap.Access, wrap.Location);
+        public DataWrap<TValue> Wrap()
+        {
+            return new(wrap.Access, wrap.Location);
+        }
 
-        public DataWrap<TValue, TInnerWrap> Wrap<TInnerWrap>(Func<TValue, TInnerWrap> func) =>
-            wrap.Location.Wrap(wrap.Access, func);
+        public DataWrap<TValue, TInnerWrap> Wrap<TInnerWrap>(Func<TValue, TInnerWrap> func)
+        {
+            return wrap.Location.Wrap(wrap.Access, func);
+        }
 
-        public DataWrap<TValue, TInnerWrap> Wrap<TInnerWrap>(TInnerWrap innerWrap) =>
-            wrap.Location.Wrap(wrap.Access, innerWrap);
+        public DataWrap<TValue, TInnerWrap> Wrap<TInnerWrap>(TInnerWrap innerWrap)
+        {
+            return wrap.Location.Wrap(wrap.Access, innerWrap);
+        }
     }
 }

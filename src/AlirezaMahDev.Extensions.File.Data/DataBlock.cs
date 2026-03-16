@@ -47,7 +47,7 @@ internal sealed class DataBlock : IDisposable, IDataBlock
             return;
         }
 
-        foreach (var block in _accessorFactory)
+        foreach (DataBlockAccessor block in _accessorFactory)
         {
             block.UnInitialize();
         }
@@ -69,7 +69,7 @@ internal sealed class DataBlock : IDisposable, IDataBlock
             MemoryMappedFileAccess.ReadWrite,
             HandleInheritability.Inheritable,
             true);
-        foreach (var block in _accessorFactory)
+        foreach (DataBlockAccessor block in _accessorFactory)
         {
             block.Initialize();
         }

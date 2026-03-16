@@ -8,7 +8,9 @@ public static class CellWrapScoreValueExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public static Comparison<CellWrap<TCell, TValue, TData, TLink>> ComparerOnScore() =>
-            (a, b) => b.RefValue.RefScore.CompareTo(a.RefValue.RefScore);
+        public static Comparison<CellWrap<TCell, TValue, TData, TLink>> ComparerOnScore()
+        {
+            return (a, b) => b.RefValue.RefScore.CompareTo(a.RefValue.RefScore);
+        }
     }
 }

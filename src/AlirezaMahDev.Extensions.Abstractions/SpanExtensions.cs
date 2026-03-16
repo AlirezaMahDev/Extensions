@@ -23,7 +23,7 @@ public static class SpanExtensions
                 throw new("span is empty");
             }
 
-            foreach (ref var item in span)
+            foreach (ref T item in span)
             {
                 if (predicate.Invoke(in item))
                 {
@@ -52,7 +52,7 @@ public static class SpanExtensions
                 return ref Unsafe.NullRef<T>();
             }
 
-            foreach (ref var item in span)
+            foreach (ref T item in span)
             {
                 if (predicate.Invoke(in item))
                 {

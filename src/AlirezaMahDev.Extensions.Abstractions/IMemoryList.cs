@@ -24,7 +24,10 @@ public interface IMemoryList<T> : IList<T>, IReadonlyMemoryList<T>
     ReadOnlyMemory<T> IReadonlyMemoryList<T>.Memory => Memory;
 
     [MustDisposeResource]
-    IReadonlyMemoryList<T> IReadonlyMemoryList<T>.Clone() => Clone();
+    IReadonlyMemoryList<T> IReadonlyMemoryList<T>.Clone()
+    {
+        return Clone();
+    }
 
     int ICollection<T>.Count => Count;
 

@@ -16,7 +16,7 @@ public static class DataLockWrapExtensions
 
         public void FreeLastLock()
         {
-            var read = Volatile.Read(ref wrap.RefValue.RefLock);
+            int read = Volatile.Read(ref wrap.RefValue.RefLock);
             if (read != 0 && read != SessionLockKey)
             {
                 Interlocked.CompareExchange(ref wrap.RefValue.RefLock, 0, read);
@@ -68,14 +68,14 @@ public static class DataLockWrapExtensions
 
         public DataWrap<TValue> Lock(DataWrapAction<TValue> action)
         {
-            using var lockScope = wrap.Lock();
+            using DataLockDisposable<TValue> lockScope = wrap.Lock();
             action(wrap);
             return wrap;
         }
 
         public TResult Lock<TResult>(DataWrapFunc<TValue, TResult> func)
         {
-            using var lockScope = wrap.Lock();
+            using DataLockDisposable<TValue> lockScope = wrap.Lock();
             return func(wrap);
         }
 
@@ -83,7 +83,7 @@ public static class DataLockWrapExtensions
             DataWrapAction<TValue> action,
             CancellationToken cancellationToken = default)
         {
-            using var lockScope = await wrap.LockAsync(cancellationToken);
+            using DataLockDisposable<TValue> lockScope = await wrap.LockAsync(cancellationToken);
             action(wrap);
             return wrap;
         }
@@ -92,7 +92,7 @@ public static class DataLockWrapExtensions
             DataWrapAsyncAction<TValue> action,
             CancellationToken cancellationToken = default)
         {
-            using var lockScope = await wrap.LockAsync(cancellationToken);
+            using DataLockDisposable<TValue> lockScope = await wrap.LockAsync(cancellationToken);
             await action(wrap, cancellationToken);
             return wrap;
         }
@@ -101,7 +101,7 @@ public static class DataLockWrapExtensions
             DataWrapFunc<TValue, TResult> func,
             CancellationToken cancellationToken = default)
         {
-            using var lockScope = await wrap.LockAsync(cancellationToken);
+            using DataLockDisposable<TValue> lockScope = await wrap.LockAsync(cancellationToken);
             return func(wrap);
         }
 
@@ -109,7 +109,7 @@ public static class DataLockWrapExtensions
             DataWrapAsyncFunc<TValue, TResult> func,
             CancellationToken cancellationToken = default)
         {
-            using var lockScope = await wrap.LockAsync(cancellationToken);
+            using DataLockDisposable<TValue> lockScope = await wrap.LockAsync(cancellationToken);
             return await func(wrap, cancellationToken);
         }
     }

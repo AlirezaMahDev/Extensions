@@ -14,10 +14,10 @@ public readonly struct DataBlockMemoryObject
         Type type)
     {
         Memory = memory;
-        var blockValueType = typeof(DataBlockMemoryValue<>).MakeGenericType(type);
-        var blockValueTypeConstructor = blockValueType.GetConstructor([typeof(DataBlockMemory)])!;
+        Type blockValueType = typeof(DataBlockMemoryValue<>).MakeGenericType(type);
+        ConstructorInfo blockValueTypeConstructor = blockValueType.GetConstructor([typeof(DataBlockMemory)])!;
         BlockValue = blockValueTypeConstructor.Invoke([memory]);
-        var blockValueProperty = blockValueType.GetProperty(nameof(DataBlockMemoryValue<>.Value))!;
+        PropertyInfo blockValueProperty = blockValueType.GetProperty(nameof(DataBlockMemoryValue<>.Value))!;
         GetMethodInfo = blockValueProperty.GetMethod!;
         SetMethodInfo = blockValueProperty.SetMethod!;
     }

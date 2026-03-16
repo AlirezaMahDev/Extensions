@@ -26,7 +26,13 @@ public readonly record struct DataLocationObject<
     private DataLocationObjectProxy<TEntity> Proxy { get; }
     public TEntity Entity => Proxy.Entity;
 
-    public void Save() => Proxy.Save();
+    public void Save()
+    {
+        Proxy.Save();
+    }
 
-    public void Dispose() => Save();
+    public void Dispose()
+    {
+        Save();
+    }
 }

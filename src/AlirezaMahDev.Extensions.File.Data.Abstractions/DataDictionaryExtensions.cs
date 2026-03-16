@@ -7,7 +7,7 @@ public static class DataDictionaryExtensions
         public TItem GetOrAdd(TKey key,
             Action<TItem> action)
         {
-            var item = items.GetOrAdd(key);
+            TItem item = items.GetOrAdd(key);
             action(item);
             return item;
         }

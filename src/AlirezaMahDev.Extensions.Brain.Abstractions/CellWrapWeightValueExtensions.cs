@@ -8,7 +8,9 @@ public static class CellWrapWeightValueExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public static Comparison<CellWrap<TCell, TValue, TData, TLink>> ComparerOnWeight() =>
-            (a, b) => b.RefValue.RefWeight.CompareTo(a.RefValue.RefWeight);
+        public static Comparison<CellWrap<TCell, TValue, TData, TLink>> ComparerOnWeight()
+        {
+            return (a, b) => b.RefValue.RefWeight.CompareTo(a.RefValue.RefWeight);
+        }
     }
 }

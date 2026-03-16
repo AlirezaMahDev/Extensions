@@ -10,7 +10,7 @@ public interface ICellBase<TSelf> : IEquatable<TSelf>,
     ISubtractionOperators<TSelf, TSelf, TSelf>
     where TSelf : unmanaged, ICellBase<TSelf>
 {
-    public TSelf Normalize();
-    public TSelf UnNormalize();
-    public TSelf Abs();
+    TSelf Normalize();
+    TSelf UnNormalize();
+    TSelf Abs();
 }

@@ -11,6 +11,8 @@ public readonly record struct DataOffset(int FileId, int PartIndex, int Offset, 
     public static DataOffset Null { get; } = new(-1, -1, -1, -1);
     public static DataOffset Default { get; } = new();
 
-    public static DataOffset Create(long offset, int length) =>
-        new(DataHelper.FileId(offset), DataHelper.PartIndex(offset), DataHelper.PartOffset(offset), length);
+    public static DataOffset Create(long offset, int length)
+    {
+        return new(DataHelper.FileId(offset), DataHelper.PartIndex(offset), DataHelper.PartOffset(offset), length);
+    }
 }

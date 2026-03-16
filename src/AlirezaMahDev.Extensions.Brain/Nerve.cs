@@ -7,7 +7,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
-class Nerve<
+internal class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -49,10 +49,10 @@ class Nerve<
         NeuronLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".neuron");
         CounterLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".counter");
 
-        var neuron = NeuronLocation
+        DataLocation<NeuronValue<TData>> neuron = NeuronLocation
             .Wrap(Access, x => x.Storage())
             .GetOrCreateData(NeuronValue<TData>.Default);
-        var connection = ConnectionLocation
+        DataLocation<ConnectionValue<TLink>> connection = ConnectionLocation
             .Wrap(Access, x => x.Storage())
             .GetOrCreateData(ConnectionValue<TLink>.Default with { Neuron = neuron.Offset });
         Counter = CounterLocation

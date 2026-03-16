@@ -41,7 +41,7 @@ public readonly unsafe struct String32 : IEquatable<String32>, IString<String32>
 
         fixed (String32* pointer = &this)
         {
-            var span = new Span<char>(pointer, Length);
+            Span<char> span = new(pointer, Length);
             span.Clear();
             readOnlySpan.CopyTo(span);
         }

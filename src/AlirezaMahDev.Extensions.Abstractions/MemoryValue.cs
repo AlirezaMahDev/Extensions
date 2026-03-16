@@ -18,18 +18,33 @@ public readonly struct MemoryValue<T>
     public bool HasValue => !_memory.IsEmpty;
     public ref T Value => ref _memory.Span[0];
 
-    public static implicit operator MemoryValue<T>(in T value) =>
-        new(in value);
+    public static implicit operator MemoryValue<T>(in T value)
+    {
+        return new(in value);
+    }
 
-    public static implicit operator Memory<T>(in MemoryValue<T> memoryValue) =>
-        memoryValue._memory;
+    public static implicit operator Memory<T>(in MemoryValue<T> memoryValue)
+    {
+        return memoryValue._memory;
+    }
 
-    public static implicit operator ReadOnlyMemory<T>(in MemoryValue<T> memoryValue) =>
-        memoryValue._memory;
+    public static implicit operator ReadOnlyMemory<T>(in MemoryValue<T> memoryValue)
+    {
+        return memoryValue._memory;
+    }
 
-    public static implicit operator ReadOnlyMemoryValue<T>(in MemoryValue<T> memoryValue) =>
-        new(memoryValue);
+    public static implicit operator ReadOnlyMemoryValue<T>(in MemoryValue<T> memoryValue)
+    {
+        return new(memoryValue);
+    }
 
-    public static implicit operator SpanValue<T>(MemoryValue<T> memoryValue) => new(ref memoryValue.Value);
-    public static implicit operator ReadOnlySpanValue<T>(MemoryValue<T> memoryValue) => new(in memoryValue.Value);
+    public static implicit operator SpanValue<T>(MemoryValue<T> memoryValue)
+    {
+        return new(ref memoryValue.Value);
+    }
+
+    public static implicit operator ReadOnlySpanValue<T>(MemoryValue<T> memoryValue)
+    {
+        return new(in memoryValue.Value);
+    }
 }

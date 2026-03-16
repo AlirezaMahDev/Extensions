@@ -13,7 +13,8 @@ public static class NerveReCountExtensions
         public void ReCount(IProgressLogger progressLogger)
         {
             nerve.Counter.RefValue.NeuronCount = 0;
-            using (var wraps = nerve.NeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
+            using (MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> wraps =
+                   nerve.NeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
                 {
@@ -33,14 +34,15 @@ public static class NerveReCountExtensions
             }
 
             nerve.Counter.RefValue.ConnectionCount = 0;
-            var connectionWrap = nerve.ConnectionWrap;
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap = nerve.ConnectionWrap;
             INerve<TData, TLink>.ReCountCore(progressLogger, connectionWrap);
         }
 
         public static void ReCountCore(IProgressLogger progressLogger,
             CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
         {
-            using (var wraps = connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
+            using (MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> wraps =
+                   connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
                 {
@@ -67,7 +69,8 @@ public static class NerveReCountExtensions
         public async Task ReCountAsync(IProgressLogger progressLogger, CancellationToken cancellationToken = default)
         {
             nerve.Counter.RefValue.NeuronCount = 0;
-            using (var wraps = nerve.NeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
+            using (MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> wraps =
+                   nerve.NeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
                 {
@@ -89,7 +92,7 @@ public static class NerveReCountExtensions
             }
 
             nerve.Counter.RefValue.ConnectionCount = 0;
-            var connectionWrap = nerve.ConnectionWrap;
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap = nerve.ConnectionWrap;
             await INerve<TData, TLink>.ReCountAsyncCore(progressLogger, connectionWrap, cancellationToken);
         }
 
@@ -97,7 +100,8 @@ public static class NerveReCountExtensions
             CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
             CancellationToken cancellationToken)
         {
-            using (var wraps = connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
+            using (MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> wraps =
+                   connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
                 {

@@ -4,7 +4,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-sealed class DataMapFile(MemoryMappedFile file) : IDisposable
+internal sealed class DataMapFile(MemoryMappedFile file) : IDisposable
 {
     private bool _disposedValue;
 
@@ -25,7 +25,7 @@ sealed class DataMapFile(MemoryMappedFile file) : IDisposable
 
     public void Flush()
     {
-        foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
+        foreach (Lazy<DataMapFilePart> dataPart in _parts.Where(x => x.IsValueCreated))
         {
             dataPart.Value.Flush();
         }
@@ -33,7 +33,7 @@ sealed class DataMapFile(MemoryMappedFile file) : IDisposable
 
     public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
+        foreach (Lazy<DataMapFilePart> dataPart in _parts.Where(x => x.IsValueCreated))
         {
             await dataPart.Value.FlushAsync(cancellationToken);
         }
@@ -45,7 +45,7 @@ sealed class DataMapFile(MemoryMappedFile file) : IDisposable
         {
             if (disposing)
             {
-                foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
+                foreach (Lazy<DataMapFilePart> dataPart in _parts.Where(x => x.IsValueCreated))
                 {
                     if (dataPart.Value is IDisposable disposable)
                     {
@@ -62,6 +62,6 @@ sealed class DataMapFile(MemoryMappedFile file) : IDisposable
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        Dispose(true);
     }
 }

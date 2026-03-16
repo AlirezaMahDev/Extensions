@@ -26,7 +26,7 @@ internal class TableColumns : ITableColumns
 
     public bool TryGet(String64 key, [MaybeNullWhen(false)] out ITableColumn @object)
     {
-        if (_cache.TryGetValue(key, out var lazy))
+        if (_cache.TryGetValue(key, out Lazy<ITableColumn>? lazy))
         {
             @object = lazy.Value;
             return true;
@@ -44,7 +44,7 @@ internal class TableColumns : ITableColumns
 
     public ITableColumn GetOrAdd(String64 key)
     {
-        var columns = this;
+        TableColumns columns = this;
         return _cache.GetOrAdd(key,
                 static (key, columns) =>
                     new(() => columns._columnFactory.GetOrCreate(new(columns, key)),
@@ -77,7 +77,7 @@ internal class TableColumns : ITableColumns
     public void Save()
     {
         Location.Save();
-        foreach (var keyValuePair in _cache)
+        foreach (KeyValuePair<String64, Lazy<ITableColumn>> keyValuePair in _cache)
         {
             keyValuePair.Value.Value.Save();
         }

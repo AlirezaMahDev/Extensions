@@ -6,7 +6,7 @@ public static class Int32Extensions
     {
         public IEnumerable<int> ToIdRange()
         {
-            for (var j = 1; j < i + 1; j++)
+            for (int j = 1; j < i + 1; j++)
             {
                 yield return j;
             }

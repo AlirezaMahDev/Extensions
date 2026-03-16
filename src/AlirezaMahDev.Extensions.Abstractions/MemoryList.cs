@@ -14,20 +14,34 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
 {
     [MustDisposeResource]
-    public static implicit operator MemoryList<T>(ReadOnlySpan<T> values) => [.. values];
+    public static implicit operator MemoryList<T>(ReadOnlySpan<T> values)
+    {
+        return [.. values];
+    }
 
     [MustDisposeResource]
-    public static implicit operator MemoryList<T>(Span<T> values) => [.. values];
+    public static implicit operator MemoryList<T>(Span<T> values)
+    {
+        return [.. values];
+    }
 
     [MustDisposeResource]
-    public static implicit operator MemoryList<T>(ReadOnlyMemory<T> values) => [.. values.Span];
+    public static implicit operator MemoryList<T>(ReadOnlyMemory<T> values)
+    {
+        return [.. values.Span];
+    }
 
     [MustDisposeResource]
-    public static implicit operator MemoryList<T>(Memory<T> values) => [.. values.Span];
+    public static implicit operator MemoryList<T>(Memory<T> values)
+    {
+        return [.. values.Span];
+    }
 
     [MustDisposeResource]
-    public static MemoryList<T> Create(int length) =>
-        new(length) { Count = length };
+    public static MemoryList<T> Create(int length)
+    {
+        return new(length) { Count = length };
+    }
 
     public MemoryList(ReadOnlySpan<T> values) : this(values.Length)
     {
@@ -37,7 +51,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
 
     public MemoryList(int capacity, IEnumerable<T> values) : this(capacity)
     {
-        foreach (var value in values)
+        foreach (T value in values)
         {
             Add(value);
         }
@@ -73,7 +87,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
     {
         if (OriginalCount < Count)
         {
-            using var lastMemoryOwner = MemoryOwner;
+            using IMemoryOwner<T> lastMemoryOwner = MemoryOwner;
             MemoryOwner = MemoryPool<T>.Shared.Rent(Count);
             lastMemoryOwner.Memory.CopyTo(OriginalMemory);
         }
@@ -104,7 +118,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
 
     public bool Remove(T item)
     {
-        var index = IndexOf(item);
+        int index = IndexOf(item);
         if (index == -1)
         {
             return false;
@@ -139,15 +153,12 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
     [MustDisposeResource]
     public MemoryList<T> Clone()
     {
-        MemoryList<T> memoryList = MemoryList<T>.Create(Count);
+        MemoryList<T> memoryList = Create(Count);
         Memory.CopyTo(memoryList.Memory);
         return memoryList;
     }
 
-    public ref T this[int index]
-    {
-        get => ref Memory.Span[index];
-    }
+    public ref T this[int index] => ref Memory.Span[index];
 
     private void Dispose(bool disposing)
     {
@@ -164,6 +175,6 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        Dispose(true);
     }
 }

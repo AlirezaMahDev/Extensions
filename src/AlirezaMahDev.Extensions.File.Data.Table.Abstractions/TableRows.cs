@@ -12,7 +12,7 @@ public readonly struct TableRows<TEntity>(ITableRows rows) : IDataCollection<Tab
 
     public bool TryGet(int index, out TableRow<TEntity> item)
     {
-        if (Rows.TryGet(index, out var row))
+        if (Rows.TryGet(index, out ITableRow? row))
         {
             item = new(row);
             return true;
@@ -29,7 +29,7 @@ public readonly struct TableRows<TEntity>(ITableRows rows) : IDataCollection<Tab
 
     public bool TryRemove(int index, out TableRow<TEntity> item)
     {
-        if (Rows.TryRemove(index, out var row))
+        if (Rows.TryRemove(index, out ITableRow? row))
         {
             item = new(row);
             return true;

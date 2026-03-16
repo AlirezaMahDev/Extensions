@@ -27,8 +27,8 @@ internal class DataBlockAccessor : MemoryManager<byte>, IDataBlockAccessor
 
     public void Save()
     {
-        using var scopeInitialize = _lockInitialize.EnterScope();
-        using var scopeSave = _lockSave.EnterScope();
+        using Lock.Scope scopeInitialize = _lockInitialize.EnterScope();
+        using Lock.Scope scopeSave = _lockSave.EnterScope();
         _accessor.Flush();
     }
 

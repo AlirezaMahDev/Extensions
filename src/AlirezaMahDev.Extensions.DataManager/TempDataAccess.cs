@@ -2,7 +2,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-class TempDataAccess()
+internal class TempDataAccess()
     : DataAccess(System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.CreateVersion7().ToString())),
         ITempDataAccess
 {

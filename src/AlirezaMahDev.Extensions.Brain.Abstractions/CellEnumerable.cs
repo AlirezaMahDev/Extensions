@@ -19,7 +19,7 @@ public readonly struct CellEnumerable<T>(int count, IEnumerable<T> enumerable) :
             yield break;
         }
 
-        foreach (var item in enumerable)
+        foreach (T item in enumerable)
         {
             yield return item;
         }
@@ -31,11 +31,33 @@ public readonly struct CellEnumerable<T>(int count, IEnumerable<T> enumerable) :
     }
 
     [MustDisposeResource]
-    public CellMemory<T> ToCellMemory() => new(this);
+    public CellMemory<T> ToCellMemory()
+    {
+        return new(this);
+    }
 
-    void ICollection<T>.CopyTo(T[] array, int arrayIndex) => throw new NotSupportedException();
-    bool ICollection<T>.Contains(T item) => throw new NotSupportedException();
-    void ICollection<T>.Add(T item) => throw new NotSupportedException();
-    void ICollection<T>.Clear() => throw new NotSupportedException();
-    bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
+    void ICollection<T>.CopyTo(T[] array, int arrayIndex)
+    {
+        throw new NotSupportedException();
+    }
+
+    bool ICollection<T>.Contains(T item)
+    {
+        throw new NotSupportedException();
+    }
+
+    void ICollection<T>.Add(T item)
+    {
+        throw new NotSupportedException();
+    }
+
+    void ICollection<T>.Clear()
+    {
+        throw new NotSupportedException();
+    }
+
+    bool ICollection<T>.Remove(T item)
+    {
+        throw new NotSupportedException();
+    }
 }

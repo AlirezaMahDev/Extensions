@@ -10,6 +10,8 @@ public readonly record struct LinkComparable<TData, TLink>(
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    public int CompareTo(CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> other) =>
-        Comparison(Link, other.RefLink);
+    public int CompareTo(CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> other)
+    {
+        return Comparison(Link, other.RefLink);
+    }
 }

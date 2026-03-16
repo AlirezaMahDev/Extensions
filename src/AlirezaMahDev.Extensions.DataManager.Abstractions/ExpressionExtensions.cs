@@ -8,8 +8,8 @@ public static class ExpressionExtensions
     {
         public SetValueAction<TSource, TValue> BuildSetter()
         {
-            var sourceParameter = Expression.Parameter(typeof(TSource).MakeByRefType(), "source");
-            var valueParameter = Expression.Parameter(typeof(TValue), "value");
+            ParameterExpression sourceParameter = Expression.Parameter(typeof(TSource).MakeByRefType(), "source");
+            ParameterExpression valueParameter = Expression.Parameter(typeof(TValue), "value");
 
             if (selector.Body is not MemberExpression memberExpression)
             {
@@ -18,8 +18,8 @@ public static class ExpressionExtensions
                     nameof(selector));
             }
 
-            var target = Expression.MakeMemberAccess(sourceParameter, memberExpression.Member);
-            var assign = Expression.Assign(target, valueParameter);
+            MemberExpression target = Expression.MakeMemberAccess(sourceParameter, memberExpression.Member);
+            BinaryExpression assign = Expression.Assign(target, valueParameter);
             return Expression.Lambda<SetValueAction<TSource, TValue>>(assign, sourceParameter, valueParameter)
                 .Compile();
         }

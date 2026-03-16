@@ -7,5 +7,9 @@ public readonly ref struct ComparableComparisonBridge<T, TBridge>(
     where TBridge : allows ref struct
 {
     private readonly TBridge _value = value;
-    public int CompareTo(T? other) => other is null ? 1 : comparison(_value, func(other));
+
+    public int CompareTo(T? other)
+    {
+        return other is null ? 1 : comparison(_value, func(other));
+    }
 }

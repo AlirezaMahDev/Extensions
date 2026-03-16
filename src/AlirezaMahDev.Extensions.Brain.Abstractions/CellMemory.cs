@@ -25,9 +25,9 @@ public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>,
         _memoryOwner = MemoryPool<T>.Shared.Rent(cellEnumerable.Count);
         Memory = _memoryOwner.Memory[..cellEnumerable.Count];
 
-        var index = 0;
-        var span = Memory.Span;
-        foreach (var item in cellEnumerable)
+        int index = 0;
+        Span<T> span = Memory.Span;
+        foreach (T item in cellEnumerable)
         {
             span[index] = item;
             index++;
@@ -53,7 +53,7 @@ public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>,
 
     public IEnumerator<T> GetEnumerator()
     {
-        for (var i = 0; i < Memory.Length; ++i)
+        for (int i = 0; i < Memory.Length; ++i)
         {
             yield return Memory.Span[i];
         }
@@ -74,7 +74,18 @@ public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>,
         Memory.Span.CopyTo(array.AsSpan(arrayIndex));
     }
 
-    void ICollection<T>.Add(T item) => throw new NotSupportedException();
-    void ICollection<T>.Clear() => throw new NotSupportedException();
-    bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
+    void ICollection<T>.Add(T item)
+    {
+        throw new NotSupportedException();
+    }
+
+    void ICollection<T>.Clear()
+    {
+        throw new NotSupportedException();
+    }
+
+    bool ICollection<T>.Remove(T item)
+    {
+        throw new NotSupportedException();
+    }
 }

@@ -8,10 +8,11 @@ using Microsoft.Extensions.Options;
 
 namespace AlirezaMahDev.Extensions.Progress;
 
-class ProgressLogger<T>(ILogger<T> logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
+internal class ProgressLogger<T>(ILogger<T> logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
     : ProgressLogger(logger, optionsMonitor), IProgressLogger<T>;
 
-partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor) : IProgressLogger
+internal partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptions> optionsMonitor)
+    : IProgressLogger
 {
     [LoggerMessage(LogLevel.Information, "{message}")]
     private static partial void LogInformation(ILogger logger, string message);
@@ -39,7 +40,7 @@ partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptio
             _options.Length = length.Value;
         }
 
-        var value = _options.GenerateState();
+        ProgressLoggerState value = _options.GenerateState();
         LogInformation(logger, value.ToString());
         _options.ProgressInterface.Report(value);
     }
@@ -126,7 +127,7 @@ partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLoggerOptio
         Func<IProgressLogger, CancellationToken, ValueTask> func,
         CancellationToken cancellationToken = default)
     {
-        var task = Task.Run(async () => await func(this, cancellationToken), cancellationToken);
+        Task task = Task.Run(async () => await func(this, cancellationToken), cancellationToken);
         await Task.Yield();
         while (!task.IsCompleted)
         {

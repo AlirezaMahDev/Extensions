@@ -25,7 +25,7 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
         _lock.EnterUpgradeableReadLock();
         try
         {
-            var canAddCore = CanAddCore(think);
+            bool? canAddCore = CanAddCore(think);
             if (canAddCore != false)
             {
                 _lock.EnterWriteLock();
@@ -74,7 +74,7 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
             return null;
         }
 
-        var comparison = NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]);
+        int comparison = NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]);
         return comparison == 0 ? null : comparison < 0;
     }
 

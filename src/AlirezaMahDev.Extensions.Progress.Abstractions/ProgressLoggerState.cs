@@ -27,9 +27,11 @@ public record ProgressLoggerState(
             ? (ProgressValue - Last.ProgressValue) / seconds
             : null;
 
-    public override string ToString() =>
-        $"Name:{Title} Message:{Message} Count:{Count} Length:{
+    public override string ToString()
+    {
+        return $"Name:{Title} Message:{Message} Count:{Count} Length:{
             Length} {ProgressValue:##,##} Speed:{ProgressSpeed:##,##}/s";
+    }
 }
 
 [method: JsonConstructor]

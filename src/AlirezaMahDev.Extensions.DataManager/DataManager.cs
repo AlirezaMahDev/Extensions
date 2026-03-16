@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-sealed class DataManager(IOptions<DataManagerOptions> options) : IDisposable, IDataManager
+internal sealed class DataManager(IOptions<DataManagerOptions> options) : IDisposable, IDataManager
 {
     private readonly IOptions<DataManagerOptions> _options = options;
     private readonly ConcurrentDictionary<string, Lazy<DataAccess>> _cache = [];
@@ -18,8 +18,8 @@ sealed class DataManager(IOptions<DataManagerOptions> options) : IDisposable, ID
         return _cache.GetOrAdd(key,
                 static (key, arg) => new(() =>
                     {
-                        var optionsValue = arg._options.Value;
-                        var path = Path.Combine(optionsValue.DirectoryPath, key);
+                        DataManagerOptions optionsValue = arg._options.Value;
+                        string path = Path.Combine(optionsValue.DirectoryPath, key);
                         return new(path);
                     },
                     LazyThreadSafetyMode.ExecutionAndPublication),
@@ -27,11 +27,14 @@ sealed class DataManager(IOptions<DataManagerOptions> options) : IDisposable, ID
             .Value;
     }
 
-    public ITempDataAccess OpenTemp() => new TempDataAccess();
+    public ITempDataAccess OpenTemp()
+    {
+        return new TempDataAccess();
+    }
 
     public bool Close(string key)
     {
-        if (!_cache.TryRemove(key, out var dataAccess))
+        if (!_cache.TryRemove(key, out Lazy<DataAccess>? dataAccess))
         {
             return false;
         }
@@ -51,7 +54,7 @@ sealed class DataManager(IOptions<DataManagerOptions> options) : IDisposable, ID
         {
             if (disposing)
             {
-                foreach (var dataAccess in _cache.Values)
+                foreach (Lazy<DataAccess> dataAccess in _cache.Values)
                 {
                     if (dataAccess.IsValueCreated)
                     {
@@ -68,6 +71,6 @@ sealed class DataManager(IOptions<DataManagerOptions> options) : IDisposable, ID
 
     void IDisposable.Dispose()
     {
-        Dispose(disposing: true);
+        Dispose(true);
     }
 }

@@ -21,8 +21,24 @@ public readonly ref struct SpanValue<T>
 
     public bool HasValue => !_span.IsEmpty;
     public ref T Value => ref MemoryMarshal.GetReference(_span);
-    public static implicit operator SpanValue<T>(in T value) => new(ref Unsafe.AsRef(in value));
-    public static implicit operator Span<T>(SpanValue<T> spanValue) => spanValue._span;
-    public static implicit operator ReadOnlySpan<T>(SpanValue<T> spanValue) => spanValue._span;
-    public static implicit operator ReadOnlySpanValue<T>(SpanValue<T> spanValue) => new(spanValue);
+
+    public static implicit operator SpanValue<T>(in T value)
+    {
+        return new(ref Unsafe.AsRef(in value));
+    }
+
+    public static implicit operator Span<T>(SpanValue<T> spanValue)
+    {
+        return spanValue._span;
+    }
+
+    public static implicit operator ReadOnlySpan<T>(SpanValue<T> spanValue)
+    {
+        return spanValue._span;
+    }
+
+    public static implicit operator ReadOnlySpanValue<T>(SpanValue<T> spanValue)
+    {
+        return new(spanValue);
+    }
 }

@@ -4,7 +4,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-sealed class DataMap(string path) : IDisposable
+internal sealed class DataMap(string path) : IDisposable
 {
     private bool _disposedValue;
 
@@ -14,8 +14,10 @@ sealed class DataMap(string path) : IDisposable
             .Select(id =>
                 new Lazy<DataMapFile>(() =>
                     {
-                        var directoryPath = Path.GetDirectoryName(path)!;
-                        if (!Directory.Exists(directoryPath)) { Directory.CreateDirectory(directoryPath); } return new(MemoryMappedFile.CreateFromFile(
+                        string directoryPath = Path.GetDirectoryName(path)!;
+                        if (!Directory.Exists(directoryPath)) { Directory.CreateDirectory(directoryPath); }
+
+                        return new(MemoryMappedFile.CreateFromFile(
                             string.Format(path, id),
                             FileMode.OpenOrCreate,
                             null,
@@ -33,7 +35,7 @@ sealed class DataMap(string path) : IDisposable
 
     public void Flush()
     {
-        foreach (var dataFile in _files.Where(x => x.IsValueCreated))
+        foreach (Lazy<DataMapFile> dataFile in _files.Where(x => x.IsValueCreated))
         {
             dataFile.Value.Flush();
         }
@@ -41,7 +43,7 @@ sealed class DataMap(string path) : IDisposable
 
     public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var dataFile in _files.Where(x => x.IsValueCreated))
+        foreach (Lazy<DataMapFile> dataFile in _files.Where(x => x.IsValueCreated))
         {
             await dataFile.Value.FlushAsync(cancellationToken);
         }
@@ -53,7 +55,7 @@ sealed class DataMap(string path) : IDisposable
         {
             if (disposing)
             {
-                foreach (var dataFile in _files.Where(x => x.IsValueCreated))
+                foreach (Lazy<DataMapFile> dataFile in _files.Where(x => x.IsValueCreated))
                 {
                     dataFile.Value.Dispose();
                 }
@@ -65,6 +67,6 @@ sealed class DataMap(string path) : IDisposable
 
     public void Dispose()
     {
-        Dispose(disposing: true);
+        Dispose(true);
     }
 }

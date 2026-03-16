@@ -20,8 +20,14 @@ public readonly ref struct ReadOnlySpanValue<T>
 
     public bool HasValue => !_readOnlySpan.IsEmpty;
     public ref readonly T Value => ref MemoryMarshal.GetReference(_readOnlySpan);
-    public static implicit operator ReadOnlySpanValue<T>(in T value) => new(in value);
 
-    public static implicit operator ReadOnlySpan<T>(ReadOnlySpanValue<T> readOnlySpanValue) =>
-        readOnlySpanValue._readOnlySpan;
+    public static implicit operator ReadOnlySpanValue<T>(in T value)
+    {
+        return new(in value);
+    }
+
+    public static implicit operator ReadOnlySpan<T>(ReadOnlySpanValue<T> readOnlySpanValue)
+    {
+        return readOnlySpanValue._readOnlySpan;
+    }
 }

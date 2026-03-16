@@ -13,11 +13,12 @@ public static class NerveLearnExtensions
             ReadOnlyMemory<TData> data,
             CancellationToken cancellationToken = default)
         {
-            var connectionWrap = nerve.ConnectionWrap;
-            for (var i = 0; i < data.Length; i++)
+            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap = nerve.ConnectionWrap;
+            for (int i = 0; i < data.Length; i++)
             {
-                var neuron = await nerve.FindOrAddNeuronAsync(data.ElementAt(i), cancellationToken);
-                var connection = await connectionWrap.FindOrAddAsync(neuron, linkFunc(data[..(i + 1)]), cancellationToken);
+                Neuron neuron = await nerve.FindOrAddNeuronAsync(data.ElementAt(i), cancellationToken);
+                Connection connection =
+                    await connectionWrap.FindOrAddAsync(neuron, linkFunc(data[..(i + 1)]), cancellationToken);
                 connectionWrap = connection.Wrap(nerve);
                 Interlocked.Increment(ref connectionWrap.Location.RefValue.Weight);
                 Interlocked.Increment(ref connectionWrap.NeuronWrap.Location.RefValue.Weight);

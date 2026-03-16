@@ -13,6 +13,13 @@ public readonly struct TableRow<TEntity>(ITableRow row) : IDisposable, IDataBloc
 
     public TEntity Entity => _dataLocationObject.Entity;
 
-    public void Save() => _dataLocationObject.Save();
-    public void Dispose() => Save();
+    public void Save()
+    {
+        _dataLocationObject.Save();
+    }
+
+    public void Dispose()
+    {
+        Save();
+    }
 }

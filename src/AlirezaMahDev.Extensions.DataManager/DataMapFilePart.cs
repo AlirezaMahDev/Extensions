@@ -5,7 +5,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-unsafe class DataMapFilePart : MemoryManager<byte>
+internal unsafe class DataMapFilePart : MemoryManager<byte>
 {
     private readonly MemoryMappedViewAccessor _accessor;
     private readonly byte* _pointer;

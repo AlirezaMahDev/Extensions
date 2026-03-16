@@ -21,7 +21,7 @@ public static class NerveCacheExtensions
     {
         public bool TryGetNeuronCache(in TData data, [NotNullWhen(true)] out Neuron? neuron)
         {
-            if (nerve.TryGetNeuronCacheCore(nerve.CreateNeuronCacheKey(in data), out var offset))
+            if (nerve.TryGetNeuronCacheCore(nerve.CreateNeuronCacheKey(in data), out DataOffset? offset))
             {
                 neuron = new(offset.Value);
                 return true;
@@ -58,11 +58,15 @@ public static class NerveCacheExtensions
             nerve.NeuronSectionCache.Set(in cacheKey, offset);
         }
 
-        public NerveCacheKey CreateNeuronCacheKey(in CellWrap<Neuron, NeuronValue<TData>, TData, TLink> neuronWrap) =>
-            nerve.CreateNeuronCacheKey(in neuronWrap.RefData);
+        public NerveCacheKey CreateNeuronCacheKey(in CellWrap<Neuron, NeuronValue<TData>, TData, TLink> neuronWrap)
+        {
+            return nerve.CreateNeuronCacheKey(in neuronWrap.RefData);
+        }
 
-        public NerveCacheKey CreateNeuronCacheKey(in TData data) =>
-            NerveCacheKey.Create(in data);
+        public NerveCacheKey CreateNeuronCacheKey(in TData data)
+        {
+            return NerveCacheKey.Create(in data);
+        }
     }
 
     extension<TData, TLink>(INerve<TData, TLink> nerve)
@@ -102,19 +106,23 @@ public static class NerveCacheExtensions
         }
 
         public NerveCacheKey CreateNeuronConnectionCacheKey(in Neuron from,
-            in CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap) =>
-            nerve.CreateNeuronConnectionCacheKey(
+            in CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
+        {
+            return nerve.CreateNeuronConnectionCacheKey(
                 in from,
                 connectionWrap.Neuron,
                 in connectionWrap.RefLink);
+        }
 
         public NerveCacheKey CreateNeuronConnectionCacheKey(in Neuron from,
             in Neuron to,
-            in TLink link) =>
-            NerveCacheKey.Create(
+            in TLink link)
+        {
+            return NerveCacheKey.Create(
                 from.Offset,
                 to.Offset,
                 in link);
+        }
     }
 
     extension<TData, TLink>(INerve<TData, TLink> nerve)
@@ -130,7 +138,7 @@ public static class NerveCacheExtensions
         {
             if (nerve.TryGetConnectionCacheCore(
                     nerve.CreateConnectionCacheKey(in from, in to, in link, in previous),
-                    offset: out var offset))
+                    out DataOffset? offset))
             {
                 connection = new(offset.Value);
                 return true;
@@ -169,28 +177,34 @@ public static class NerveCacheExtensions
         }
 
         public NerveCacheKey CreateConnectionCacheKey(
-            in CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap) =>
-            nerve.CreateConnectionCacheKey(
+            in CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
+        {
+            return nerve.CreateConnectionCacheKey(
                 connectionWrap.PreviousWrap!.Value.Neuron,
                 connectionWrap.Neuron,
                 in connectionWrap.RefLink,
                 connectionWrap.Previous!.Value);
+        }
 
         public NerveCacheKey CreateConnectionCacheKey(
             in CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
             in Neuron to,
-            in TLink link) =>
-            nerve.CreateConnectionCacheKey(
+            in TLink link)
+        {
+            return nerve.CreateConnectionCacheKey(
                 connectionWrap.Neuron,
                 to,
                 in link,
                 connectionWrap.Cell);
+        }
 
         public NerveCacheKey CreateConnectionCacheKey(
             in Neuron from,
             in Neuron to,
             in TLink link,
-            in Connection previous) =>
-            NerveCacheKey.Create(from.Offset, to.Offset, in link, previous.Offset);
+            in Connection previous)
+        {
+            return NerveCacheKey.Create(from.Offset, to.Offset, in link, previous.Offset);
+        }
     }
 }

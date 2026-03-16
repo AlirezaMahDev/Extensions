@@ -41,7 +41,7 @@ public readonly unsafe struct String256 : IEquatable<String256>, IString<String2
 
         fixed (String256* pointer = &this)
         {
-            var span = new Span<char>(pointer, Length);
+            Span<char> span = new(pointer, Length);
             span.Clear();
             readOnlySpan.CopyTo(span);
         }

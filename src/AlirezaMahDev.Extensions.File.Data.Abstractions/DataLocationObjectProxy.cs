@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace AlirezaMahDev.Extensions.File.Data.Abstractions;
 
@@ -13,7 +14,7 @@ public class DataLocationObjectProxy<[DynamicallyAccessedMembers(DynamicallyAcce
         "This functionality is not compatible with trimming. Use 'MethodFriendlyToTrimming' instead")]
     public DataLocationObjectProxy(DataLocationObjectProperties properties)
     {
-        foreach (var property in properties)
+        foreach (DataLocationObjectProperty property in properties)
         {
             property.PropertyInfo.SetValue(Entity, property.Value);
             _saveAction += () => property.Value = property.PropertyInfo.GetValue(Entity);
@@ -29,27 +30,30 @@ public class DataLocationObjectProxy<[DynamicallyAccessedMembers(DynamicallyAcce
         "This functionality is not compatible with trimming. Use 'MethodFriendlyToTrimming' instead")]
     public DataLocationObjectProxy(IDataLocation dataLocation, DataLocationObjectProperties properties)
     {
-        foreach (var property in properties)
+        foreach (DataLocationObjectProperty property in properties)
         {
             property.PropertyInfo.SetValue(Entity, property.Value);
             _saveAction += () => property.Value = property.PropertyInfo.GetValue(Entity);
         }
 
-        foreach (var propertyInfo in properties.OtherPropertyInfos)
+        foreach (PropertyInfo propertyInfo in properties.OtherPropertyInfos)
         {
-            var propertyLocation = dataLocation.GetOrAdd(propertyInfo.Name);
-            var type = typeof(DataLocationObjectProxy<>).MakeGenericType(propertyInfo.PropertyType);
-            var instance = Activator.CreateInstance(
+            IDataLocation propertyLocation = dataLocation.GetOrAdd(propertyInfo.Name);
+            Type type = typeof(DataLocationObjectProxy<>).MakeGenericType(propertyInfo.PropertyType);
+            object? instance = Activator.CreateInstance(
                 type,
                 propertyLocation,
                 new DataLocationObjectProperties(propertyInfo.PropertyType, propertyLocation)
             );
-            var entityPropertyInfo = type.GetProperty(nameof(Entity))!;
-            var entitySaveMethod = type.GetMethod(nameof(Save))!;
+            PropertyInfo entityPropertyInfo = type.GetProperty(nameof(Entity))!;
+            MethodInfo entitySaveMethod = type.GetMethod(nameof(Save))!;
             propertyInfo.SetValue(Entity, entityPropertyInfo.GetValue(instance));
             _saveAction += () => entitySaveMethod.Invoke(instance, []);
         }
     }
 
-    public void Save() => _saveAction();
+    public void Save()
+    {
+        _saveAction();
+    }
 }

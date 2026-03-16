@@ -7,20 +7,29 @@ public static class DataLocationDictionaryExtensions
         where TItem : unmanaged, IDataDictionaryItem<TItem, TKey>
         where TKey : unmanaged, IEquatable<TKey>
     {
-        public IDataDictionary<TValue, TItem, TKey> Dictionary() => null!;
+        public IDataDictionary<TValue, TItem, TKey> Dictionary()
+        {
+            return null!;
+        }
     }
 
     extension<TValue, TKey>(IDataDictionaryTree<TValue, TKey> value)
         where TValue : unmanaged, IDataDictionaryTree<TValue, TKey>
         where TKey : unmanaged, IEquatable<TKey>
     {
-        public IDataDictionary<TValue, TValue, TKey> TreeDictionary() => null!;
+        public IDataDictionary<TValue, TValue, TKey> TreeDictionary()
+        {
+            return null!;
+        }
     }
 
     extension<TValue>(IDataCollectionItem<TValue> value)
         where TValue : unmanaged, IDataCollectionItem<TValue>
     {
-        public IDataCollectionItem<TValue> CollectionItem() => null!;
+        public IDataCollectionItem<TValue> CollectionItem()
+        {
+            return null!;
+        }
     }
 
     extension<TValue, TItem, TKey>(DataWrap<TValue, IDataDictionary<TValue, TItem, TKey>> wrap)
@@ -30,7 +39,7 @@ public static class DataLocationDictionaryExtensions
     {
         public DataLocation<TItem> GetOrAdd(TKey key)
         {
-            var locationWrapCollection = wrap
+            DataWrap<TValue, DataCollectionWrap<TValue, TItem>> locationWrapCollection = wrap
                 .Wrap(x => x.Collection());
             return locationWrapCollection
                 .GetChildren()
@@ -42,16 +51,16 @@ public static class DataLocationDictionaryExtensions
         public async ValueTask<DataLocation<TItem>> GetOrAddAsync(TKey key,
             CancellationToken cancellationToken = default)
         {
-            var locationWrapCollection = wrap
+            DataWrap<TValue, DataCollectionWrap<TValue, TItem>> locationWrapCollection = wrap
                 .Wrap(x => x.Collection());
-            var dataLocation = await locationWrapCollection
+            DataLocation<TItem> dataLocation = await locationWrapCollection
                 .GetChildren()
                 .ToAsyncEnumerable()
                 .FirstOrDefaultAsync(x => x.GetRefValue(wrap.Access).Key.Equals(key), cancellationToken);
             return await dataLocation.WhenDefaultAsync(async token =>
                     await locationWrapCollection.AddAsync(wrap.Access.Create(TItem.Default with { Key = key }),
-                        cancellationToken: token),
-                cancellationToken: cancellationToken);
+                        token),
+                cancellationToken);
         }
     }
 
@@ -72,7 +81,7 @@ public static class DataLocationDictionaryExtensions
         public async ValueTask<DataLocation<TItem>?> TryGetAsync(TKey key,
             CancellationToken cancellationToken = default)
         {
-            var dataLocation = await wrap
+            DataLocation<TItem> dataLocation = await wrap
                 .Wrap(x => x.Collection())
                 .GetChildren()
                 .ToAsyncEnumerable()
@@ -96,7 +105,7 @@ public static class DataLocationDictionaryExtensions
 
         public DataLocation<TItem>? Remove(TKey key)
         {
-            var locationWrapCollection = wrap
+            DataWrap<TValue, DataCollectionWrap<TValue, TItem>> locationWrapCollection = wrap
                 .Wrap(x => x.Collection());
             return locationWrapCollection
                 .GetChildren()
@@ -107,13 +116,13 @@ public static class DataLocationDictionaryExtensions
         public async ValueTask<DataLocation<TItem>?> RemoveAsync(TKey key,
             CancellationToken cancellationToken = default)
         {
-            var locationWrapCollection = wrap
+            DataWrap<TValue, DataCollectionWrap<TValue, TItem>> locationWrapCollection = wrap
                 .Wrap(x => x.Collection());
-            var dataLocation = await locationWrapCollection
+            DataLocation<TItem> dataLocation = await locationWrapCollection
                 .GetChildren()
                 .ToAsyncEnumerable()
                 .FirstOrDefaultAsync(x => x.GetRefValue(wrap.Access).Key.Equals(key),
-                    cancellationToken: cancellationToken);
+                    cancellationToken);
             return await dataLocation.WhenNotDefaultAsync(
                 async (x, token) => await locationWrapCollection.RemoveAsync(x, token),
                 cancellationToken);

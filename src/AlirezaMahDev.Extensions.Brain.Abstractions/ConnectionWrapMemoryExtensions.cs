@@ -14,8 +14,9 @@ public static class ConnectionWrapMemoryExtensions
         public MemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
             NearConnection(
                 ThinkValueRef<TData, TLink> pair,
-                int depth) =>
-            memory.Near(pair,
+                int depth)
+        {
+            return memory.Near(pair,
                 x =>
                     new(in x.NeuronWrap.RefData,
                         in x.RefLink,
@@ -23,6 +24,7 @@ public static class ConnectionWrapMemoryExtensions
                         in x.RefValue.RefWeight),
                 NerveHelper<TData, TLink>.SleepComparisons,
                 depth);
+        }
 
         [MustDisposeResource]
         public MemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>

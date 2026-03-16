@@ -30,7 +30,7 @@ internal partial class DataLocation : IDataLocation
     {
         _args = args;
         _logger = logger;
-        var reader = args.DataAccess.Block.AsReader(args.Id)
+        DataBlockReader reader = args.DataAccess.Block.AsReader(args.Id)
             .ReadRefValue(out _value);
         _lazy = new(() =>
             {
@@ -57,7 +57,7 @@ internal partial class DataLocation : IDataLocation
 
     public bool TryGet(String64 key, [MaybeNullWhen(false)] out IDataLocation result)
     {
-        if (_cache.TryGetValue(key, out var lazy))
+        if (_cache.TryGetValue(key, out Lazy<IDataLocation>? lazy))
         {
             result = lazy.Value;
             return true;
@@ -76,7 +76,7 @@ internal partial class DataLocation : IDataLocation
     public IDataLocation GetOrAdd(String64 key, int size = 0)
     {
         LogDebug($"start create location:{_args.Id} {key} {size}");
-        var location = _cache.GetOrAdd(key,
+        IDataLocation location = _cache.GetOrAdd(key,
                 static (key, arg) =>
                     new(() =>
                             arg.location.FirstOrDefault(x => x.RefKey == key) ?? arg.location.ForceAdd(key, arg.size),
@@ -90,10 +90,10 @@ internal partial class DataLocation : IDataLocation
 
     public IDataLocation ForceAdd(String64 key, int dataLength)
     {
-        using var scope = _lock.EnterScope();
-        var length = Unsafe.SizeOf<DataLocationValue>() + dataLength;
-        var id = _args.DataAccess.GenerateId(length);
-        var location = _args.DataAccess.LocationFactory.GetOrCreate(id);
+        using Lock.Scope scope = _lock.EnterScope();
+        int length = Unsafe.SizeOf<DataLocationValue>() + dataLength;
+        long id = _args.DataAccess.GenerateId(length);
+        DataLocation location = _args.DataAccess.LocationFactory.GetOrCreate(id);
         location.RefValue.Key = key;
         location.RefValue.Length = dataLength;
         return ForceAdd(location);
@@ -108,7 +108,7 @@ internal partial class DataLocation : IDataLocation
 
     public bool TryRemove(String64 key, [MaybeNullWhen(false)] out IDataLocation item)
     {
-        using var _ = _lock.EnterScope();
+        using Lock.Scope _ = _lock.EnterScope();
         item = this.FirstOrDefault();
         if (item?.RefKey == key)
         {
@@ -130,7 +130,7 @@ internal partial class DataLocation : IDataLocation
 
     public IEnumerator<IDataLocation> GetEnumerator()
     {
-        var current = Child;
+        IDataLocation? current = Child;
         while (current is not null)
         {
             yield return current;

@@ -5,19 +5,27 @@ public static class ReadOnlyMemoryValueExtensions
     extension<T>(ref T t)
         where T : struct
     {
-        public ReadOnlyMemoryValue<T> AsReadonlyMemoryValue() =>
-            new(in t);
+        public ReadOnlyMemoryValue<T> AsReadonlyMemoryValue()
+        {
+            return new(in t);
+        }
     }
 
     extension<T>(ReadOnlyMemory<T> readOnlyMemory)
         where T : struct
     {
-        public ReadOnlyMemoryValue<T> ElementAt(int index) => new(readOnlyMemory.Slice(index, 1));
+        public ReadOnlyMemoryValue<T> ElementAt(int index)
+        {
+            return new(readOnlyMemory.Slice(index, 1));
+        }
     }
 
     extension<T>(ReadOnlyMemoryValue<T> readOnlyMemoryValue)
         where T : struct
     {
-        public ReadOnlySpanValue<T> AsReadOnlySpanValue() => new(in readOnlyMemoryValue.Value);
+        public ReadOnlySpanValue<T> AsReadOnlySpanValue()
+        {
+            return new(in readOnlyMemoryValue.Value);
+        }
     }
 }

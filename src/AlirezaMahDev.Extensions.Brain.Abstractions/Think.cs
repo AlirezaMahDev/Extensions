@@ -53,9 +53,9 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         ConnectionWrap = connectionWrap;
         Previous = previous;
 
-        var dataDifference = data.Value.Normalize() - connectionWrap.NeuronWrap.RefData.Normalize();
+        TData dataDifference = data.Value.Normalize() - connectionWrap.NeuronWrap.RefData.Normalize();
         DataDifferenceSum = previous.DataDifferenceSum + dataDifference;
-        var dataDifferenceAbs = dataDifference.Abs();
+        TData dataDifferenceAbs = dataDifference.Abs();
         DataDifferenceSumAbs = previous.DataDifferenceSumAbs + dataDifferenceAbs;
 
         if (Count > 2)
@@ -67,25 +67,31 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         WeightSum = previous.WeightSum + connectionWrap.RefValue.Weight;
     }
 
-    public static Think<TData, TLink> Create(CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection) =>
-        new(connection);
+    public static Think<TData, TLink> Create(CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection)
+    {
+        return new(connection);
+    }
 
     public Think<TData, TLink> Append(ReadOnlyMemoryValue<TData> data,
         ReadOnlyMemoryValue<TLink> link,
-        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection) =>
-        new(data, link, connection, this);
+        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection)
+    {
+        return new(data, link, connection, this);
+    }
 
     [MustDisposeResource]
     public IReadonlyMemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
         GetNextConnectionWrap(
             PredictValueRef<TLink> link,
-            int depth) =>
-        ConnectionWrap.GetConnectionsWrapCache().Memory.NearConnection(link, depth);
+            int depth)
+    {
+        return ConnectionWrap.GetConnectionsWrapCache().Memory.NearConnection(link, depth);
+    }
 
     public IEnumerator<Think<TData, TLink>> GetEnumerator()
     {
         Stack<Think<TData, TLink>> stack = [];
-        var current = this;
+        Think<TData, TLink>? current = this;
         while (current is not null)
         {
             stack.Push(current);
@@ -95,7 +101,10 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         return stack.GetEnumerator();
     }
 
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 
     public override int GetHashCode()
     {

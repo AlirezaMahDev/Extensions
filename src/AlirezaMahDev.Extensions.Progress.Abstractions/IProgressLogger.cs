@@ -27,7 +27,7 @@ public interface IProgressLogger
     void SetMessage(string message);
     void SetName(string name);
 
-    public Disposable Listener(EventHandler<ProgressLoggerState> action);
+    Disposable Listener(EventHandler<ProgressLoggerState> action);
 }
 
 public interface IProgressLogger<T> : IProgressLogger;
