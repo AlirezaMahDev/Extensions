@@ -1,5 +1,3 @@
-using AlirezaMahDev.Extensions.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NerveThinkExtensions
@@ -10,8 +8,9 @@ public static class NerveThinkExtensions
     {
         public void CleanThink()
         {
-            Parallel.ForEach(nerve.MemoryCache.Where(x => x.Value.IsValueCreated),
-                pair => pair.Value.Value.Dispose());
+            SmartParallel.ForEach(nerve.MemoryCache.Where(x => x.Value.IsValueCreated),
+                CancellationToken.None,
+                (pair, _) => pair.Value.Value.Dispose());
             nerve.MemoryCache.Clear();
         }
 
@@ -27,7 +26,7 @@ public static class NerveThinkExtensions
                 linkFunc,
                 data,
                 0,
-                Think<TData, TLink>.Create(nerve.ConnectionWrap),
+                Think<TData, TLink>.Create(nerve.RootConnectionWrap),
                 result,
                 cancellationToken);
 
@@ -43,8 +42,8 @@ public static class NerveThinkExtensions
             ThinkResult<TData, TLink> resultThink,
             CancellationToken cancellationToken = default)
         {
-            ReadOnlyMemory<TData> previousData = input[..inputIndex];
-            ReadOnlyMemory<TData> nextData = input[inputIndex..];
+            var previousData = input[..inputIndex];
+            var nextData = input[inputIndex..];
 
             if (nextData.IsEmpty)
             {
@@ -57,10 +56,10 @@ public static class NerveThinkExtensions
             }
 
             ReadOnlyMemoryValue<TLink> linkValue = linkFunc(previousData);
-            ReadOnlyMemoryValue<TData> dataValue = nextData.ElementAt(0);
+            var dataValue = nextData.ElementAt(0);
 
             ThinkValueRef<TData, TLink> pair = new(in dataValue.Value, in linkValue.Value);
-            CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellMemory =
+            var cellMemory =
                 currentThink.ConnectionWrap.GetConnectionsWrapCache();
 
             if (cellMemory.Count == 0)
@@ -68,7 +67,7 @@ public static class NerveThinkExtensions
                 return;
             }
 
-            using MemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>> memoryList =
+            using var memoryList =
                 cellMemory.Memory.NearConnection(pair, depth);
             if (memoryList.Count == 0)
             {
@@ -101,13 +100,13 @@ public static class NerveThinkExtensions
             ReadOnlyMemoryValue<TLink> linkValue,
             CancellationToken token)
         {
-            for (int readOnlyMemoryIndex = 0;
+            for (var readOnlyMemoryIndex = 0;
                  readOnlyMemoryIndex < readOnlyMemory.Length;
                  readOnlyMemoryIndex++)
             {
-                CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> nextConnection =
+                var nextConnection =
                     readOnlyMemory.Span[readOnlyMemoryIndex];
-                Think<TData, TLink> nextThink = currentThink.Append(dataValue, linkValue, nextConnection);
+                var nextThink = currentThink.Append(dataValue, linkValue, nextConnection);
                 if (resultThink.CanAdd(nextThink))
                 {
                     await INerve<TData, TLink>.ThinkCoreAsync(depth,

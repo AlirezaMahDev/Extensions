@@ -1,10 +1,13 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public readonly struct DataLockDisposable<TValue>(DataWrap<TValue> wrap) : IDisposable
+public readonly ref struct DataLockDisposable<TValue>(ref readonly DataWrap<TValue> wrap) : IDisposable
     where TValue : unmanaged, IDataLock<TValue>
 {
+    private readonly DataWrap<TValue> _wrap =  wrap;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        wrap.UnLock();
+        _wrap.UnLock();
     }
 }

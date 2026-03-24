@@ -11,7 +11,7 @@ public class NodeBuilder(IServiceCollection services) : BuilderBase(services)
         where TNodeServiceOptions : NodeOptions
     {
         Services.TryAddSingleton<TNodeService>();
-        OptionsBuilder<TNodeServiceOptions> optionsBuilder = Services.AddOptions<TNodeServiceOptions>();
+        var optionsBuilder = Services.AddOptions<TNodeServiceOptions>();
         optionsBuilder.Configure(options => options.Assembly = typeof(TNodeService).Assembly);
         if (action != null)
         {

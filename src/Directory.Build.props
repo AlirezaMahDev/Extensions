@@ -9,6 +9,7 @@
     <Copyright>Copyright (c) AlirezaMahDev 2025</Copyright>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <RepositoryType>git</RepositoryType>
+    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

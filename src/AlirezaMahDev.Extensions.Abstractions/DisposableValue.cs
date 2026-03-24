@@ -1,17 +1,26 @@
-using System.Runtime.InteropServices;
-
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 [MustDisposeResource]
 [StructLayout(LayoutKind.Auto)]
-public readonly struct DisposableValue<TValue>(TValue value, IDisposable disposable) : IDisposable
+public ref struct DisposableValue<TValue, TDisposable>(TValue value, TDisposable disposable)
+    where TDisposable : IDisposable
 {
-    public TValue Value { get; } = value;
+    private TDisposable _disposable = disposable;
+    private bool _disposed = false;
 
+    public TValue Value
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    } = value;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        disposable.Dispose();
+        if (!_disposed)
+        {
+            _disposable.Dispose();
+            _disposed = true;
+        }
     }
 }

@@ -25,7 +25,7 @@ internal sealed class DataMapFile(MemoryMappedFile file) : IDisposable
 
     public void Flush()
     {
-        foreach (Lazy<DataMapFilePart> dataPart in _parts.Where(x => x.IsValueCreated))
+        foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
         {
             dataPart.Value.Flush();
         }
@@ -33,7 +33,7 @@ internal sealed class DataMapFile(MemoryMappedFile file) : IDisposable
 
     public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
-        foreach (Lazy<DataMapFilePart> dataPart in _parts.Where(x => x.IsValueCreated))
+        foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
         {
             await dataPart.Value.FlushAsync(cancellationToken);
         }
@@ -45,7 +45,7 @@ internal sealed class DataMapFile(MemoryMappedFile file) : IDisposable
         {
             if (disposing)
             {
-                foreach (Lazy<DataMapFilePart> dataPart in _parts.Where(x => x.IsValueCreated))
+                foreach (var dataPart in _parts.Where(x => x.IsValueCreated))
                 {
                     if (dataPart.Value is IDisposable disposable)
                     {

@@ -5,22 +5,26 @@ public static class ComparisonChainExtensions
     extension<T>(ComparisonChain<T>)
         where T : allows ref struct
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static ComparisonWrap<ComparisonChain<T>, T> ChainOrder(Comparison<T> comparison)
         {
             return new ComparisonChain<T>(comparison, comparison, null).Wrap();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static ComparisonWrap<ComparisonChain<T>, T> ChainOrderDescending(Comparison<T> comparison)
         {
             return new ComparisonChain<T>((x, y) => comparison(y, x), (x, y) => comparison(y, x), null).Wrap();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static ComparisonWrap<ComparisonChain<T>, T> ChainOrderBy<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey>
         {
             return ComparisonChain<T>.ChainOrder((x, y) => func(x).CompareTo(func(y)));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public static ComparisonWrap<ComparisonChain<T>, T> ChainOrderByDescending<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey>
         {
@@ -31,6 +35,7 @@ public static class ComparisonChainExtensions
     extension<T>(ComparisonChain<T> unwrap)
         where T : allows ref struct
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ComparisonWrap<ComparisonChain<T>, T> Wrap()
         {
             return new(unwrap);
@@ -41,6 +46,7 @@ public static class ComparisonChainExtensions
         where TComparisonChain : struct, IComparisonChain<T>
         where T : allows ref struct
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ComparisonWrap<TComparisonChain, T> ChainOrder(Comparison<T> comparison)
         {
             return new(wrap.UnWrap with
@@ -51,6 +57,7 @@ public static class ComparisonChainExtensions
             });
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ComparisonWrap<TComparisonChain, T> ChainOrderDescending(Comparison<T> comparison)
         {
             return new(wrap.UnWrap with
@@ -61,18 +68,21 @@ public static class ComparisonChainExtensions
             });
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ComparisonWrap<TComparisonChain, T> ChainOrderBy<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey>
         {
             return wrap.ChainOrder((x, y) => func(x).CompareTo(func(y)));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ComparisonWrap<TComparisonChain, T> ChainOrderByDescending<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey>
         {
             return wrap.ChainOrderDescending((x, y) => func(x).CompareTo(func(y)));
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public IEnumerable<IComparisonChain<T>> GetComparisonChains()
         {
             Stack<IComparisonChain<T>> stack = new();
@@ -86,6 +96,7 @@ public static class ComparisonChainExtensions
             return stack;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ComparisonWrap<TComparisonChain, T> Merge()
         {
             return new(wrap.UnWrap with

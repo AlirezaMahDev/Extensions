@@ -16,7 +16,7 @@ public class ParameterInstanceFactoryOptions
     public IEnumerable<IParameterInstanceFactory<TParameter>> GetFactories<TParameter>()
         where TParameter : notnull
     {
-        return Factories.TryGetValue(typeof(TParameter), out ConcurrentBag<object>? bag)
+        return Factories.TryGetValue(typeof(TParameter), out var bag)
             ? bag.Cast<IParameterInstanceFactory<TParameter>>()
             : [];
     }

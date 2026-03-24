@@ -24,13 +24,12 @@ public record ProgressLoggerState(
     [JsonIgnore]
     public double? ProgressSpeed =>
         Last is not null && (Timestamp - Last.Timestamp).TotalSeconds is var seconds && seconds != 0
-            ? (ProgressValue - Last.ProgressValue) / seconds
+            ? (Count - Last.Count) / seconds
             : null;
 
     public override string ToString()
     {
-        return $"Name:{Title} Message:{Message} Count:{Count} Length:{
-            Length} {ProgressValue:##,##} Speed:{ProgressSpeed:##,##}/s";
+        return $"Name:{Title} Message:{Message} Count:{Count} Length:{Length} Progress:{ProgressValue:P2} Speed:{ProgressSpeed}/s";
     }
 }
 

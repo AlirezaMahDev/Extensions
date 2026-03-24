@@ -1,7 +1,3 @@
-using AlirezaMahDev.Extensions.Abstractions;
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
-using AlirezaMahDev.Extensions.Progress.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NerveReCountExtensions
@@ -13,20 +9,21 @@ public static class NerveReCountExtensions
         public void ReCount(IProgressLogger progressLogger)
         {
             nerve.Counter.RefValue.NeuronCount = 0;
-            using (MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> wraps =
-                   nerve.NeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
+            using (var wraps =
+                   nerve.RootNeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
                 {
                     return;
                 }
 
-                Parallel.For(0,
+                SmartParallel.For(0,
                     wraps.Count,
-                    (index) =>
+                    CancellationToken.None,
+                    (index, _) =>
                     {
                         wraps[index]
-                            .Lock(location =>
+                            .Lock((ref readonly location) =>
                                 location.RefValue.NextCount = wraps.Count - index - 1);
                         progressLogger.IncrementCount();
                     });
@@ -34,14 +31,14 @@ public static class NerveReCountExtensions
             }
 
             nerve.Counter.RefValue.ConnectionCount = 0;
-            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap = nerve.ConnectionWrap;
+            var connectionWrap = nerve.RootConnectionWrap;
             INerve<TData, TLink>.ReCountCore(progressLogger, connectionWrap);
         }
 
         public static void ReCountCore(IProgressLogger progressLogger,
             CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
         {
-            using (MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> wraps =
+            using (var wraps =
                    connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
                 if (wraps.Count == 0)
@@ -49,83 +46,23 @@ public static class NerveReCountExtensions
                     return;
                 }
 
-                Parallel.For(0,
+                SmartParallel.For(0,
                     wraps.Count,
-                    (index) =>
+                    CancellationToken.None,
+                    (index, _) =>
                     {
                         wraps[index]
-                            .Lock(location =>
+                            .Lock((ref readonly location) =>
                                 location.RefValue.NextCount = wraps.Count - index - 1);
                         progressLogger.IncrementCount();
                     });
                 Interlocked.Add(ref connectionWrap.Nerve.Counter.RefValue.ConnectionCount, wraps.Count);
             }
 
-            Parallel.ForEach(connectionWrap.GetConnectionsWrapRaw(),
-                (item) =>
+            SmartParallel.ForEach(connectionWrap.GetConnectionsWrapRaw(),
+                CancellationToken.None,
+                (item, _) =>
                     INerve<TData, TLink>.ReCountCore(progressLogger, item));
-        }
-
-        public async Task ReCountAsync(IProgressLogger progressLogger, CancellationToken cancellationToken = default)
-        {
-            nerve.Counter.RefValue.NeuronCount = 0;
-            using (MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> wraps =
-                   nerve.NeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
-            {
-                if (wraps.Count == 0)
-                {
-                    return;
-                }
-
-                await SmartParallel.ForAsync(0,
-                    wraps.Count,
-                    cancellationToken,
-                    async (index, token) =>
-                    {
-                        await wraps[index]
-                            .LockAsync(location =>
-                                    location.RefValue.NextCount = wraps.Count - index - 1,
-                                token);
-                        progressLogger.IncrementCount();
-                    });
-                Interlocked.Add(ref nerve.Counter.RefValue.NeuronCount, wraps.Count);
-            }
-
-            nerve.Counter.RefValue.ConnectionCount = 0;
-            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap = nerve.ConnectionWrap;
-            await INerve<TData, TLink>.ReCountAsyncCore(progressLogger, connectionWrap, cancellationToken);
-        }
-
-        private static async Task ReCountAsyncCore(IProgressLogger progressLogger,
-            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
-            CancellationToken cancellationToken)
-        {
-            using (MemoryList<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> wraps =
-                   connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
-            {
-                if (wraps.Count == 0)
-                {
-                    return;
-                }
-
-                await SmartParallel.ForAsync(0,
-                    wraps.Count,
-                    cancellationToken,
-                    async (index, token) =>
-                    {
-                        await wraps[index]
-                            .LockAsync(location =>
-                                    location.RefValue.NextCount = wraps.Count - index - 1,
-                                token);
-                        progressLogger.IncrementCount();
-                    });
-                Interlocked.Add(ref connectionWrap.Nerve.Counter.RefValue.ConnectionCount, wraps.Count);
-            }
-
-            await Parallel.ForEachAsync(connectionWrap.GetConnectionsWrapRaw(),
-                cancellationToken,
-                async (item, token) =>
-                    await INerve<TData, TLink>.ReCountAsyncCore(progressLogger, item, token));
         }
     }
 }

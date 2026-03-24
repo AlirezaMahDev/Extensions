@@ -1,7 +1,3 @@
-using AlirezaMahDev.Extensions.Abstractions;
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
-using AlirezaMahDev.Extensions.Progress.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NerveSleepExtensions
@@ -15,7 +11,7 @@ public static class NerveSleepExtensions
             CancellationToken cancellationToken = default)
         {
             return INerve<TData, TLink>.SleepAsyncCore(progressLogger,
-                nerve.ConnectionWrap,
+                nerve.RootConnectionWrap,
                 NerveHelper<TData, TLink>.SleepComparisons,
                 cancellationToken);
         }
@@ -31,7 +27,7 @@ public static class NerveSleepExtensions
                 return;
             }
 
-            CellEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellEnumerable =
+            var cellEnumerable =
                 cellWrap.GetConnectionsWrap();
 
             if (cellEnumerable.Count == 0)
@@ -39,7 +35,7 @@ public static class NerveSleepExtensions
                 return;
             }
 
-            using CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellMemory =
+            using var cellMemory =
                 cellEnumerable.ToCellMemory();
 
             if (cellMemory.Count == 1)
@@ -70,39 +66,39 @@ public static class NerveSleepExtensions
                     in wrap.RefValue.RefWeight),
                 comparisonChain.Comparison);
             return SmartParallel.InvokeAsync(cancellationToken,
-                async (_) =>
+                (_) =>
                 {
                     progressLogger.IncrementLength();
-                    if (cellWrap.RefValue.Child != cellMemory.Memory.Span[0].Cell.Offset)
+                    if (cellWrap.RefValue.Child != cellMemory.Memory.Span[0].RefCell.Offset)
                     {
-                        await cellWrap.LockAsync(location =>
+                        cellWrap.Lock((ref readonly location) =>
                             {
-                                location.RefValue.Child = cellMemory.Memory.Span[0].Cell.Offset;
+                                location.RefValue.Child = cellMemory.Memory.Span[0].RefCell.Offset;
                                 progressLogger.IncrementCount();
-                            },
-                            CancellationToken.None);
+                            });
                     }
+
+                    return ValueTask.CompletedTask;
                 },
-                async (_) =>
+                (_) =>
                 {
                     CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> second = default;
-                    for (int index = 0; index < cellMemory.Count - 1; index++)
+                    for (var index = 0; index < cellMemory.Count - 1; index++)
                     {
-                        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>
+                        var
                             first = cellMemory.Memory.Span[index];
                         second = cellMemory.Memory.Span[index + 1];
 
                         progressLogger.IncrementLength();
-                        if (first.RefValue.Next != second.Cell.Offset ||
+                        if (first.RefValue.Next != second.RefCell.Offset ||
                             first.RefValue.NextCount != cellMemory.Count - index - 1)
                         {
-                            await first.LockAsync(location =>
+                            first.Lock((ref readonly location) =>
                                 {
-                                    location.RefValue.Next = second.Cell.Offset;
+                                    location.RefValue.Next = second.RefCell.Offset;
                                     location.RefValue.NextCount = cellMemory.Count - index - 1;
                                     progressLogger.IncrementCount();
-                                },
-                                CancellationToken.None);
+                                });
                         }
                     }
 
@@ -110,14 +106,15 @@ public static class NerveSleepExtensions
                     if (second.RefValue.Next != DataOffset.Null ||
                         second.RefValue.NextCount != 0)
                     {
-                        await second.LockAsync(location =>
+                        second.Lock((ref readonly location) =>
                             {
                                 location.RefValue.Next = DataOffset.Null;
                                 location.RefValue.NextCount = 0;
                                 progressLogger.IncrementCount();
-                            },
-                            CancellationToken.None);
+                            });
                     }
+
+                    return ValueTask.CompletedTask;
                 }
             );
         }

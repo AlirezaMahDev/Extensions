@@ -1,59 +1,57 @@
-using System.Runtime.InteropServices;
-
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public readonly record struct CellWrap<TCell, TValue, TData, TLink>(INerve<TData, TLink> Nerve, TCell Cell)
-    : ICellWrap<TCell, TValue, TData, TLink>
+[method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+public readonly struct CellWrap<TCell, TValue, TData, TLink>(INerve<TData, TLink> nerve, in TCell cell)
+    : ICellWrap<TCell, TValue, TData, TLink>, IInEquatable<CellWrap<TCell, TValue, TData, TLink>>
     where TCell : ICell
     where TValue : unmanaged, ICellValue<TValue>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    public TCell Cell { get; } = Cell;
-    public INerve<TData, TLink> Nerve { get; } = Nerve;
+    private readonly TCell _cell = cell;
+    private readonly DataWrap<TValue> _location = new(nerve.Access, new(cell.Offset));
 
-    public DataWrap<TValue> Location => new(Nerve.Access, new(Cell.Offset));
-    public ref readonly TValue RefValue => ref Location.RefValue;
-
-    public void Lock(DataWrapAction<TValue> action)
+    public ref readonly TCell RefCell
     {
-        Location.Lock(action);
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._cell;
     }
 
-    public TResult Lock<TResult>(DataWrapFunc<TValue, TResult> func)
+    public INerve<TData, TLink> Nerve { get; } = nerve;
+
+    public ref readonly DataWrap<TValue> Location
     {
-        return Location.Lock(func);
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return ref Unsafe.AsRef(in this)._location;
+        }
     }
 
-    public async ValueTask LockAsync(DataWrapAction<TValue> action,
-        CancellationToken cancellationToken = default)
+    public ref readonly TValue RefValue
     {
-        await Location.LockAsync(action, cancellationToken);
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return ref Location.Location.GetRefValue(Nerve.Access);
+        }
     }
 
-    public async ValueTask LockAsync(DataWrapAsyncAction<TValue> action,
-        CancellationToken cancellationToken = default)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool Equals(in CellWrap<TCell, TValue, TData, TLink> other)
     {
-        await Location.LockAsync(action, cancellationToken);
+        return _cell.Offset == other._cell.Offset;
     }
 
-    public ValueTask<TResult> LockAsync<TResult>(DataWrapFunc<TValue, TResult> func,
-        CancellationToken cancellationToken = default)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool Equals(CellWrap<TCell, TValue, TData, TLink> other)
     {
-        return Location.LockAsync(func, cancellationToken);
-    }
-
-    public ValueTask<TResult> LockAsync<TResult>(DataWrapAsyncFunc<TValue, TResult> func,
-        CancellationToken cancellationToken = default)
-    {
-        return Location.LockAsync(func, cancellationToken);
+        return Equals(in other);
     }
 
     public override string ToString()
     {
-        return $"{Cell} {RefValue}";
+        return $"{_cell} {RefValue}";
     }
 }

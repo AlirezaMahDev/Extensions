@@ -1,5 +1,3 @@
-using AlirezaMahDev.Extensions.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NerveHelper<TData, TLink>
@@ -16,8 +14,8 @@ public static class NerveHelper<TData, TLink>
 
     public static ComparisonChain<Think<TData, TLink>> ThinkComparisons { get; } =
         ComparisonChain<Think<TData, TLink>>
-            .ChainOrderBy(x => x.LinkDifference.Abs())
             .ChainOrderBy(x => x.DataDifferenceSumAbs)
+            .ChainOrderBy(x => x.LinkDifference.Abs())
             .ChainOrderByDescending(x => x.ScoreSum)
             .ChainOrderByDescending(x => x.WeightSum)
             .UnWrap;

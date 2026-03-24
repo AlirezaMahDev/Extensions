@@ -1,16 +1,19 @@
-using System.Linq.Expressions;
-using System.Runtime.InteropServices;
-
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [StructLayout(LayoutKind.Sequential)]
-public readonly struct DataCollectionItemWrap<TValue>(
-    Expression<SelectValueFunc<TValue, DataOffset>> selectNextExpression)
+public readonly struct DataCollectionItemWrap<TValue>(GetRefValueFunc<TValue, DataOffset> getRefNext)
     where TValue : unmanaged, IDataValue<TValue>
 {
-    public SelectValueFunc<TValue, DataOffset> GetNext { get; } = selectNextExpression.Compile();
+    public GetRefValueFunc<TValue, DataOffset> GetRefNext
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    } = getRefNext;
 
-    public SetValueAction<TValue, DataOffset> SetNext { get; } = selectNextExpression.BuildSetter();
 
-    public SelectValueFunc<TValue, DataOffset> SelectNext { get; } = selectNextExpression.Compile();
+    public GetValueFunc<TValue, DataOffset> GetValueNext
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    } = (ref value) => getRefNext(ref value);
 }

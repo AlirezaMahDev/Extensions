@@ -49,8 +49,8 @@ internal partial class NodeWorker<TNodeService, TNodeServiceOptions>(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        string? config = (await _nodeService.InitializeAsync(stoppingToken).ConfigureAwait(false))?.ToString();
-        string? workingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        var config = (await _nodeService.InitializeAsync(stoppingToken).ConfigureAwait(false))?.ToString();
+        var workingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         _process.StartInfo = new("node", $"{_options.Assembly.GetName().Name}.js {config}")
         {
             WorkingDirectory = workingDirectory,
@@ -85,18 +85,18 @@ internal partial class NodeWorker<TNodeService, TNodeServiceOptions>(
         NodeTaskRequest nodeTaskRequest = new("check",
             JsonSerializer.SerializeToElement(true, NodeDefaults.JsonSerializerOptions));
         await _channel.Writer.WriteAsync(nodeTaskRequest, cancellationToken);
-        NodeTaskResponse nodeTaskResponse = await nodeTaskRequest.TaskCompletionSource.Task;
+        var nodeTaskResponse = await nodeTaskRequest.TaskCompletionSource.Task;
         LogInformation($"end check {_name}: {nodeTaskResponse}");
     }
 
     private async Task WriteAsync(CancellationToken cancellationToken = default)
     {
-        await foreach (NodeTaskRequest nodeTaskRequest in _channel.Reader.ReadAllAsync(cancellationToken)
+        await foreach (var nodeTaskRequest in _channel.Reader.ReadAllAsync(cancellationToken)
                            .ConfigureAwait(false))
         {
             _requests[nodeTaskRequest.Id] = nodeTaskRequest;
 
-            string write = JsonSerializer.Serialize(nodeTaskRequest, NodeDefaults.JsonSerializerOptions);
+            var write = JsonSerializer.Serialize(nodeTaskRequest, NodeDefaults.JsonSerializerOptions);
             await _process.StandardInput.WriteLineAsync($"request>{write}");
             LogInformation($"process {_name} request: {write}");
         }
@@ -106,7 +106,7 @@ internal partial class NodeWorker<TNodeService, TNodeServiceOptions>(
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            string? read = await _process.StandardOutput.ReadLineAsync(cancellationToken);
+            var read = await _process.StandardOutput.ReadLineAsync(cancellationToken);
 
             if (string.IsNullOrWhiteSpace(read))
             {
@@ -125,12 +125,12 @@ internal partial class NodeWorker<TNodeService, TNodeServiceOptions>(
             {
                 LogInformation($"process {_name} response: {read}");
 
-                NodeTaskResponse nodeTaskResponse = JsonSerializer.Deserialize<NodeTaskResponse>(
+                var nodeTaskResponse = JsonSerializer.Deserialize<NodeTaskResponse>(
                     read[responsePrefix.Length..],
                     NodeDefaults.JsonSerializerOptions
                 )!;
 
-                if (_requests.TryRemove(nodeTaskResponse.Id, out NodeTaskRequest? nodeTask))
+                if (_requests.TryRemove(nodeTaskResponse.Id, out var nodeTask))
                 {
                     if (nodeTaskResponse.Success)
                     {
@@ -153,7 +153,7 @@ internal partial class NodeWorker<TNodeService, TNodeServiceOptions>(
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            string? read = await _process.StandardError.ReadLineAsync(cancellationToken);
+            var read = await _process.StandardError.ReadLineAsync(cancellationToken);
 
             if (string.IsNullOrWhiteSpace(read))
             {

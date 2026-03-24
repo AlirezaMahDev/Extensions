@@ -1,7 +1,3 @@
-using System.IO.Hashing;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [StructLayout(LayoutKind.Sequential)]
@@ -19,14 +15,14 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
         where T1 : unmanaged
         where T2 : unmanaged
     {
-        ReadOnlySpan<byte> s1 = AsReadOnlySpan(in t1);
-        ReadOnlySpan<byte> s2 = AsReadOnlySpan(in t2);
+        var s1 = AsReadOnlySpan(in t1);
+        var s2 = AsReadOnlySpan(in t2);
 
-        int length = s1.Length + s2.Length;
+        var length = s1.Length + s2.Length;
 
         Span<byte> destination = stackalloc byte[length];
 
-        int offset = 0;
+        var offset = 0;
         s1.CopyTo(destination[offset..]);
         offset += s1.Length;
         s2.CopyTo(destination[offset..]);
@@ -39,15 +35,15 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
         where T2 : unmanaged
         where T3 : unmanaged
     {
-        ReadOnlySpan<byte> s1 = AsReadOnlySpan(in t1);
-        ReadOnlySpan<byte> s2 = AsReadOnlySpan(in t2);
-        ReadOnlySpan<byte> s3 = AsReadOnlySpan(in t3);
+        var s1 = AsReadOnlySpan(in t1);
+        var s2 = AsReadOnlySpan(in t2);
+        var s3 = AsReadOnlySpan(in t3);
 
-        int length = s1.Length + s2.Length + s3.Length;
+        var length = s1.Length + s2.Length + s3.Length;
 
         Span<byte> destination = stackalloc byte[length];
 
-        int offset = 0;
+        var offset = 0;
         s1.CopyTo(destination[offset..]);
         offset += s1.Length;
         s2.CopyTo(destination[offset..]);
@@ -63,16 +59,16 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
         where T3 : unmanaged
         where T4 : unmanaged
     {
-        ReadOnlySpan<byte> s1 = AsReadOnlySpan(in t1);
-        ReadOnlySpan<byte> s2 = AsReadOnlySpan(in t2);
-        ReadOnlySpan<byte> s3 = AsReadOnlySpan(in t3);
-        ReadOnlySpan<byte> s4 = AsReadOnlySpan(in t4);
+        var s1 = AsReadOnlySpan(in t1);
+        var s2 = AsReadOnlySpan(in t2);
+        var s3 = AsReadOnlySpan(in t3);
+        var s4 = AsReadOnlySpan(in t4);
 
-        int length = s1.Length + s2.Length + s3.Length + s4.Length;
+        var length = s1.Length + s2.Length + s3.Length + s4.Length;
 
         Span<byte> destination = stackalloc byte[length];
 
-        int offset = 0;
+        var offset = 0;
         s1.CopyTo(destination[offset..]);
         offset += s1.Length;
         s2.CopyTo(destination[offset..]);

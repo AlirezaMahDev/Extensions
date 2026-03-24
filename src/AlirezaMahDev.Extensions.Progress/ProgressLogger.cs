@@ -40,7 +40,7 @@ internal partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLo
             _options.Length = length.Value;
         }
 
-        ProgressLoggerState value = _options.GenerateState();
+        var value = _options.GenerateState();
         LogInformation(logger, value.ToString());
         _options.ProgressInterface.Report(value);
     }
@@ -127,12 +127,12 @@ internal partial class ProgressLogger(ILogger logger, IOptionsMonitor<ProgressLo
         Func<IProgressLogger, CancellationToken, ValueTask> func,
         CancellationToken cancellationToken = default)
     {
-        Task task = Task.Run(async () => await func(this, cancellationToken), cancellationToken);
+        var task = Task.Run(async () => await func(this, cancellationToken), cancellationToken);
         await Task.Yield();
         while (!task.IsCompleted)
         {
             Report();
-            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+            await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
         }
 
         await task.WaitAsync(cancellationToken);

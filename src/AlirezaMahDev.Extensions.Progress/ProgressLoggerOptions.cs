@@ -46,7 +46,7 @@ internal class ProgressLoggerOptions
 
     public ProgressLoggerState GenerateState()
     {
-        ProgressLoggerState result = State;
+        var result = State;
         LastState = result;
         return result;
     }

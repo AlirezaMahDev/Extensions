@@ -1,5 +1,3 @@
-using System.Linq.Expressions;
-
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public static class DataCollectionWrapExtensions
@@ -8,22 +6,49 @@ public static class DataCollectionWrapExtensions
         where TValue : unmanaged, IDataValue<TValue>
         where TItem : unmanaged, IDataValue<TItem>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataCollectionWrap<TValue, TItem> Collection(
-            Expression<SelectValueFunc<TValue, DataOffset>> selectChildExpression,
-            Expression<SelectValueFunc<TItem, DataOffset>> selectNextExpression)
+            GetRefValueFunc<TValue, DataOffset> getRefChildExpression,
+            GetRefValueFunc<TItem, DataOffset> getRefNextExpression)
         {
-            return new(selectChildExpression, selectNextExpression);
+            return new(getRefChildExpression, getRefNextExpression);
         }
+    }
+
+    private static class DataCollectionWrapChildDefault<TValue>
+        where TValue : unmanaged, IDataCollection<TValue>
+    {
+        public static readonly GetRefValueFunc<TValue, DataOffset> GetRefChild =
+            [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+            (ref x) => ref x.Child;
+    }
+
+    private static class DataCollectionWrapNextDefault<TValue>
+        where TValue : unmanaged, IDataCollectionItem<TValue>
+    {
+        public static readonly GetRefValueFunc<TValue, DataOffset> GetRefNext =
+            [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+            (ref x) => ref x.Next;
+    }
+
+    private static class DataCollectionWrapFullDefault<TValue, TItem>
+        where TValue : unmanaged, IDataCollection<TValue>
+        where TItem : unmanaged, IDataCollectionItem<TItem>
+    {
+        public static readonly DataCollectionWrap<TValue, TItem> Default
+            = new(DataCollectionWrapChildDefault<TValue>.GetRefChild,
+                DataCollectionWrapNextDefault<TItem>.GetRefNext);
     }
 
     extension<TValue, TItem>(IDataValue<TValue> value)
         where TValue : unmanaged, IDataCollection<TValue>
         where TItem : unmanaged, IDataValue<TItem>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataCollectionWrap<TValue, TItem> Collection(
-            Expression<SelectValueFunc<TItem, DataOffset>> selectNextExpression)
+            GetRefValueFunc<TItem, DataOffset> getRefNextExpression)
         {
-            return new(x => x.Child, selectNextExpression);
+            return new(DataCollectionWrapChildDefault<TValue>.GetRefChild, getRefNextExpression);
         }
     }
 
@@ -31,15 +56,17 @@ public static class DataCollectionWrapExtensions
         where TValue : unmanaged, IDataCollection<TValue, TItem>
         where TItem : unmanaged, IDataCollectionItem<TItem>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataCollectionWrap<TValue, TItem> Collection()
         {
-            return new(x => x.Child, x => x.Next);
+            return DataCollectionWrapFullDefault<TValue, TItem>.Default;
         }
     }
 
     extension<TValue>(IDataCollectionTree<TValue> value)
         where TValue : unmanaged, IDataCollectionTree<TValue>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public IDataCollection<TValue, TValue> TreeCollection()
         {
             return null!;
@@ -49,117 +76,92 @@ public static class DataCollectionWrapExtensions
     extension<TValue>(IDataValue<TValue> value)
         where TValue : unmanaged, IDataValue<TValue>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataCollectionItemWrap<TValue>
-            CollectionItem(Expression<SelectValueFunc<TValue, DataOffset>> selectNextExpression)
+            CollectionItem(GetRefValueFunc<TValue, DataOffset> getRefNextExpression)
         {
-            return new(selectNextExpression);
+            return new(getRefNextExpression);
         }
     }
 
     extension<TValue>(IDataCollectionItem<TValue> value)
         where TValue : unmanaged, IDataCollectionItem<TValue>
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataCollectionItemWrap<TValue> CollectionItem()
         {
-            return new(x => x.Next);
+            return new(DataCollectionWrapNextDefault<TValue>.GetRefNext);
         }
     }
 
-    extension<TValue>(DataWrap<TValue, DataCollectionItemWrap<TValue>> wrap)
+    extension<TValue>(ref readonly DataWrap<TValue, DataCollectionItemWrap<TValue>> wrap)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public DataLocation<TValue>? GetNext()
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public bool GetNext(out DataLocation<TValue> result)
         {
-            DataOffset next = wrap.Wrap.SelectNext(wrap.Location.GetRefValue(wrap.Access));
-            return next.IsNull
-                ? null
-                : new DataLocation<TValue>(next);
+            ref var next = ref wrap.Wrap.GetRefNext(ref wrap.Location.GetRefValue(wrap.Access));
+            if (next.IsNull)
+            {
+                result = default;
+                return false;
+            }
+
+            result = new(next);
+            return true;
         }
     }
 
-    extension<TValue, TItem>(DataWrap<TValue, DataCollectionWrap<TValue, TItem>> wrap)
+    extension<TValue, TItem>(ref readonly DataWrap<TValue, DataCollectionWrap<TValue, TItem>> wrap)
         where TValue : unmanaged, IDataLock<TValue>
         where TItem : unmanaged, IDataLock<TItem>
     {
-        public DataLocation<TItem>? GetChild()
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public bool GetChild(out DataLocation<TItem> result)
         {
-            DataOffset child = wrap.Wrap.GetChild(wrap.Location.GetRefValue(wrap.Access));
-            return child.IsNull
-                ? null
-                : new DataLocation<TItem>(child);
-        }
-
-        public IEnumerable<DataLocation<TItem>> GetChildren()
-        {
-            DataLocation<TItem>? current = wrap.GetChild();
-            while (current.HasValue)
+            ref var child = ref wrap.Wrap.GetRefChild(ref wrap.Location.GetRefValue(wrap.Access));
+            if (child.IsNull)
             {
-                yield return current.Value;
-                current = current.Value
-                    .Wrap(wrap.Access, wrap.Wrap.ItemWrap)
-                    .GetNext();
+                result = default;
+                return false;
             }
+
+            result = new(child);
+            return true;
         }
 
-        public DataLocation<TItem> Add(DataLocation<TItem> dataLocation)
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public void Add(DataLocation<TItem> dataLocation)
         {
-            wrap.Wrap()
-                .Lock(innerWrap =>
-                {
-                    DataOffset child = wrap.Wrap.GetChild(innerWrap.RefValue);
-
-                    dataLocation.Wrap(wrap.Access)
-                        .Lock(innerDataLocation =>
-                            wrap.Wrap.ItemWrap.SetNext(ref innerDataLocation.RefValue,
-                                child));
-
-                    wrap.Wrap.SetChild(ref innerWrap.RefValue, dataLocation.Offset);
-                });
-            return dataLocation;
+            var clearWrap = wrap.ClearWrap();
+            using var lockWrap = clearWrap.Lock();
+            var wrapData = dataLocation.Wrap(wrap.Access);
+            using var lockData = wrapData.Lock();
+            wrap.Wrap.ItemWrap.GetRefNext(ref wrapData.RefValue) = wrap.Wrap.GetChild(ref clearWrap.RefValue);
+            wrap.Wrap.GetRefChild(ref clearWrap.RefValue) = dataLocation.Offset;
         }
 
-
-        public async Task<DataLocation<TItem>> AddAsync(DataLocation<TItem> dataLocation,
-            CancellationToken cancellationToken = default)
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public Optional<DataLocation<TItem>> Remove(in DataOffset offset)
         {
-            await wrap.Wrap()
-                .LockAsync(async (innerWrap, token) =>
-                    {
-                        DataOffset child = wrap.Wrap.GetChild(innerWrap.RefValue);
-
-                        await dataLocation.Wrap(wrap.Access)
-                            .LockAsync(innerDataLocation =>
-                                    wrap.Wrap.ItemWrap.SetNext(
-                                        ref innerDataLocation.RefValue,
-                                        child),
-                                token);
-
-                        wrap.Wrap.SetChild(ref innerWrap.RefValue, dataLocation.Offset);
-                    },
-                    cancellationToken);
-            return dataLocation;
-        }
-
-        public DataLocation<TItem>? Remove(DataOffset offset)
-        {
-            DataLocation<TItem>? previous = null;
-            foreach (DataLocation<TItem> dataLocation in wrap.GetChildren())
+            var previous = Optional<DataLocation<TItem>>.Null;
+            foreach (var dataLocation in wrap.GetChildren())
             {
                 if (dataLocation.Offset == offset)
                 {
                     if (previous.HasValue)
                     {
-                        previous.Value.Wrap(wrap.Access)
-                            .Lock(innerWrap =>
-                                wrap.Wrap.ItemWrap.SetNext(ref innerWrap.RefValue,
-                                    wrap.Wrap.ItemWrap.GetNext(dataLocation.GetRefValue(wrap.Access))));
+                        var previousWrap = previous.Value.Wrap(wrap.Access);
+                        using var @lock = previousWrap.Lock();
+                        wrap.Wrap.ItemWrap.GetRefNext(ref previousWrap.RefValue) =
+                            wrap.Wrap.ItemWrap.GetValueNext(ref dataLocation.GetRefValue(wrap.Access));
                     }
                     else
                     {
-                        wrap.Location.Wrap(wrap.Access)
-                            .Lock(innerWrap =>
-                                wrap.Wrap.SetChild(ref innerWrap.RefValue,
-                                    wrap.Wrap.ItemWrap.GetNext(dataLocation.GetRefValue(wrap.Access))));
+                        var clearWrap = wrap.ClearWrap();
+                        using var @lock = clearWrap.Lock();
+                        wrap.Wrap.GetRefChild(ref clearWrap.RefValue) =
+                            wrap.Wrap.ItemWrap.GetValueNext(ref dataLocation.GetRefValue(wrap.Access));
                     }
 
                     wrap.Access.GetTrash().Add(wrap.Access, dataLocation);
@@ -169,73 +171,43 @@ public static class DataCollectionWrapExtensions
                 previous = dataLocation;
             }
 
-            return null;
+            return Optional<DataLocation<TItem>>.Null;
         }
 
-        public async ValueTask<DataLocation<TItem>?> RemoveAsync(DataOffset offset,
-            CancellationToken cancellationToken = default)
-        {
-            DataLocation<TItem>? previous = null;
-            foreach (DataLocation<TItem> dataLocation in wrap.GetChildren())
-            {
-                if (dataLocation.Offset == offset)
-                {
-                    if (previous.HasValue)
-                    {
-                        await previous.Value.Wrap(wrap.Access)
-                            .LockAsync(location =>
-                                    wrap.Wrap.ItemWrap.SetNext(ref location.RefValue,
-                                        wrap.Wrap.ItemWrap.GetNext(
-                                            dataLocation.GetRefValue(wrap.Access))),
-                                cancellationToken);
-                    }
-                    else
-                    {
-                        _ = await wrap.Location.Wrap(wrap.Access)
-                            .LockAsync(location =>
-                                    wrap.Wrap.SetChild(ref location.RefValue,
-                                        wrap.Wrap.ItemWrap.GetNext(
-                                            dataLocation.GetRefValue(wrap.Access))),
-                                cancellationToken);
-                    }
-
-                    await (await wrap.Access.GetTrashAsync(cancellationToken))
-                        .AddAsync(wrap.Access, dataLocation, cancellationToken);
-                    return dataLocation;
-                }
-
-                previous = dataLocation;
-            }
-
-            return null;
-        }
-
-        public DataLocation<TItem>? Remove(DataLocation<TItem> dataLocation)
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public Optional<DataLocation<TItem>> Remove(in DataLocation<TItem> dataLocation)
         {
             return wrap.Remove(dataLocation.Offset);
         }
 
-        public async ValueTask<DataLocation<TItem>?> RemoveAsync(DataLocation<TItem> dataLocation,
-            CancellationToken cancellationToken = default)
-        {
-            return await wrap.RemoveAsync(dataLocation.Offset, cancellationToken);
-        }
 
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public void Clear()
         {
-            foreach (DataLocation<TItem> dataLocation in wrap.GetChildren())
+            using var dataLocations = wrap.GetChildren().ToMemoryList();
+            foreach (ref var dataLocation in dataLocations.Memory.Span)
             {
-                wrap.Remove(dataLocation);
+                wrap.Remove(in dataLocation);
             }
         }
+    }
 
-        public async ValueTask ClearAsync(CancellationToken cancellationToken = default)
+    extension<TValue, TItem>(DataWrap<TValue, DataCollectionWrap<TValue, TItem>> wrap)
+        where TValue : unmanaged, IDataLock<TValue>
+        where TItem : unmanaged, IDataLock<TItem>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public IEnumerable<DataLocation<TItem>> GetChildren()
         {
-            foreach (DataLocation<TItem> dataLocation in wrap.GetChildren())
+            if (!wrap.GetChild(out var current))
             {
-                await wrap.RemoveAsync(dataLocation, cancellationToken);
+                yield break;
             }
+
+            do
+            {
+                yield return current;
+            } while (current.Wrap(wrap.Access, wrap.Wrap.ItemWrap) is var dataWrap && dataWrap.GetNext(out current));
         }
     }
 }

@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.CompilerServices;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
@@ -11,6 +12,7 @@ internal unsafe class DataMapFilePart : MemoryManager<byte>
     private readonly byte* _pointer;
     private int _pinCount;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public DataMapFilePart(MemoryMappedViewAccessor accessor)
     {
         _accessor = accessor;
@@ -19,22 +21,30 @@ internal unsafe class DataMapFilePart : MemoryManager<byte>
         _pointer += _accessor.PointerOffset;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public ref byte GetRef(int offset)
+        => ref Unsafe.AsRef<byte>(_pointer + offset);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public override Span<byte> GetSpan()
     {
         return new(_pointer, DataDefaults.PartSize);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public override MemoryHandle Pin(int elementIndex = 0)
     {
         Interlocked.Increment(ref _pinCount);
         return new(_pointer + elementIndex);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public override void Unpin()
     {
         Interlocked.Decrement(ref _pinCount);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Flush()
     {
         _accessor.Flush();
@@ -51,6 +61,7 @@ internal unsafe class DataMapFilePart : MemoryManager<byte>
         return ValueTask.CompletedTask;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     protected override void Dispose(bool disposing)
     {
         if (_pinCount > 0)

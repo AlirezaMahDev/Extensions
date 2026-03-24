@@ -1,17 +1,28 @@
-using System.Linq.Expressions;
-using System.Runtime.InteropServices;
-
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct DataCollectionWrap<TValue, TItem>(
-    Expression<SelectValueFunc<TValue, DataOffset>> selectChildExpression,
-    Expression<SelectValueFunc<TItem, DataOffset>> selectNextExpression)
+    GetRefValueFunc<TValue, DataOffset> getRefChild,
+    GetRefValueFunc<TItem, DataOffset> getRefNext)
     where TValue : unmanaged, IDataValue<TValue>
     where TItem : unmanaged, IDataValue<TItem>
 {
-    public SelectValueFunc<TValue, DataOffset> GetChild { get; } = selectChildExpression.Compile();
+    public GetRefValueFunc<TValue, DataOffset> GetRefChild
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    } = getRefChild;
 
-    public SetValueAction<TValue, DataOffset> SetChild { get; } = selectChildExpression.BuildSetter();
-    public DataCollectionItemWrap<TItem> ItemWrap { get; } = new(selectNextExpression);
+
+    public GetValueFunc<TValue, DataOffset> GetChild
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    } = (ref value) => getRefChild(ref value);
+
+    public DataCollectionItemWrap<TItem> ItemWrap
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    } = new(getRefNext);
 }

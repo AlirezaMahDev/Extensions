@@ -4,21 +4,24 @@ public static class DataAccessExtensions
 {
     extension(IDataAccess access)
     {
-        public DataLocation Create(int length)
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public void Create(int length, out DataLocation result)
         {
-            return DataLocation.Create(access, length);
+            DataLocation.Create(access, length, out result);
         }
 
-        public DataLocation<TDataValue> Create<TDataValue>()
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public void Create<TDataValue>(out DataLocation<TDataValue> result)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {
-            return DataLocation<TDataValue>.Create(access);
+            DataLocation<TDataValue>.Create(access, out result);
         }
 
-        public DataLocation<TDataValue> Create<TDataValue>(TDataValue @default)
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public void Create<TDataValue>(TDataValue @default, out DataLocation<TDataValue> result)
             where TDataValue : unmanaged, IDataValue<TDataValue>
         {
-            return DataLocation<TDataValue>.Create(access, @default);
+            DataLocation<TDataValue>.Create(access, @default, out result);
         }
     }
 }

@@ -39,28 +39,24 @@ public static class DataLocationDictionaryExtensions
     {
         public DataLocation<TItem> GetOrAdd(TKey key)
         {
-            DataWrap<TValue, DataCollectionWrap<TValue, TItem>> locationWrapCollection = wrap
-                .Wrap(x => x.Collection());
+            var locationWrapCollection = wrap
+                .Wrap([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                  MethodImplOptions.AggressiveOptimization)]
+                    (x) => x.Collection());
             return locationWrapCollection
                 .GetChildren()
-                .FirstOrDefault(x => x.GetRefValue(wrap.Access).Key.Equals(key))
-                .WhenDefault(() =>
-                    locationWrapCollection.Add(wrap.Access.Create(TItem.Default with { Key = key })));
-        }
-
-        public async ValueTask<DataLocation<TItem>> GetOrAddAsync(TKey key,
-            CancellationToken cancellationToken = default)
-        {
-            DataWrap<TValue, DataCollectionWrap<TValue, TItem>> locationWrapCollection = wrap
-                .Wrap(x => x.Collection());
-            DataLocation<TItem> dataLocation = await locationWrapCollection
-                .GetChildren()
-                .ToAsyncEnumerable()
-                .FirstOrDefaultAsync(x => x.GetRefValue(wrap.Access).Key.Equals(key), cancellationToken);
-            return await dataLocation.WhenDefaultAsync(async token =>
-                    await locationWrapCollection.AddAsync(wrap.Access.Create(TItem.Default with { Key = key }),
-                        token),
-                cancellationToken);
+                .FirstOrDefault([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                            MethodImplOptions.AggressiveOptimization)]
+                    (x) =>
+                        x.GetRefValue(wrap.Access).Key.Equals(key))
+                .WhenDefault([MethodImpl(
+                        MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+                    () =>
+                    {
+                        wrap.Access.Create(TItem.Default with { Key = key }, out var location);
+                        locationWrapCollection.Add(location);
+                        return location;
+                    });
         }
     }
 
@@ -69,69 +65,70 @@ public static class DataLocationDictionaryExtensions
         where TItem : unmanaged, IDataDictionaryItem<TItem, TKey>
         where TKey : unmanaged, IEquatable<TKey>
     {
-        public DataLocation<TItem>? TryGet(TKey key)
+        public Optional<DataLocation<TItem>> TryGet(TKey key)
         {
             return wrap
-                .Wrap(x => x.Collection())
+                .Wrap([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                  MethodImplOptions.AggressiveOptimization)]
+                    (x) => x.Collection())
                 .GetChildren()
-                .FirstOrDefault(x => x.GetRefValue(wrap.Access).Key.Equals(key))
+                .FirstOrDefault([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                            MethodImplOptions.AggressiveOptimization)]
+                    (x) =>
+                        x.GetRefValue(wrap.Access).Key.Equals(key))
                 .NullWhenDefault();
         }
 
-        public async ValueTask<DataLocation<TItem>?> TryGetAsync(TKey key,
+        public async ValueTask<Optional<DataLocation<TItem>>> TryGetAsync(TKey key,
             CancellationToken cancellationToken = default)
         {
-            DataLocation<TItem> dataLocation = await wrap
-                .Wrap(x => x.Collection())
+            var dataLocation = await wrap
+                .Wrap([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                  MethodImplOptions.AggressiveOptimization)]
+                    (x) => x.Collection())
                 .GetChildren()
                 .ToAsyncEnumerable()
-                .FirstOrDefaultAsync(x => x.GetRefValue(wrap.Access).Key.Equals(key), cancellationToken);
+                .FirstOrDefaultAsync(
+                    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+                    (x) => x.GetRefValue(wrap.Access).Key.Equals(key),
+                    cancellationToken);
             return dataLocation.NullWhenDefault();
         }
 
         public void Clear()
         {
             wrap
-                .Wrap(x => x.Collection())
+                .Wrap([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                  MethodImplOptions.AggressiveOptimization)]
+                    (x) => x.Collection())
                 .Clear();
         }
 
-        public async ValueTask ClearAsync(CancellationToken cancellationToken = default)
-        {
-            await wrap
-                .Wrap(x => x.Collection())
-                .ClearAsync(cancellationToken);
-        }
 
-        public DataLocation<TItem>? Remove(TKey key)
+        public Optional<DataLocation<TItem>> Remove(TKey key)
         {
-            DataWrap<TValue, DataCollectionWrap<TValue, TItem>> locationWrapCollection = wrap
-                .Wrap(x => x.Collection());
+            var locationWrapCollection = wrap
+                .Wrap([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                  MethodImplOptions.AggressiveOptimization)]
+                    (x) => x.Collection());
             return locationWrapCollection
                 .GetChildren()
-                .FirstOrDefault(x => x.GetRefValue(wrap.Access).Key.Equals(key))
-                .WhenNotDefault(x => locationWrapCollection.Remove(x));
-        }
-
-        public async ValueTask<DataLocation<TItem>?> RemoveAsync(TKey key,
-            CancellationToken cancellationToken = default)
-        {
-            DataWrap<TValue, DataCollectionWrap<TValue, TItem>> locationWrapCollection = wrap
-                .Wrap(x => x.Collection());
-            DataLocation<TItem> dataLocation = await locationWrapCollection
-                .GetChildren()
-                .ToAsyncEnumerable()
-                .FirstOrDefaultAsync(x => x.GetRefValue(wrap.Access).Key.Equals(key),
-                    cancellationToken);
-            return await dataLocation.WhenNotDefaultAsync(
-                async (x, token) => await locationWrapCollection.RemoveAsync(x, token),
-                cancellationToken);
+                .FirstOrDefault([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                            MethodImplOptions.AggressiveOptimization)]
+                    (x) =>
+                        x.GetRefValue(wrap.Access).Key.Equals(key))
+                .WhenNotDefault([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                            MethodImplOptions.AggressiveOptimization)]
+                    (x) =>
+                        locationWrapCollection.Remove(x));
         }
 
         public IEnumerable<DataLocation<TItem>> GetChildren()
         {
             return wrap
-                .Wrap(x => x.Collection())
+                .Wrap([MethodImpl(MethodImplOptions.AggressiveInlining |
+                                  MethodImplOptions.AggressiveOptimization)]
+                    (x) => x.Collection())
                 .GetChildren();
         }
     }

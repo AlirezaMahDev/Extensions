@@ -1,6 +1,3 @@
-using AlirezaMahDev.Extensions.Brain.Abstractions;
-using AlirezaMahDev.Extensions.ParameterInstance;
-
 namespace AlirezaMahDev.Extensions.Brain;
 
 internal class NerveFactory<TData, TLink>(

@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class ThreadPoolExtensions

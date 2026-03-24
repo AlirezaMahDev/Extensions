@@ -11,15 +11,14 @@ public readonly record struct DataLocationObjectProperties : IEnumerable<DataLoc
 
     private DataLocationObjectProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
     {
-        PropertyInfo[] properties = type
+        PropertyInfo[] properties = [.. type
             .GetProperties(BindingFlags.GetProperty |
                            BindingFlags.SetProperty |
                            BindingFlags.Public |
                            BindingFlags.Instance)
             .Where(x => x.SetMethod is not null &&
                         x.GetMethod is not null &&
-                        x.GetCustomAttribute<NotMappedAttribute>() is null)
-            .ToArray();
+                        x.GetCustomAttribute<NotMappedAttribute>() is null)];
         PropertyInfos = [.. properties.Where(x => x.PropertyType.IsUnmanaged)];
         OtherPropertyInfos = [.. properties.Where(x => !x.PropertyType.IsUnmanaged)];
     }

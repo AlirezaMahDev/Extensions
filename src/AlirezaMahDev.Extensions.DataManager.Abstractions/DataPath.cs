@@ -1,64 +1,77 @@
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public record struct DataPath(
-    String64 Key,
-    int Size,
-    DataOffset Next,
-    DataOffset Child,
-    DataOffset Data,
-    DataOffset Index)
-    : IDataDictionaryTree<DataPath, String64>, IDataValueDefault<DataPath>, IDataStorage<DataPath>, IDataIndex<DataPath>
+[method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+public struct DataPath(
+    in String64 key,
+    in int size,
+    in DataOffset next,
+    in DataOffset child,
+    in DataOffset data,
+    in DataOffset index)
+    : IDataDictionaryTree<DataPath, String64>, IDataValueDefault<DataPath>, IDataStorage<DataPath>
 {
-    public String64 RefKey = Key;
-    public DataOffset RefNext = Next;
-    public DataOffset RefChild = Child;
-    public DataOffset RefData = Data;
-    public DataOffset RefIndex = Index;
-    public int RefSize = Size;
+    private String64 _key = key;
+    private DataOffset _next = next;
+    private DataOffset _child = child;
+    private DataOffset _data = data;
+    private DataOffset _index = index;
+    private int _size = size;
+    private int _lock;
 
-    public static DataPath Default { get; } =
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool Equals(in DataPath other)
+    {
+        return _key == other._key;
+    }
+
+    private static readonly DataPath DefaultField =
         new(default, -1, DataOffset.Null, DataOffset.Null, DataOffset.Null, DataOffset.Null);
 
-    public String64 Key
+    public static ref readonly DataPath Default
     {
-        readonly get => RefKey;
-        set => RefKey = value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref DefaultField;
     }
 
-    public int Size
+    public ref String64 Key
     {
-        readonly get => RefSize;
-        set => RefSize = value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._key;
     }
 
-    public DataOffset Next
+    public ref int Size
     {
-        readonly get => RefNext;
-        set => RefNext = value;
+        get => ref Unsafe.AsRef(in this)._size;
     }
 
-    public DataOffset Child
+    public ref DataOffset Next
     {
-        readonly get => RefChild;
-        set => RefChild = value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._next;
     }
 
-    public DataOffset Data
+    public ref DataOffset Child
     {
-        readonly get => RefData;
-        set => RefData = value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._child;
     }
 
-    public DataOffset Index
+    public ref DataOffset Data
     {
-        readonly get => RefIndex;
-        set => RefIndex = value;
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._data;
     }
 
-    public int Lock;
-    public ref int RefLock => ref Unsafe.AsRef(in this).Lock;
+    public ref DataOffset Index
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._index;
+    }
+
+    public ref int Lock
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._lock;
+    }
 }

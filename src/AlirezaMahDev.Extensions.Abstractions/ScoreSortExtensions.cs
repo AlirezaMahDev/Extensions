@@ -1,5 +1,3 @@
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class ScoreSortExtensions
@@ -24,18 +22,18 @@ public static class ScoreSortExtensions
 
         public int BestScoreSort(int depth, ComparisonBuilder<ComparisonCollectionChain<T>, T> builder)
         {
-            ComparisonCollectionChain<T> collectionChain = input.ScoreSortCore(builder);
-            Comparison<T> comparer = Span<T>.FinalSort(input, collectionChain);
+            var collectionChain = input.ScoreSortCore(builder);
+            var comparer = Span<T>.FinalSort(input, collectionChain);
             return input.BestScoreSortCore(depth, comparer);
         }
 
         private int BestScoreSortCore(int depth, Comparison<T> comparer)
         {
-            ref T target = ref input[0];
-            int count = 1;
-            for (int i = 1; i < input.Length; i++)
+            ref var target = ref input[0];
+            var count = 1;
+            for (var i = 1; i < input.Length; i++)
             {
-                ref T current = ref input[i];
+                ref var current = ref input[i];
                 if (comparer(target, current) != 0)
                 {
                     if (depth == 0)
@@ -55,7 +53,7 @@ public static class ScoreSortExtensions
 
         public void ScoreSort(ComparisonBuilder<ComparisonCollectionChain<T>, T> builder)
         {
-            ComparisonCollectionChain<T> collectionChain = input.ScoreSortCore(builder);
+            var collectionChain = input.ScoreSortCore(builder);
             Span<T>.FinalSort(input, collectionChain);
         }
 
@@ -63,10 +61,10 @@ public static class ScoreSortExtensions
         {
             input.InitializeSort();
 
-            ComparisonCollectionChain<T> collectionChain =
+            var collectionChain =
                 builder(ComparisonCollectionChain<T>.OrderBy(ScoreSortHelper<T>.Comparison).Wrap())
                     .UnWrap;
-            foreach (Comparison<T> comparison in collectionChain.Enumerable)
+            foreach (var comparison in collectionChain.Enumerable)
             {
                 Span<T>.ComparisonSort(input, comparison);
             }
@@ -76,7 +74,7 @@ public static class ScoreSortExtensions
 
         private void InitializeSort()
         {
-            foreach (ref T t in input)
+            foreach (ref var t in input)
             {
                 t.Score = 0;
             }
@@ -85,12 +83,12 @@ public static class ScoreSortExtensions
         private static void ComparisonSort(Span<T> span, Comparison<T> comparison)
         {
             span.Sort(comparison);
-            int score = 0;
-            ref T target = ref span[0];
-            for (int i = 1; i < span.Length; i++)
+            var score = 0;
+            ref var target = ref span[0];
+            for (var i = 1; i < span.Length; i++)
             {
-                ref T current = ref span[i];
-                int comparable = comparison(target, current);
+                ref var current = ref span[i];
+                var comparable = comparison(target, current);
                 if (comparable == 0)
                 {
                     current.Score += score;
@@ -106,7 +104,7 @@ public static class ScoreSortExtensions
 
         private static Comparison<T> FinalSort(Span<T> span, ComparisonCollectionChain<T> collectionChain)
         {
-            Comparison<T> comparison = collectionChain.Comparison;
+            var comparison = collectionChain.Comparison;
             span.Sort(comparison);
             return comparison;
         }

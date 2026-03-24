@@ -1,10 +1,6 @@
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-using JetBrains.Annotations;
 
 namespace AlirezaMahDev.Extensions.Abstractions;
 
@@ -14,64 +10,120 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
 {
     [MustDisposeResource]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static implicit operator MemoryList<T>(ReadOnlySpan<T> values)
     {
         return [.. values];
     }
 
     [MustDisposeResource]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static implicit operator MemoryList<T>(Span<T> values)
     {
         return [.. values];
     }
 
     [MustDisposeResource]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static implicit operator MemoryList<T>(ReadOnlyMemory<T> values)
     {
         return [.. values.Span];
     }
 
     [MustDisposeResource]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static implicit operator MemoryList<T>(Memory<T> values)
     {
         return [.. values.Span];
     }
 
     [MustDisposeResource]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static MemoryList<T> Create(int length)
     {
         return new(length) { Count = length };
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public MemoryList(ReadOnlySpan<T> values) : this(values.Length)
     {
         Count = values.Length;
         values.CopyTo(Memory.Span);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public MemoryList(int capacity, ReadOnlySpan<T> values) : this(Math.Max(capacity, values.Length))
+    {
+        Count = values.Length;
+        values.CopyTo(Memory.Span);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public MemoryList(int capacity, IEnumerable<T> values) : this(capacity)
     {
-        foreach (T value in values)
+        foreach (var value in values)
         {
             Add(value);
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public MemoryList(IEnumerable<T> values) : this(-1, values)
     {
     }
 
     private bool _disposedValue;
 
-    private IMemoryOwner<T> MemoryOwner { get; set; } = MemoryPool<T>.Shared.Rent(capacity);
-    private Memory<T> OriginalMemory => MemoryOwner.Memory;
-    private int OriginalCount => OriginalMemory.Length;
+    private IMemoryOwner<T> MemoryOwner
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        set;
+    } = MemoryPool<T>.Shared.Rent(capacity);
 
-    public Memory<T> Memory => OriginalMemory[..Count];
+    private Memory<T> OriginalMemory
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return MemoryOwner.Memory;
+        }
+    }
 
-    public int Count { get; private set; }
+    private int OriginalCount
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return OriginalMemory.Length;
+        }
+    }
 
-    public bool IsReadOnly => false;
+    public Memory<T> Memory
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return OriginalMemory[..Count];
+        }
+    }
+
+    public int Count
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        private set;
+    }
+
+    public bool IsReadOnly
+    {
+        get
+        {
+            return false;
+        }
+    }
 
     public IEnumerator<T> GetEnumerator()
     {
@@ -83,16 +135,18 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
         return GetEnumerator();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void CheckNeedGrow()
     {
         if (OriginalCount < Count)
         {
-            using IMemoryOwner<T> lastMemoryOwner = MemoryOwner;
+            using var lastMemoryOwner = MemoryOwner;
             MemoryOwner = MemoryPool<T>.Shared.Rent(Count);
             lastMemoryOwner.Memory.CopyTo(OriginalMemory);
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Add(T item)
     {
         Count++;
@@ -100,25 +154,29 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
         Memory.Span[Count - 1] = item;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Clear()
     {
         Count = 0;
         OriginalMemory.Span.Clear();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool Contains(T item)
     {
         return IndexOf(item) != -1;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void CopyTo(T[] array, int arrayIndex)
     {
         Memory.CopyTo(array.AsMemory());
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool Remove(T item)
     {
-        int index = IndexOf(item);
+        var index = IndexOf(item);
         if (index == -1)
         {
             return false;
@@ -128,11 +186,13 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
         return true;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int IndexOf(T item)
     {
         return Memory.Span.IndexOf(item);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Insert(int index, T item)
     {
         Count++;
@@ -141,6 +201,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
         Memory.Span[index] = item;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void RemoveAt(int index)
     {
         Count--;
@@ -151,15 +212,24 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
     }
 
     [MustDisposeResource]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public MemoryList<T> Clone()
     {
-        MemoryList<T> memoryList = Create(Count);
+        var memoryList = Create(Count);
         Memory.CopyTo(memoryList.Memory);
         return memoryList;
     }
 
-    public ref T this[int index] => ref Memory.Span[index];
+    public ref T this[int index]
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return ref Memory.Span[index];
+        }
+    }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void Dispose(bool disposing)
     {
         if (!_disposedValue)
@@ -173,6 +243,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
         Dispose(true);

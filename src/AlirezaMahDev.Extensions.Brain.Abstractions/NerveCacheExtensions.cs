@@ -1,7 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NerveCacheExtensions
@@ -21,7 +17,7 @@ public static class NerveCacheExtensions
     {
         public bool TryGetNeuronCache(in TData data, [NotNullWhen(true)] out Neuron? neuron)
         {
-            if (nerve.TryGetNeuronCacheCore(nerve.CreateNeuronCacheKey(in data), out DataOffset? offset))
+            if (nerve.TryGetNeuronCacheCore(nerve.CreateNeuronCacheKey(in data), out var offset))
             {
                 neuron = new(offset.Value);
                 return true;
@@ -36,21 +32,11 @@ public static class NerveCacheExtensions
             return nerve.NeuronSectionCache.TryGet(in cacheKey, out offset);
         }
 
-        public void TrySetNeuronCache(in CellWrap<Neuron, NeuronValue<TData>, TData, TLink> neuronWrap)
-        {
-            nerve.TrySetNeuronCacheCore(nerve.CreateNeuronCacheKey(in neuronWrap), neuronWrap.Cell.Offset);
-        }
-
-        public void TrySetNeuronCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
-        {
-            nerve.NeuronSectionCache.GetOrAdd(in cacheKey, offset);
-        }
-
         public void SetNeuronCache(in CellWrap<Neuron, NeuronValue<TData>, TData, TLink> neuronWrap)
         {
             nerve.SetNeuronCacheCore(
                 nerve.CreateNeuronCacheKey(in neuronWrap),
-                neuronWrap.Cell.Offset);
+                neuronWrap.RefCell.Offset);
         }
 
         public void SetNeuronCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
@@ -79,25 +65,12 @@ public static class NerveCacheExtensions
             return nerve.ConnectionSectionCache.TryGet(in cacheKey, out offset);
         }
 
-        public void TrySetNeuronConnectionCache(in Neuron from,
-            in CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
-        {
-            nerve.TrySetNeuronConnectionCacheCore(
-                nerve.CreateNeuronConnectionCacheKey(in from, in connectionWrap),
-                connectionWrap.Cell.Offset);
-        }
-
-        public void TrySetNeuronConnectionCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
-        {
-            nerve.ConnectionSectionCache.GetOrAdd(in cacheKey, offset);
-        }
-
         public void SetNeuronConnectionCache(in Neuron from,
             in CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
         {
             nerve.SetNeuronConnectionCacheCore(
                 nerve.CreateNeuronConnectionCacheKey(in from, in connectionWrap),
-                connectionWrap.Cell.Offset);
+                connectionWrap.RefCell.Offset);
         }
 
         public void SetNeuronConnectionCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
@@ -138,7 +111,7 @@ public static class NerveCacheExtensions
         {
             if (nerve.TryGetConnectionCacheCore(
                     nerve.CreateConnectionCacheKey(in from, in to, in link, in previous),
-                    out DataOffset? offset))
+                    out var offset))
             {
                 connection = new(offset.Value);
                 return true;
@@ -153,22 +126,11 @@ public static class NerveCacheExtensions
             return nerve.ConnectionSectionCache.TryGet(in cacheKey, out offset);
         }
 
-        public void TrySetConnectionCache(in CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
-        {
-            nerve.TrySetConnectionCacheCore(nerve.CreateConnectionCacheKey(in connectionWrap),
-                connectionWrap.Cell.Offset);
-        }
-
-        public void TrySetConnectionCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
-        {
-            nerve.ConnectionSectionCache.GetOrAdd(in cacheKey, offset);
-        }
-
         public void SetConnectionCache(in CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
         {
             nerve.SetConnectionCacheCore(
                 nerve.CreateConnectionCacheKey(in connectionWrap),
-                connectionWrap.Cell.Offset);
+                connectionWrap.RefCell.Offset);
         }
 
         public void SetConnectionCacheCore(in NerveCacheKey cacheKey, in DataOffset offset)
@@ -195,7 +157,7 @@ public static class NerveCacheExtensions
                 connectionWrap.Neuron,
                 to,
                 in link,
-                connectionWrap.Cell);
+                connectionWrap.RefCell);
         }
 
         public NerveCacheKey CreateConnectionCacheKey(

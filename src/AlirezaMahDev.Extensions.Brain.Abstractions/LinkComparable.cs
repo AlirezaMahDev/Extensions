@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [StructLayout(LayoutKind.Sequential)]

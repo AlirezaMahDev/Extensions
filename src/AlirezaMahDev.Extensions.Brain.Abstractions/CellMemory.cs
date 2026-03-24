@@ -1,19 +1,13 @@
-using System.Buffers;
-using System.Collections;
-
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-// ReSharper disable once RedundantExtendsListEntry
 [MustDisposeResource]
-// ReSharper disable once RedundantExtendsListEntry
 public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>, ICellMemory<T>
 {
     public static CellMemory<T> Empty { get; } = new(CellEnumerable<T>.Empty);
 
     private IMemoryOwner<T>? _memoryOwner;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public CellMemory(CellEnumerable<T> cellEnumerable)
     {
         if (cellEnumerable.Count == 0)
@@ -25,9 +19,9 @@ public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>,
         _memoryOwner = MemoryPool<T>.Shared.Rent(cellEnumerable.Count);
         Memory = _memoryOwner.Memory[..cellEnumerable.Count];
 
-        int index = 0;
-        Span<T> span = Memory.Span;
-        foreach (T item in cellEnumerable)
+        var index = 0;
+        var span = Memory.Span;
+        foreach (var item in cellEnumerable)
         {
             span[index] = item;
             index++;
@@ -40,35 +34,53 @@ public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>,
         }
     }
 
-    public Memory<T> Memory { get; }
+    public Memory<T> Memory
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    }
 
-    public int Count => Memory.Length;
-    public bool IsReadOnly => true;
+    public int Count
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => Memory.Length;
+    }
 
+    public bool IsReadOnly
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => true;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
         _memoryOwner?.Dispose();
         _memoryOwner = null;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public IEnumerator<T> GetEnumerator()
     {
-        for (int i = 0; i < Memory.Length; ++i)
+        for (var i = 0; i < Memory.Length; ++i)
         {
             yield return Memory.Span[i];
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool Contains(T item)
     {
         return Memory.Span.Contains(item);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void CopyTo(T[] array, int arrayIndex)
     {
         Memory.Span.CopyTo(array.AsSpan(arrayIndex));

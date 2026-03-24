@@ -1,7 +1,3 @@
-using AlirezaMahDev.Extensions.Brain.Abstractions;
-
-using Microsoft.Extensions.DependencyInjection;
-
 namespace AlirezaMahDev.Extensions.Brain;
 
 internal class BrainService(IServiceProvider provider) : IBrainService

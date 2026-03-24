@@ -8,6 +8,7 @@ public readonly ref struct ComparableComparisonBridge<T, TBridge>(
 {
     private readonly TBridge _value = value;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int CompareTo(T? other)
     {
         return other is null ? 1 : comparison(_value, func(other));

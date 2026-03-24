@@ -1,86 +1,78 @@
-using System.Diagnostics;
-using System.Runtime.InteropServices;
-
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Size = Size)]
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
-public readonly unsafe struct String32 : IEquatable<String32>, IString<String32>
+public readonly struct String32 : IInEquatable<String32>, IString<String32>
 {
     private const int Length = 32;
     private const int Size = Length * sizeof(char);
-    public static String32 Empty { get; } = new();
 
-    public static implicit operator string(String32 value)
-    {
-        return value.ToString();
-    }
-
-    public static implicit operator String32(string? value)
-    {
-        return new(value is null ? [] : value.PadRight(Length, ' ').AsSpan());
-    }
+    public static readonly String32 Empty = new();
 
     public ReadOnlySpan<char> Span
     {
-        get
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => MemoryMarshal.CreateReadOnlySpan(
+            ref Unsafe.As<String32, char>(
+                ref Unsafe.AsRef(in this)),
+            Length);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private String32(ReadOnlySpan<char> value)
+    {
+        if ((uint)value.Length > Length)
         {
-            fixed (String32* pointer = &this)
-            {
-                return new(pointer, Length);
-            }
+            ThrowHelper.ThrowArgumentException(
+                $"{value.Length} > {Length}.",
+                nameof(value));
+        }
+
+        ref var dest = ref Unsafe.As<String32, char>(ref this);
+        value.CopyTo(MemoryMarshal.CreateSpan(ref dest, Length));
+
+        if (value.Length < Length)
+        {
+            MemoryMarshal.CreateSpan(
+                    ref Unsafe.Add(ref dest, value.Length),
+                    Length - value.Length)
+                .Clear();
         }
     }
 
-    private String32(ReadOnlySpan<char> readOnlySpan)
-    {
-        if (readOnlySpan.Length > Length)
-        {
-            throw new ArgumentException($"{readOnlySpan.Length} > {Length}.", nameof(readOnlySpan));
-        }
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static implicit operator string(String32 value) => value.ToString();
 
-        fixed (String32* pointer = &this)
-        {
-            Span<char> span = new(pointer, Length);
-            span.Clear();
-            readOnlySpan.CopyTo(span);
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static implicit operator String32(string? value)
+        => value is null or { Length: 0 }
+            ? Empty
+            : new(value.AsSpan());
 
-    public override string ToString()
-    {
-        return new string(Span).Trim();
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public override string ToString() => new(Span.TrimEnd('\0'));
 
-    public override int GetHashCode()
-    {
-        HashCode hashCode = new();
-        hashCode.AddBytes(MemoryMarshal.AsBytes(Span));
-        return hashCode.ToHashCode();
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool Equals(in String32 other)
+        => MemoryMarshal.AsBytes(Span)
+            .SequenceEqual(MemoryMarshal.AsBytes(other.Span));
 
-    private string GetDebuggerDisplay()
-    {
-        return ToString();
-    }
-
-    public bool Equals(String32 other)
-    {
-        return Span.SequenceEqual(other.Span);
-    }
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public override bool Equals(object? obj)
-    {
-        return obj is String32 other && Span.SequenceEqual(other.Span);
-    }
+        => obj is String32 other && Equals(other);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public override int GetHashCode()
+        => (int)XxHash3.HashToUInt64(MemoryMarshal.AsBytes(Span));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool operator ==(String32 left, String32 right)
-    {
-        return left.Equals(right);
-    }
+        => left.Equals(right);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool operator !=(String32 left, String32 right)
-    {
-        return !left.Equals(right);
-    }
+        => !left.Equals(right);
+
+    private string GetDebuggerDisplay() => ToString();
 }

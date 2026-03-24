@@ -1,9 +1,9 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public interface IString<TValue>
-    where TValue : IString<TValue>
+public interface IString<TSelf>
+    where TSelf : IString<TSelf>
 {
     ReadOnlySpan<char> Span { get; }
-    public static abstract implicit operator string(TValue value);
-    public static abstract implicit operator TValue(string? value);
+    public static abstract implicit operator string(TSelf value);
+    public static abstract implicit operator TSelf(string? value);
 }

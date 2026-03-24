@@ -1,7 +1,5 @@
 using System.Buffers;
 
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 [MustDisposeResource]
@@ -18,9 +16,9 @@ public sealed class ScoreSortComparer<T> : IDisposable, IComparer<T>
         _memoryOwner = MemoryPool<ScoreSortItem<T>>.Shared.Rent(memory.Length);
         WrapMemory = _memoryOwner.Memory[..memory.Length];
 
-        Span<T> srcSpan = Memory.Span;
-        Span<ScoreSortItem<T>> distSpan = _memoryOwner.Memory.Span;
-        for (int i = 0; i < srcSpan.Length; i++)
+        var srcSpan = Memory.Span;
+        var distSpan = _memoryOwner.Memory.Span;
+        for (var i = 0; i < srcSpan.Length; i++)
         {
             distSpan[i] = new(srcSpan[i]);
         }
@@ -44,11 +42,11 @@ public sealed class ScoreSortComparer<T> : IDisposable, IComparer<T>
         ComparisonBuilder<ComparisonCollectionChain<ScoreSortItem<T>>, ScoreSortItem<T>>
             comparisons)
     {
-        Memory<ScoreSortItem<T>> source = WrapMemory[..BestScoreSortCore(depth, comparisons)];
-        Memory<T> dist = new T[source.Length].AsMemory();
-        Span<ScoreSortItem<T>> sourceSpan = source.Span;
-        Span<T> distSpan = dist.Span;
-        for (int i = 0; i < sourceSpan.Length; i++)
+        var source = WrapMemory[..BestScoreSortCore(depth, comparisons)];
+        var dist = new T[source.Length].AsMemory();
+        var sourceSpan = source.Span;
+        var distSpan = dist.Span;
+        for (var i = 0; i < sourceSpan.Length; i++)
         {
             distSpan[i] = sourceSpan[i].Value;
         }
@@ -67,16 +65,16 @@ public sealed class ScoreSortComparer<T> : IDisposable, IComparer<T>
         ComparisonBuilder<ComparisonCollectionChain<ScoreSortItem<T>>, ScoreSortItem<T>>
             comparisons)
     {
-        int count = BestScoreSortCore(depth, comparisons);
+        var count = BestScoreSortCore(depth, comparisons);
         Apply();
         return count;
     }
 
     private void Apply()
     {
-        Span<ScoreSortItem<T>> wrapMemorySpan = WrapMemory.Span;
-        Span<T> memorySpan = Memory.Span;
-        for (int i = 0; i < wrapMemorySpan.Length; i++)
+        var wrapMemorySpan = WrapMemory.Span;
+        var memorySpan = Memory.Span;
+        for (var i = 0; i < wrapMemorySpan.Length; i++)
         {
             memorySpan[i] = wrapMemorySpan[i].Value;
         }

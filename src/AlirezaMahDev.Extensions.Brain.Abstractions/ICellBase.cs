@@ -1,9 +1,8 @@
-using System.Numerics;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public interface ICellBase<TSelf> : IEquatable<TSelf>,
-    IComparable<TSelf>,
+public interface ICellBase<TSelf> : IInEquatable<TSelf>,
+    IInEqualityOperators<TSelf, TSelf, bool>,
+    IInComparable<TSelf>,
     IMultiplyOperators<TSelf, TSelf, TSelf>,
     IDivisionOperators<TSelf, TSelf, TSelf>,
     IAdditionOperators<TSelf, TSelf, TSelf>,

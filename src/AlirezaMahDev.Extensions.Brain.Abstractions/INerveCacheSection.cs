@@ -1,7 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public interface INerveCacheSection
@@ -19,15 +15,5 @@ public interface INerveCacheSection
     DataOffset Set(in NerveCacheKey key, DataOffset value);
 
     DataOffset Set<TKey>(in TKey key, DataOffset value)
-        where TKey : unmanaged;
-
-    DataOffset GetOrAdd(in NerveCacheKey key, Func<UInt128, DataOffset> factory);
-
-    DataOffset GetOrAdd<TKey>(in TKey key, Func<UInt128, DataOffset> factory)
-        where TKey : unmanaged;
-
-    DataOffset GetOrAdd(in NerveCacheKey key, DataOffset value);
-
-    DataOffset GetOrAdd<TKey>(in TKey key, DataOffset value)
         where TKey : unmanaged;
 }

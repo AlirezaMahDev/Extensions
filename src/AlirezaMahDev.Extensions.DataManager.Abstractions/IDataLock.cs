@@ -3,5 +3,5 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 public interface IDataLock<TValue> : IDataValue<TValue>
     where TValue : unmanaged, IDataLock<TValue>
 {
-    ref int RefLock { get; }
+    ref int Lock { get; }
 }

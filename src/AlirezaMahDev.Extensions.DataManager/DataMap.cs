@@ -4,29 +4,34 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-internal sealed class DataMap(string path) : IDisposable
+internal sealed class DataMap : IDisposable
 {
     private bool _disposedValue;
 
-    private readonly Lazy<DataMapFile>[] _files =
-    [
-        .. Enumerable.Range(0, DataDefaults.FileCount)
-            .Select(id =>
-                new Lazy<DataMapFile>(() =>
-                    {
-                        string directoryPath = Path.GetDirectoryName(path)!;
-                        if (!Directory.Exists(directoryPath)) { Directory.CreateDirectory(directoryPath); }
+    private readonly Lazy<DataMapFile>[] _files;
 
-                        return new(MemoryMappedFile.CreateFromFile(
+    public DataMap(string path)
+    {
+        var directoryPath = Path.GetDirectoryName(path)!;
+        if (!Directory.Exists(directoryPath))
+        {
+            Directory.CreateDirectory(directoryPath);
+        }
+
+        _files =
+        [
+            .. Enumerable.Range(0, DataDefaults.FileCount)
+                .Select(id =>
+                    new Lazy<DataMapFile>(() => new(MemoryMappedFile.CreateFromFile(
                             string.Format(path, id),
                             FileMode.OpenOrCreate,
                             null,
                             DataDefaults.FileSize,
                             MemoryMappedFileAccess.ReadWrite)
-                        );
-                    },
-                    LazyThreadSafetyMode.ExecutionAndPublication))
-    ];
+                        ),
+                        LazyThreadSafetyMode.ExecutionAndPublication))
+        ];
+    }
 
     public DataMapFile File(in DataOffset offset)
     {
@@ -35,7 +40,7 @@ internal sealed class DataMap(string path) : IDisposable
 
     public void Flush()
     {
-        foreach (Lazy<DataMapFile> dataFile in _files.Where(x => x.IsValueCreated))
+        foreach (var dataFile in _files.Where(x => x.IsValueCreated))
         {
             dataFile.Value.Flush();
         }
@@ -43,7 +48,7 @@ internal sealed class DataMap(string path) : IDisposable
 
     public async ValueTask FlushAsync(CancellationToken cancellationToken = default)
     {
-        foreach (Lazy<DataMapFile> dataFile in _files.Where(x => x.IsValueCreated))
+        foreach (var dataFile in _files.Where(x => x.IsValueCreated))
         {
             await dataFile.Value.FlushAsync(cancellationToken);
         }
@@ -55,7 +60,7 @@ internal sealed class DataMap(string path) : IDisposable
         {
             if (disposing)
             {
-                foreach (Lazy<DataMapFile> dataFile in _files.Where(x => x.IsValueCreated))
+                foreach (var dataFile in _files.Where(x => x.IsValueCreated))
                 {
                     dataFile.Value.Dispose();
                 }

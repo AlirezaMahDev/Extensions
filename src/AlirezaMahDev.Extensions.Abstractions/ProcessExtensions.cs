@@ -6,16 +6,17 @@ public static class ProcessExtensions
 {
     extension(Process)
     {
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public static async Task<string> InvokeAsync(string command)
         {
-            string[] split = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var split = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (split.Length == 0)
             {
                 throw new ArgumentException("Command cannot be empty");
             }
 
-            string commandName = split[0];
-            string? commandArgumand = split.Length > 1 ? string.Join(" ", split[1..]) : null;
+            var commandName = split[0];
+            var commandArgumand = split.Length > 1 ? string.Join(" ", split[1..]) : null;
             ProcessStartInfo psi = new()
             {
                 FileName = commandName,
@@ -26,16 +27,17 @@ public static class ProcessExtensions
                 CreateNoWindow = true
             };
 
-            using Process process = new() { StartInfo = psi };
+            using Process process = new();
+            process.StartInfo = psi;
 
             process.Start();
 
-            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-            Task<string> errorTask = process.StandardError.ReadToEndAsync();
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
 
             await process.WaitForExitAsync();
 
-            string output = await outputTask;
+            var output = await outputTask;
 
             return !string.IsNullOrEmpty(await errorTask)
                 ? throw new($"Error: {await errorTask} {output}")

@@ -1,7 +1,3 @@
-using AlirezaMahDev.Extensions.Abstractions;
-
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [MustDisposeResource]
@@ -12,20 +8,30 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
     private readonly ReaderWriterLockSlim _lock = new();
 
     private readonly MemoryList<Think<TData, TLink>> _memoryList = [];
-    public Memory<Think<TData, TLink>> Thinks => _memoryList.Memory;
 
+    public Memory<Think<TData, TLink>> Thinks
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return _memoryList.Memory;
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public Memory<Think<TData, TLink>> GetBestThinks()
     {
         Thinks.Span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
         return Thinks.ToArray();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool Add(Think<TData, TLink> think)
     {
         _lock.EnterUpgradeableReadLock();
         try
         {
-            bool? canAddCore = CanAddCore(think);
+            var canAddCore = CanAddCore(think);
             if (canAddCore != false)
             {
                 _lock.EnterWriteLock();
@@ -54,6 +60,7 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool CanAdd(Think<TData, TLink> think)
     {
         _lock.EnterReadLock();
@@ -67,6 +74,7 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private bool? CanAddCore(Think<TData, TLink> think)
     {
         if (_memoryList.Count <= Math.Max(1, depth))
@@ -74,10 +82,11 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
             return null;
         }
 
-        int comparison = NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]);
+        var comparison = NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]);
         return comparison == 0 ? null : comparison < 0;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
         _lock.Dispose();

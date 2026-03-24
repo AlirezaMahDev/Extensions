@@ -17,7 +17,7 @@ public class DataManagerBuilder : BuilderBase
     {
         Services.TryAddSingleton<IDataAccess>(provider =>
         {
-            DataManagerOptions options = provider.GetRequiredService<IOptions<DataManagerOptions>>().Value;
+            var options = provider.GetRequiredService<IOptions<DataManagerOptions>>().Value;
             return provider.GetRequiredService<IDataManager>()
                 .Open(Path.Combine(options.DirectoryPath, options.DefaultName));
         });
@@ -29,7 +29,7 @@ public class DataManagerBuilder : BuilderBase
         Services.TryAddKeyedSingleton<IDataAccess>(key,
             (provider, _) =>
             {
-                DataManagerOptions options = provider.GetRequiredService<IOptions<DataManagerOptions>>().Value;
+                var options = provider.GetRequiredService<IOptions<DataManagerOptions>>().Value;
                 return provider.GetRequiredService<IDataManager>()
                     .Open(Path.Combine(options.DirectoryPath, key));
             });

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
@@ -6,14 +7,26 @@ namespace AlirezaMahDev.Extensions.DataManager;
 
 internal class DataAccess : IDisposable, IDataAccess
 {
-    public string Path { get; }
+    public string Path
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    }
 
     private bool _disposedValue;
     private readonly DataMap _map;
     private readonly DataLocation<DataAccessValue> _value;
 
-    public ref long LastOffset => ref _value.GetRefValue(this).LastOffset;
+    public ref long LastOffset
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return ref _value.GetRefValue(this).LastOffset;
+        }
+    }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public DataAccess(string path)
     {
         Path = path;
@@ -24,7 +37,7 @@ internal class DataAccess : IDisposable, IDataAccess
         if (LastOffset == 0)
         {
             LastOffset = _value.Offset.Length;
-            this.Create<DataPath>();
+            this.Create<DataPath>(out _);
         }
 
         Flush();
@@ -33,7 +46,8 @@ internal class DataAccess : IDisposable, IDataAccess
         RootWrap = Root.Wrap(this);
     }
 
-    private DataOffset AllocateOffset(int length)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public DataOffset AllocateOffset(int length)
     {
         if (length > DataDefaults.PartSize)
         {
@@ -61,14 +75,25 @@ internal class DataAccess : IDisposable, IDataAccess
         return DataOffset.Create(offset, length);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private DataMapFilePart AccessPart(in DataOffset offset)
     {
         return _map.File(in offset).Part(in offset);
     }
 
-    public DataLocation<DataPath> Root { get; }
-    public DataWrap<DataPath> RootWrap { get; }
+    public DataLocation<DataPath> Root
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    }
 
+    public DataWrap<DataPath> RootWrap
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public DataLocation<DataTrash> GetTrash()
     {
         return Root
@@ -78,32 +103,35 @@ internal class DataAccess : IDisposable, IDataAccess
             .GetOrCreateData<DataPath, DataTrash>();
     }
 
-    public async ValueTask<DataLocation<DataTrash>> GetTrashAsync(CancellationToken cancellationToken = default)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public Memory<byte> ReadMemory(in DataOffset offset)
     {
-        DataLocation<DataPath> trashPath = await Root
-            .Wrap(this, x => x.TreeDictionary())
-            .GetOrAddAsync(".trash", cancellationToken);
-        return trashPath
-            .Wrap(this, x => x.Storage())
-            .GetOrCreateData<DataPath, DataTrash>();
+        return AccessPart(in offset).Memory.Slice(offset.Offset, offset.Length);
     }
 
-    public AllocateMemory<byte> AllocateMemory(int length)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public ref byte ReadRef(in DataOffset offset)
     {
-        DataOffset offset = AllocateOffset(length);
-        return new(offset, AccessPart(offset).Memory.Slice(offset.Offset, offset.Length));
+        if ((uint)offset.FileId >= DataDefaults.FileCount ||
+            (uint)offset.PartIndex >= DataDefaults.PartCount)
+        {
+            Debug.WriteLine($"CORRUPT OFFSET: FileId={offset.FileId}, " +
+                            $"PartIndex={offset.PartIndex}, " +
+                            $"Offset={offset.Offset}, " +
+                            $"Length={offset.Length}");
+            Debugger.Break();
+        }
+
+        return ref AccessPart(in offset).GetRef(offset.Offset);
     }
 
-    public Memory<byte> ReadMemory(DataOffset offset)
-    {
-        return AccessPart(offset).Memory.Slice(offset.Offset, offset.Length);
-    }
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Flush()
     {
         _map.Flush();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     protected virtual void Dispose(bool disposing)
     {
         if (!_disposedValue)
@@ -117,6 +145,7 @@ internal class DataAccess : IDisposable, IDataAccess
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
         Dispose(true);

@@ -8,9 +8,9 @@ public interface IDataAccess
     DataWrap<DataPath> RootWrap { get; }
 
     DataLocation<DataTrash> GetTrash();
-    ValueTask<DataLocation<DataTrash>> GetTrashAsync(CancellationToken cancellationToken = default);
-
-    AllocateMemory<byte> AllocateMemory(int length);
-    Memory<byte> ReadMemory(DataOffset offset);
+    
+    DataOffset AllocateOffset(int length);
+    Memory<byte> ReadMemory(in DataOffset offset);
+    ref byte ReadRef(in DataOffset offset);
     void Flush();
 }

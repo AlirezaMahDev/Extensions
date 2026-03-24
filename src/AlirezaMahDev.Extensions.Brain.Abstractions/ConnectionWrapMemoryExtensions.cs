@@ -1,7 +1,3 @@
-using AlirezaMahDev.Extensions.Abstractions;
-
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class ConnectionWrapMemoryExtensions
@@ -11,6 +7,7 @@ public static class ConnectionWrapMemoryExtensions
         where TLink : unmanaged, ICellLink<TLink>
     {
         [MustDisposeResource]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public MemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
             NearConnection(
                 ThinkValueRef<TData, TLink> pair,
@@ -27,6 +24,7 @@ public static class ConnectionWrapMemoryExtensions
         }
 
         [MustDisposeResource]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public MemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
             NearConnection(PredictValueRef<TLink> link, int depth)
         {

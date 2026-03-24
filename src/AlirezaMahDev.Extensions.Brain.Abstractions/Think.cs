@@ -1,9 +1,3 @@
-using System.Collections;
-
-using AlirezaMahDev.Extensions.Abstractions;
-
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
@@ -53,9 +47,9 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         ConnectionWrap = connectionWrap;
         Previous = previous;
 
-        TData dataDifference = data.Value.Normalize() - connectionWrap.NeuronWrap.RefData.Normalize();
+        var dataDifference = data.Value.Normalize() - connectionWrap.NeuronWrap.RefData.Normalize();
         DataDifferenceSum = previous.DataDifferenceSum + dataDifference;
-        TData dataDifferenceAbs = dataDifference.Abs();
+        var dataDifferenceAbs = dataDifference.Abs();
         DataDifferenceSumAbs = previous.DataDifferenceSumAbs + dataDifferenceAbs;
 
         if (Count > 2)
@@ -91,7 +85,7 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     public IEnumerator<Think<TData, TLink>> GetEnumerator()
     {
         Stack<Think<TData, TLink>> stack = [];
-        Think<TData, TLink>? current = this;
+        var current = this;
         while (current is not null)
         {
             stack.Push(current);

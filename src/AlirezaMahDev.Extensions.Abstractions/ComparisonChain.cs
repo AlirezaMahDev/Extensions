@@ -7,6 +7,7 @@ public record struct ComparisonChain<T>(
     : IComparisonChain<T>, IComparer<T>
     where T : allows ref struct
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public readonly int Compare(T? x, T? y)
     {
         return ComparerHelper<T>.NullDown(x, y) ?? Comparison(x!, y!);

@@ -1,12 +1,7 @@
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public record struct ConnectionValue<TLink> :
+public struct ConnectionValue<TLink> :
     ICellValueDefault<ConnectionValue<TLink>>,
     ICellScoreValue,
     ICellWeightValue
@@ -22,8 +17,22 @@ public record struct ConnectionValue<TLink> :
     public int NextCount;
     public uint Weight;
     public float Score;
+    public int _lock;
 
-    public static ConnectionValue<TLink> Default { get; } = new()
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool Equals(in ConnectionValue<TLink> other)
+    {
+        return Link.Equals(in other.Link) &&
+               Neuron == other.Neuron &&
+               Child == other.Child &&
+               Next == other.Next &&
+               Previous == other.Previous &&
+               NextCount == other.NextCount &&
+               Weight == other.Weight &&
+               Score == other.Score;
+    }
+
+    private static readonly ConnectionValue<TLink> DefaultField = new()
     {
         Neuron = DataOffset.Null,
         Next = DataOffset.Null,
@@ -35,9 +44,37 @@ public record struct ConnectionValue<TLink> :
         Link = default
     };
 
-    public int Lock;
-    public readonly ref int RefLock => ref Unsafe.AsRef(in this).Lock;
+    public static ref readonly ConnectionValue<TLink> Default
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref DefaultField;
+    }
 
-    public readonly ref float RefScore => ref Unsafe.AsRef(in this).Score;
-    public readonly ref uint RefWeight => ref Unsafe.AsRef(in this).Weight;
+
+    public readonly ref int Lock
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return ref Unsafe.AsRef(in this)._lock;
+        }
+    }
+
+    public readonly ref float RefScore
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return ref Unsafe.AsRef(in this).Score;
+        }
+    }
+
+    public readonly ref uint RefWeight
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return ref Unsafe.AsRef(in this).Weight;
+        }
+    }
 }

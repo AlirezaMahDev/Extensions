@@ -1,7 +1,3 @@
-using System.Collections;
-
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 // ReSharper disable once RedundantExtendsListEntry
@@ -9,8 +5,23 @@ public readonly struct CellEnumerable<T>(int count, IEnumerable<T> enumerable) :
 {
     public static CellEnumerable<T> Empty { get; } = new(0, []);
 
-    public int Count => count;
-    public bool IsReadOnly => true;
+    public int Count
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return count;
+        }
+    }
+
+    public bool IsReadOnly
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get
+        {
+            return true;
+        }
+    }
 
     public IEnumerator<T> GetEnumerator()
     {
@@ -19,7 +30,7 @@ public readonly struct CellEnumerable<T>(int count, IEnumerable<T> enumerable) :
             yield break;
         }
 
-        foreach (T item in enumerable)
+        foreach (var item in enumerable)
         {
             yield return item;
         }
@@ -31,6 +42,7 @@ public readonly struct CellEnumerable<T>(int count, IEnumerable<T> enumerable) :
     }
 
     [MustDisposeResource]
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public CellMemory<T> ToCellMemory()
     {
         return new(this);

@@ -18,8 +18,8 @@ internal sealed class DataManager(IOptions<DataManagerOptions> options) : IDispo
         return _cache.GetOrAdd(key,
                 static (key, arg) => new(() =>
                     {
-                        DataManagerOptions optionsValue = arg._options.Value;
-                        string path = Path.Combine(optionsValue.DirectoryPath, key);
+                        var optionsValue = arg._options.Value;
+                        var path = Path.Combine(optionsValue.DirectoryPath, key);
                         return new(path);
                     },
                     LazyThreadSafetyMode.ExecutionAndPublication),
@@ -34,7 +34,7 @@ internal sealed class DataManager(IOptions<DataManagerOptions> options) : IDispo
 
     public bool Close(string key)
     {
-        if (!_cache.TryRemove(key, out Lazy<DataAccess>? dataAccess))
+        if (!_cache.TryRemove(key, out var dataAccess))
         {
             return false;
         }
@@ -54,7 +54,7 @@ internal sealed class DataManager(IOptions<DataManagerOptions> options) : IDispo
         {
             if (disposing)
             {
-                foreach (Lazy<DataAccess> dataAccess in _cache.Values)
+                foreach (var dataAccess in _cache.Values)
                 {
                     if (dataAccess.IsValueCreated)
                     {

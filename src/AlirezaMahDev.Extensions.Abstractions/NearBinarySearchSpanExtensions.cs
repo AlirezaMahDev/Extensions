@@ -1,5 +1,3 @@
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class NearBinarySearchSpanExtensions
@@ -7,15 +5,16 @@ public static class NearBinarySearchSpanExtensions
     extension<T>(ReadOnlyMemory<T> readonlyMemory)
     {
         [MustDisposeResource]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public MemoryList<ReadOnlyMemory<T>> Near(T value,
             ComparisonChain<T> comparisonChain,
             int depth)
         {
             MemoryList<ReadOnlyMemory<T>> result = [readonlyMemory];
-            foreach (IComparisonChain<T> comparison in comparisonChain.Wrap().GetComparisonChains())
+            foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
                 MemoryList<ReadOnlyMemory<T>> newResult = [];
-                foreach (ReadOnlyMemory<T> item in result)
+                foreach (var item in result)
                 {
                     item.NearCore(newResult, value, comparison.CurrentComparison, depth);
                 }
@@ -27,6 +26,7 @@ public static class NearBinarySearchSpanExtensions
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         private void NearCore(MemoryList<ReadOnlyMemory<T>> result,
             T value,
             Comparison<T> comparison,
@@ -37,8 +37,8 @@ public static class NearBinarySearchSpanExtensions
                 return;
             }
 
-            BinarySearchRange binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, comparison);
-            if (binarySearchRange.TryGetRange(out Range range))
+            var binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, comparison);
+            if (binarySearchRange.TryGetRange(out var range))
             {
                 result.Add(readonlyMemory[range]);
             }
@@ -51,7 +51,7 @@ public static class NearBinarySearchSpanExtensions
             int before, after;
             if (binarySearchRange.Start < 0)
             {
-                int define = ~binarySearchRange.Start;
+                var define = ~binarySearchRange.Start;
                 before = define - 1;
                 after = define;
             }
@@ -76,6 +76,7 @@ public static class NearBinarySearchSpanExtensions
         }
 
         [MustDisposeResource]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public MemoryList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
             Func<T, TBridge> func,
             ComparisonChain<TBridge> comparisonChain,
@@ -83,10 +84,10 @@ public static class NearBinarySearchSpanExtensions
             where TBridge : allows ref struct
         {
             MemoryList<ReadOnlyMemory<T>> result = [readonlyMemory];
-            foreach (IComparisonChain<TBridge> comparison in comparisonChain.Wrap().GetComparisonChains())
+            foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
                 MemoryList<ReadOnlyMemory<T>> newResult = [];
-                foreach (ReadOnlyMemory<T> item in result)
+                foreach (var item in result)
                 {
                     item.NearCore(newResult, value, func, comparison.CurrentComparison, depth);
                 }
@@ -98,6 +99,7 @@ public static class NearBinarySearchSpanExtensions
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         private void NearCore<TBridge>(MemoryList<ReadOnlyMemory<T>> result,
             TBridge value,
             Func<T, TBridge> func,
@@ -110,8 +112,8 @@ public static class NearBinarySearchSpanExtensions
                 return;
             }
 
-            BinarySearchRange binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, func, comparison);
-            if (binarySearchRange.TryGetRange(out Range range))
+            var binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, func, comparison);
+            if (binarySearchRange.TryGetRange(out var range))
             {
                 result.Add(readonlyMemory[range]);
             }
@@ -124,7 +126,7 @@ public static class NearBinarySearchSpanExtensions
             int before, after;
             if (binarySearchRange.Start < 0)
             {
-                int define = ~binarySearchRange.Start;
+                var define = ~binarySearchRange.Start;
                 before = define - 1;
                 after = define;
             }
@@ -152,12 +154,14 @@ public static class NearBinarySearchSpanExtensions
     extension<T>(Memory<T> memory)
     {
         [MustDisposeResource]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public MemoryList<ReadOnlyMemory<T>> Near(T value, ComparisonChain<T> comparisonChainWrap, int depth)
         {
             return ((ReadOnlyMemory<T>)memory).Near(value, comparisonChainWrap, depth);
         }
 
         [MustDisposeResource]
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public MemoryList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
             Func<T, TBridge> func,
             ComparisonChain<TBridge> comparisonChainWrap,

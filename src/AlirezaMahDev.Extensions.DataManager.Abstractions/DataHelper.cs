@@ -2,22 +2,26 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public static class DataHelper
 {
-    public static int FileId(long offset)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static int FileId(in long offset)
     {
         return (int)(offset / DataDefaults.FileSize);
     }
 
-    public static int FileOffset(long offset)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static int FileOffset(in long offset)
     {
         return (int)(offset % DataDefaults.FileSize);
     }
 
-    public static int PartIndex(long offset)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static int PartIndex(in long offset)
     {
         return FileOffset(offset) / DataDefaults.PartSize;
     }
 
-    public static int PartOffset(long offset)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static int PartOffset(in long offset)
     {
         return (int)(offset % DataDefaults.PartSize);
     }

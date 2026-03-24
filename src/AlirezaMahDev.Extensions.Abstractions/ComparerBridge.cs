@@ -6,6 +6,7 @@ public readonly record struct ComparerBridge<T, TBridge, TComparer>(
     where TComparer : IComparer<TBridge>
     where TBridge : allows ref struct
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int Compare(T? x, T? y)
     {
         return Comparer<T>.NullDown(x, y) ?? Comparer.Compare(Func(x!), Func(y!));

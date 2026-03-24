@@ -1,6 +1,3 @@
-using AlirezaMahDev.Extensions.Abstractions;
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
-
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NerveExtensions
@@ -9,68 +6,70 @@ public static class NerveExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public Neuron? FindNeuronCore(in NerveCacheKey cacheKey, in TData data)
+        [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+        public Optional<Neuron> FindNeuronCore(in NerveCacheKey cacheKey, in TData data)
         {
-            if (nerve.TryGetNeuronCacheCore(in cacheKey, out DataOffset? offset))
+            if (nerve.TryGetNeuronCacheCore(in cacheKey, out var offset))
             {
-                return new(offset.Value);
+                return Optional<Neuron>.From(new(offset.Value));
             }
 
-            TData localData = data;
-            IEnumerable<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> cellMemory = nerve.NeuronWrap
+            var localData = data;
+            var cellMemory = nerve.RootNeuronWrap
                 .GetUnloadedConnectionsWrap();
-            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>? connection = cellMemory
+            var connection = cellMemory
                 .FirstOrDefault(x => x.Neuron.Wrap(nerve).RefData.Equals(localData))
                 .NullWhenDefault();
             if (!connection.HasValue)
             {
-                return null;
+                return Optional<Neuron>.Null;
             }
 
             offset = connection.Value.RefValue.Neuron;
-            nerve.TrySetNeuronCacheCore(in cacheKey, offset.Value);
-            return new(offset.Value);
+            nerve.SetNeuronCacheCore(in cacheKey, offset.Value);
+            return Optional<Neuron>.From(new(offset.Value));
         }
 
-        public async ValueTask<Neuron> FindOrAddNeuronAsync(ReadOnlyMemoryValue<TData> data,
-            CancellationToken cancellationToken = default)
+        [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+        public Neuron FindOrAddNeuron(in TData data)
         {
-            NerveCacheKey cacheKey = nerve.CreateNeuronCacheKey(in data.Value);
-            return nerve.FindNeuronCore(in cacheKey, in data.Value) ??
-                   await nerve.AddNeuronAsyncCore(cacheKey, data, cancellationToken);
+            var cacheKey = nerve.CreateNeuronCacheKey(in data);
+            return nerve.FindNeuronCore(in cacheKey, in data) is { HasValue: true } optional
+                ? optional.Value
+                : nerve.AddNeuronCore(in cacheKey, in data);
         }
 
-        private async ValueTask<Neuron> AddNeuronAsyncCore(NerveCacheKey cacheKey,
-            ReadOnlyMemoryValue<TData> data,
-            CancellationToken cancellationToken)
+        [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+        private Neuron AddNeuronCore(
+            in NerveCacheKey cacheKey,
+            in TData data)
         {
-            return await nerve.NeuronWrap
-                .LockAsync(valueWrap =>
-                    {
-                        if (nerve.FindNeuronCore(in cacheKey, in data.Value) is { } neuron)
-                        {
-                            return neuron;
-                        }
+            using var @lock = nerve.RootNeuronWrap.Lock();
+            if (nerve.FindNeuronCore(in cacheKey, in data) is { HasValue: true } neuron)
+            {
+                return neuron.Value;
+            }
 
-                        DataLocation<NeuronValue<TData>> neuronValue =
-                            nerve.Access.Create(NeuronValue<TData>.Default with { Data = data.Value });
-                        Interlocked.Increment(ref nerve.Counter.RefValue.NeuronCount);
+            nerve.Access.Create(NeuronValue<TData>.Default with { Data = data }, out var neuronValue);
+            Interlocked.Increment(ref nerve.Counter.RefValue.NeuronCount);
 
-                        DataLocation<ConnectionValue<TLink>> connectionValue = nerve.Access
-                            .Create(ConnectionValue<TLink>.Default with
-                            {
-                                Neuron = neuronValue.Offset,
-                                Next = valueWrap.RefValue.Connection,
-                                NextCount = nerve.NeuronWrap.ConnectionWrap?.RefValue.NextCount + 1 ?? 0
-                            });
-                        Interlocked.Increment(ref nerve.Counter.RefValue.ConnectionCount);
+            var location = nerve.RootNeuronWrap.Location;
+            nerve.Access
+                .Create(ConnectionValue<TLink>.Default with
+                {
+                    Neuron = neuronValue.Offset,
+                    Next = location.RefValue.Connection,
+                    NextCount = nerve.RootNeuronWrap.ConnectionWrap is { HasValue: true } connectionWrap
+                            ? connectionWrap.Value.RefValue.NextCount + 1
+                            : 0
+                },
+                    out var connectionValue);
+            Interlocked.Increment(ref nerve.Counter.RefValue.ConnectionCount);
 
-                        valueWrap.RefValue.Connection = connectionValue.Offset;
+            location.RefValue.Connection = connectionValue.Offset;
 
-                        nerve.TrySetNeuronCacheCore(in cacheKey, neuronValue.Offset);
-                        return new(neuronValue.Offset);
-                    },
-                    cancellationToken);
+            nerve.SetNeuronCacheCore(in cacheKey, in neuronValue.Offset);
+            return new(neuronValue.Offset);
         }
     }
 }

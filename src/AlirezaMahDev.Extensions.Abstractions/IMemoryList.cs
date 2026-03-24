@@ -1,5 +1,3 @@
-using JetBrains.Annotations;
-
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public interface IMemoryList<T> : IList<T>, IReadonlyMemoryList<T>

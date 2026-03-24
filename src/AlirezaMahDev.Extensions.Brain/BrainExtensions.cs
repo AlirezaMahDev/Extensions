@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace AlirezaMahDev.Extensions.Brain;
 
 public static class BrainExtensions

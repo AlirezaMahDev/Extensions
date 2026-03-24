@@ -2,25 +2,15 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public static class DataLocationDataTrashExtensions
 {
-    extension(DataLocation<DataTrash> location)
+    extension(ref readonly DataLocation<DataTrash> location)
     {
-        public void Add<TDataLocation>(IDataAccess access, TDataLocation dataLocation)
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public void Add<TDataLocation>(IDataAccess access, in TDataLocation dataLocation)
             where TDataLocation : IDataLocationBase<TDataLocation>
         {
-            location
-                .Wrap(access, x => x.Collection())
-                .Add(access.Create(new DataTrashItem { Offset = dataLocation.Offset }));
-        }
-
-        public async ValueTask AddAsync<TDataLocation>(IDataAccess access,
-            TDataLocation dataLocation,
-            CancellationToken cancellationToken = default)
-            where TDataLocation : IDataLocationBase<TDataLocation>
-        {
-            await location
-                .Wrap(access, x => x.Collection())
-                .AddAsync(access.Create(new DataTrashItem { Offset = dataLocation.Offset }),
-                    cancellationToken);
+            access.Create(new DataTrashItem { Offset = dataLocation.Offset }, out var item);
+            var wrap = location.Wrap(access, x => x.Collection());
+            wrap.Add(item);
         }
     }
 }

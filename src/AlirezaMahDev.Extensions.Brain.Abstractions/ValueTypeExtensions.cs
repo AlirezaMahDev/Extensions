@@ -5,6 +5,7 @@ public static class ValueTypeExtensions
     extension<T>(T value)
         where T : struct
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public T? NullWhenDefault()
         {
             return EqualityComparer<T>.Default.Equals(value, default) ? null : value;
@@ -15,6 +16,7 @@ public static class ValueTypeExtensions
         where TSource : struct
         where TDestination : class
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public TDestination? Convert(Func<TSource, TDestination> func, TDestination? nullValue = null)
         {
             return source.HasValue ? func(source.Value) : nullValue;
@@ -25,6 +27,7 @@ public static class ValueTypeExtensions
         where TSource : struct
         where TDestination : struct
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public TDestination? Convert(Func<TSource, TDestination> func, TDestination? nullValue = null)
         {
             return source.HasValue ? func(source.Value) : nullValue;
