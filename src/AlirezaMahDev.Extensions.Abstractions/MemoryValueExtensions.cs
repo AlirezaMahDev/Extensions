@@ -2,13 +2,13 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class MemoryValueExtensions
 {
-    extension<T>(ref T t)
+    extension<T>(T t)
         where T : struct
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public MemoryValue<T> AsMemoryValue()
         {
-            return new(in t);
+            return new(t);
         }
     }
 
@@ -40,7 +40,7 @@ public static class MemoryValueExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ReadOnlySpanValue<T> AsReadOnlySpanValue()
         {
-            return new(in memoryValue.Value);
+            return new(ref memoryValue.Value);
         }
     }
 }

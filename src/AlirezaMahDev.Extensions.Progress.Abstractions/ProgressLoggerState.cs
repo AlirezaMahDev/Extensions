@@ -29,7 +29,8 @@ public record ProgressLoggerState(
 
     public override string ToString()
     {
-        return $"Name:{Title} Message:{Message} Count:{Count} Length:{Length} Progress:{ProgressValue:P2} Speed:{ProgressSpeed}/s";
+        return $"Name:{Title} Message:{Message} Count:{Count} Length:{Length} Progress:{ProgressValue:P2} Speed:{
+            ProgressSpeed}/s";
     }
 }
 

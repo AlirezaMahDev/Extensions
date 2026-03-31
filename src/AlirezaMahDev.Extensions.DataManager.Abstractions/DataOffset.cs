@@ -4,8 +4,8 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [StructLayout(LayoutKind.Sequential)]
 [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-public readonly struct DataOffset(in int fileId, in int partIndex, in int offset, in int length)
-    : IInEquatable<DataOffset>, IInEqualityOperators<DataOffset, DataOffset, bool>
+public readonly struct DataOffset(int fileId, int partIndex, int offset, int length)
+    : IScopedRefReadOnlyEquatable<DataOffset>, IScopedInEqualityOperators<DataOffset, DataOffset, bool>
 {
     public readonly int FileId = fileId;
     public readonly int PartIndex = partIndex;
@@ -18,7 +18,9 @@ public readonly struct DataOffset(in int fileId, in int partIndex, in int offset
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private ref byte AsByteRef()
-        => ref Unsafe.As<DataOffset, byte>(ref Unsafe.AsRef(in this));
+    {
+        return ref Unsafe.As<DataOffset, byte>(ref Unsafe.AsRef(in this));
+    }
 
     public bool IsNull
     {
@@ -33,31 +35,53 @@ public readonly struct DataOffset(in int fileId, in int partIndex, in int offset
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Equals(in DataOffset other)
-        => Vector128.LoadUnsafe(ref AsByteRef()) ==
-           Vector128.LoadUnsafe(ref Unsafe.As<DataOffset, byte>(ref Unsafe.AsRef(in other)));
+    public bool Equals(scoped ref readonly DataOffset other)
+    {
+        return Vector128.LoadUnsafe(ref AsByteRef()) ==
+               Vector128.LoadUnsafe(ref Unsafe.As<DataOffset, byte>(ref Unsafe.AsRef(in other)));
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static DataOffset Create(in long offset, in int length)
-        => new(DataHelper.FileId(in offset),
-            DataHelper.PartIndex(in offset),
-            DataHelper.PartOffset(in offset),
+    public static DataOffset Create(long offset, int length)
+    {
+        return new(DataHelper.FileId(offset),
+            DataHelper.PartIndex(offset),
+            DataHelper.PartOffset(offset),
             length);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Equals(DataOffset other) => Equals(in other);
+    public bool Equals(DataOffset other)
+    {
+        return Equals(ref other);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public override bool Equals(object? obj) =>
-        obj is DataOffset dataOffset && Equals(in dataOffset);
+    public override bool Equals(object? obj)
+    {
+        return obj is DataOffset dataOffset && Equals(ref dataOffset);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public override int GetHashCode() =>
-        XxHash3.Combine(in FileId, in PartIndex, in Offset, in Length);
+    public override int GetHashCode()
+    {
+        return XxHash3.Combine(in FileId, in PartIndex, in Offset, in Length);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static bool operator ==(in DataOffset left, in DataOffset right) => left.Equals(in right);
+    public static bool operator ==(in DataOffset left, in DataOffset right)
+    {
+        return left.Equals(right);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static bool operator !=(in DataOffset left, in DataOffset right) => !left.Equals(in right);
+    public static bool operator !=(in DataOffset left, in DataOffset right)
+    {
+        return !left.Equals(right);
+    }
+
+    public override string ToString()
+    {
+        return $"{FileId}_{PartIndex}_{Offset}_{Length}";
+    }
 }

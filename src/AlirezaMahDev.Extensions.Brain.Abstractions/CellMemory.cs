@@ -1,7 +1,7 @@
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [MustDisposeResource]
-public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>, ICellMemory<T>
+public sealed class CellMemory<T> : IDisposable, IEnumerable<T>, ICollection<T>, IReadOnlyCollection<T>, ICellMemory<T>
 {
     public static CellMemory<T> Empty { get; } = new(CellEnumerable<T>.Empty);
 

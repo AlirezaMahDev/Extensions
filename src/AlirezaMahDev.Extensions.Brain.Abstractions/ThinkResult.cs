@@ -12,16 +12,16 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
     public Memory<Think<TData, TLink>> Thinks
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return _memoryList.Memory;
-        }
+        get => _memoryList.Memory;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public Memory<Think<TData, TLink>> GetBestThinks()
     {
-        Thinks.Span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
+        ScopedRefReadOnlyComparisonToScopedRefReadOnlyComparer<Think<TData, TLink>> scopedRefReadOnlyComparisonToScopedRefReadOnlyComparer =
+            new(NerveHelper<TData, TLink>
+                .ThinkComparisons.Comparison);
+        Thinks.Span.Sort(scopedRefReadOnlyComparisonToScopedRefReadOnlyComparer);
         return Thinks.ToArray();
     }
 
@@ -38,7 +38,11 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
                 try
                 {
                     _memoryList.Add(think);
-                    _memoryList.Memory.Span.Sort(NerveHelper<TData, TLink>.ThinkComparisons.Comparison);
+                    ScopedRefReadOnlyComparisonToScopedRefReadOnlyComparer<Think<TData, TLink>>
+                        scopedRefReadOnlyComparisonToScopedRefReadOnlyComparer =
+                            new(NerveHelper<TData, TLink>
+                                .ThinkComparisons.Comparison);
+                    _memoryList.Memory.Span.Sort(scopedRefReadOnlyComparisonToScopedRefReadOnlyComparer);
                     if (canAddCore != null)
                     {
                         _memoryList.RemoveAt(_memoryList.Count - 1);
@@ -82,7 +86,8 @@ public sealed class ThinkResult<TData, TLink>(int depth) : IDisposable
             return null;
         }
 
-        var comparison = NerveHelper<TData, TLink>.ThinkComparisons.Comparison(think, _memoryList.Memory.Span[^1]);
+        var comparison =
+            NerveHelper<TData, TLink>.ThinkComparisons.Comparison(ref think, ref _memoryList.Memory.Span[^1]);
         return comparison == 0 ? null : comparison < 0;
     }
 

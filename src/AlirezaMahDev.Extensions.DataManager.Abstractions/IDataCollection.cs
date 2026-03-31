@@ -1,6 +1,6 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public interface IDataCollection<TValue> : IDataLock<TValue>
+public interface IDataCollection<TValue> : IDataValue<TValue>
     where TValue : unmanaged, IDataCollection<TValue>
 {
     ref DataOffset Child { get; }

@@ -7,29 +7,12 @@ public struct NeuronValue<TData> :
     ICellWeightValue
     where TData : unmanaged, ICellData<TData>
 {
-    public TData Data;
-
-    public DataOffset Connection;
-
-    public uint Weight;
-    public float Score;
-    public int _lock;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Equals(in NeuronValue<TData> other)
-    {
-        return Data.Equals(in other.Data) &&
-               Connection == other.Connection &&
-               Weight == other.Weight &&
-               Score == other.Score;
-    }
-
     public static readonly NeuronValue<TData> DefaultField = new()
     {
-        Connection = DataOffset.Null,
+        Connection = Connection.Null,
         Data = default,
-        Score = 1f,
-        Weight = 0u
+        _score = 1f,
+        _weight = 0u
     };
 
     public static ref readonly NeuronValue<TData> Default
@@ -38,31 +21,43 @@ public struct NeuronValue<TData> :
         get => ref DefaultField;
     }
 
+    public TData Data;
+    public Connection Connection;
 
-    public readonly ref int Lock
+    private uint _weight;
+    private float _score;
+
+    private DataLock _lock;
+
+    public readonly ref DataLock Lock
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this)._lock;
-        }
+        get => ref Unsafe.AsRef(in this)._lock;
     }
 
-    public readonly ref float RefScore
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public readonly bool Equals(scoped ref readonly NeuronValue<TData> other)
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this).Score;
-        }
+        return Data == other.Data &&
+               Connection == other.Connection &&
+               _weight == other._weight &&
+               _score == other._score;
     }
 
-    public readonly ref uint RefWeight
+    public readonly ref float Score
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this).Weight;
-        }
+        get => ref Unsafe.AsRef(in this)._score;
+    }
+
+    public readonly ref uint Weight
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._weight;
+    }
+
+    public override readonly string ToString()
+    {
+        return $"{Data}";
     }
 }

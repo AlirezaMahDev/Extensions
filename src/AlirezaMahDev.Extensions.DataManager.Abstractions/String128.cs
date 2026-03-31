@@ -2,7 +2,7 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Size = Size)]
 [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
-public readonly struct String128 : IInEquatable<String128>, IString<String128>
+public readonly struct String128 : IScopedRefReadOnlyEquatable<String128>, IString<String128>
 {
     private const int Length = 128;
     private const int Size = Length * sizeof(char);
@@ -41,37 +41,58 @@ public readonly struct String128 : IInEquatable<String128>, IString<String128>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static implicit operator string(String128 value) => value.ToString();
+    public static implicit operator string(String128 value)
+    {
+        return value.ToString();
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static implicit operator String128(string? value)
-        => value is null or { Length: 0 }
+    {
+        return value is null or { Length: 0 }
             ? Empty
             : new(value.AsSpan());
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public override string ToString() => new(Span.TrimEnd('\0'));
+    public override string ToString()
+    {
+        return new(Span.TrimEnd('\0'));
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Equals(in String128 other)
-        => MemoryMarshal.AsBytes(Span)
+    public bool Equals(scoped ref readonly String128 other)
+    {
+        return MemoryMarshal.AsBytes(Span)
             .SequenceEqual(MemoryMarshal.AsBytes(other.Span));
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public override bool Equals(object? obj)
-        => obj is String128 other && Equals(other);
+    {
+        return obj is String128 other && Equals(ref other);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public override int GetHashCode()
-        => (int)XxHash3.HashToUInt64(MemoryMarshal.AsBytes(Span));
+    {
+        return (int)XxHash3.HashToUInt64(MemoryMarshal.AsBytes(Span));
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool operator ==(String128 left, String128 right)
-        => left.Equals(right);
+    {
+        return left.Equals(ref right);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static bool operator !=(String128 left, String128 right)
-        => !left.Equals(right);
+    {
+        return !left.Equals(ref right);
+    }
 
-    private string GetDebuggerDisplay() => ToString();
+    private string GetDebuggerDisplay()
+    {
+        return ToString();
+    }
 }

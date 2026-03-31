@@ -4,13 +4,12 @@ public interface IDataAccess
 {
     string Path { get; }
 
-    DataLocation<DataPath> Root { get; }
-    DataWrap<DataPath> RootWrap { get; }
+    IDataMap Map { get; }
+    ref readonly DataLocation<DataPath> Root { get; }
+    ref readonly DataLocation<DataTrash> Trash { get; }
 
-    DataLocation<DataTrash> GetTrash();
-    
     DataOffset AllocateOffset(int length);
-    Memory<byte> ReadMemory(in DataOffset offset);
-    ref byte ReadRef(in DataOffset offset);
+    IDataMapFilePartOwner GetOwner(ref DataOffset offset);
+
     void Flush();
 }

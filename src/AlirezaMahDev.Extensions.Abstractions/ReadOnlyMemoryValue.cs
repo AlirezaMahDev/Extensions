@@ -6,29 +6,43 @@ public readonly struct ReadOnlyMemoryValue<T>
 {
     private readonly ReadOnlyMemory<T> _readOnlyMemory;
 
-    public ReadOnlyMemoryValue(in T value)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public ReadOnlyMemoryValue(T value)
     {
         _readOnlyMemory = new([value]);
     }
 
-    public ReadOnlyMemoryValue(in ReadOnlyMemory<T> memory)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public ReadOnlyMemoryValue(ReadOnlyMemory<T> memory)
     {
         _readOnlyMemory = memory[..1];
     }
 
-    public bool HasValue => !_readOnlyMemory.IsEmpty;
-    public ref readonly T Value => ref _readOnlyMemory.Span[0];
-
-    public static implicit operator ReadOnlyMemoryValue<T>(in T value)
+    public bool HasValue
     {
-        return new(in value);
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => !_readOnlyMemory.IsEmpty;
     }
 
-    public static implicit operator ReadOnlyMemory<T>(in ReadOnlyMemoryValue<T> memoryValue)
+    public ref readonly T Value
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref _readOnlyMemory.Span[0];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static implicit operator ReadOnlyMemoryValue<T>(T value)
+    {
+        return new(value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static implicit operator ReadOnlyMemory<T>(ReadOnlyMemoryValue<T> memoryValue)
     {
         return memoryValue._readOnlyMemory;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static implicit operator ReadOnlySpanValue<T>(ReadOnlyMemoryValue<T> readOnlyMemory)
     {
         return new(in readOnlyMemory.Value);

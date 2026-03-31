@@ -68,7 +68,7 @@ public static class NerveThinkExtensions
             }
 
             using var memoryList =
-                cellMemory.Memory.NearConnection(pair, depth);
+                cellMemory.Memory.NearConnection(ref pair, depth);
             if (memoryList.Count == 0)
             {
                 return;
@@ -95,7 +95,7 @@ public static class NerveThinkExtensions
             int inputIndex,
             Think<TData, TLink> currentThink,
             ThinkResult<TData, TLink> resultThink,
-            ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>> readOnlyMemory,
+            ReadOnlyMemory<CellWrap<ConnectionValue<TLink>, TData, TLink>> readOnlyMemory,
             ReadOnlyMemoryValue<TData> dataValue,
             ReadOnlyMemoryValue<TLink> linkValue,
             CancellationToken token)

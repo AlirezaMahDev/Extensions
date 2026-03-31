@@ -5,7 +5,7 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 public ref struct DisposableValue<TValue, TDisposable>(TValue value, TDisposable disposable)
     where TDisposable : IDisposable
 {
-    private TDisposable _disposable = disposable;
+    private readonly TDisposable _disposable = disposable;
     private bool _disposed = false;
 
     public TValue Value

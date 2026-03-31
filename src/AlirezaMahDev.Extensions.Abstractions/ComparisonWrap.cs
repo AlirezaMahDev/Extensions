@@ -1,5 +1,14 @@
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 // ReSharper disable once UnusedTypeParameter
-public record struct ComparisonWrap<TComparisonTarget, T>(TComparisonTarget UnWrap)
-    where T : allows ref struct;
+public struct ComparisonWrap<TComparisonTarget, T>(TComparisonTarget unWrap)
+    where T : allows ref struct
+{
+    public TComparisonTarget UnWrap
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        set;
+    } = unWrap;
+}

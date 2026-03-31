@@ -27,14 +27,14 @@ public static class ScoreSortExtensions
             return input.BestScoreSortCore(depth, comparer);
         }
 
-        private int BestScoreSortCore(int depth, Comparison<T> comparer)
+        private int BestScoreSortCore(int depth, ScopedRefReadOnlyComparison<T> comparer)
         {
             ref var target = ref input[0];
             var count = 1;
             for (var i = 1; i < input.Length; i++)
             {
                 ref var current = ref input[i];
-                if (comparer(target, current) != 0)
+                if (comparer(ref target, ref current) != 0)
                 {
                     if (depth == 0)
                     {
@@ -62,7 +62,7 @@ public static class ScoreSortExtensions
             input.InitializeSort();
 
             var collectionChain =
-                builder(ComparisonCollectionChain<T>.OrderBy(ScoreSortHelper<T>.Comparison).Wrap())
+                builder(ComparisonCollectionChain<T>.OrderBy(ScoreSortHelper<T>.ReadOnlyComparison).Wrap())
                     .UnWrap;
             foreach (var comparison in collectionChain.Enumerable)
             {
@@ -80,15 +80,16 @@ public static class ScoreSortExtensions
             }
         }
 
-        private static void ComparisonSort(Span<T> span, Comparison<T> comparison)
+        private static void ComparisonSort(Span<T> span, ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            span.Sort(comparison);
+            ScopedRefReadOnlyComparisonToScopedRefReadOnlyComparer<T> scopedRefReadOnlyComparisonToScopedRefReadOnlyComparer = new(readOnlyComparison);
+            span.Sort(scopedRefReadOnlyComparisonToScopedRefReadOnlyComparer);
             var score = 0;
             ref var target = ref span[0];
             for (var i = 1; i < span.Length; i++)
             {
                 ref var current = ref span[i];
-                var comparable = comparison(target, current);
+                var comparable = readOnlyComparison(ref target, ref current);
                 if (comparable == 0)
                 {
                     current.Score += score;
@@ -102,11 +103,12 @@ public static class ScoreSortExtensions
             }
         }
 
-        private static Comparison<T> FinalSort(Span<T> span, ComparisonCollectionChain<T> collectionChain)
+        private static ScopedRefReadOnlyComparison<T> FinalSort(Span<T> span, ComparisonCollectionChain<T> collectionChain)
         {
-            var comparison = collectionChain.Comparison;
-            span.Sort(comparison);
-            return comparison;
+            var readOnlyComparison = collectionChain.Comparison;
+            ScopedRefReadOnlyComparisonToScopedRefReadOnlyComparer<T> scopedRefReadOnlyComparisonToScopedRefReadOnlyComparer = new(readOnlyComparison);
+            span.Sort(scopedRefReadOnlyComparisonToScopedRefReadOnlyComparer);
+            return readOnlyComparison;
         }
     }
 }

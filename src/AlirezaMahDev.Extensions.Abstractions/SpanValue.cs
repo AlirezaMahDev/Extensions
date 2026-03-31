@@ -21,25 +21,13 @@ public readonly ref struct SpanValue<T>
     public bool HasValue
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return !_span.IsEmpty;
-        }
+        get => !_span.IsEmpty;
     }
 
     public ref T Value
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref MemoryMarshal.GetReference(_span);
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static implicit operator SpanValue<T>(in T value)
-    {
-        return new(ref Unsafe.AsRef(in value));
+        get => ref MemoryMarshal.GetReference(_span);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

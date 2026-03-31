@@ -6,13 +6,13 @@ public readonly struct MemoryValue<T>
     private readonly Memory<T> _memory;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public MemoryValue(in T value)
+    public MemoryValue(T value)
     {
         _memory = new([value]);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public MemoryValue(in Memory<T> memory)
+    public MemoryValue(Memory<T> memory)
     {
         _memory = memory[..1];
     }
@@ -20,41 +20,35 @@ public readonly struct MemoryValue<T>
     public bool HasValue
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return !_memory.IsEmpty;
-        }
+        get => !_memory.IsEmpty;
     }
 
     public ref T Value
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref _memory.Span[0];
-        }
+        get => ref _memory.Span[0];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static implicit operator MemoryValue<T>(in T value)
+    public static implicit operator MemoryValue<T>(T value)
     {
-        return new(in value);
+        return new( value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static implicit operator Memory<T>(in MemoryValue<T> memoryValue)
+    public static implicit operator Memory<T>(MemoryValue<T> memoryValue)
     {
         return memoryValue._memory;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static implicit operator ReadOnlyMemory<T>(in MemoryValue<T> memoryValue)
+    public static implicit operator ReadOnlyMemory<T>(MemoryValue<T> memoryValue)
     {
         return memoryValue._memory;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static implicit operator ReadOnlyMemoryValue<T>(in MemoryValue<T> memoryValue)
+    public static implicit operator ReadOnlyMemoryValue<T>(MemoryValue<T> memoryValue)
     {
         return new(memoryValue);
     }
@@ -68,6 +62,6 @@ public readonly struct MemoryValue<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static implicit operator ReadOnlySpanValue<T>(MemoryValue<T> memoryValue)
     {
-        return new(in memoryValue.Value);
+        return new(ref memoryValue.Value);
     }
 }

@@ -2,11 +2,11 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [StructLayout(LayoutKind.Sequential)]
 [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-public struct DataTrash(in DataOffset child)
+public struct DataTrash(DataOffset child)
     : IDataCollection<DataTrash, DataTrashItem>, IDataValueDefault<DataTrash>
 {
     private DataOffset _child = child;
-    private int _lock;
+    private DataLock _lock;
     public static readonly DataTrash DefaultField = new(DataOffset.Null);
 
     public static ref readonly DataTrash Default
@@ -15,22 +15,19 @@ public struct DataTrash(in DataOffset child)
         get => ref DefaultField;
     }
 
-    public ref int Lock
+    public readonly ref DataLock Lock
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this)._lock;
-        }
+        get => ref Unsafe.AsRef(in this)._lock;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Equals(in DataTrash other)
+    public readonly bool Equals(scoped ref readonly DataTrash other)
     {
         return _child == other.Child;
     }
 
-    public ref DataOffset Child
+    public readonly ref DataOffset Child
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get => ref Unsafe.AsRef(in this)._child;

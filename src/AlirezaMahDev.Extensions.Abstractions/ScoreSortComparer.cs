@@ -87,12 +87,14 @@ public sealed class ScoreSortComparer<T> : IDisposable, IComparer<T>
 
     public int Compare(T? x, T? y)
     {
+        var scoreSortItemX = Find(x!);
+        var scoreSortItemY = Find(y!);
         return Comparer<T>.NullDown(x, y) ??
-               ScoreSortHelper<ScoreSortItem<T>>.Comparison(Find(x!), Find(y!));
+               ScoreSortHelper<ScoreSortItem<T>>.ReadOnlyComparison(ref scoreSortItemX, ref scoreSortItemY);
     }
 
     private ScoreSortItem<T> Find(T t)
     {
-        return WrapMemory.Span.First((in x) => x.Value.Equals(t));
+        return WrapMemory.Span.First((ref x) => x.Value.Equals(t));
     }
 }

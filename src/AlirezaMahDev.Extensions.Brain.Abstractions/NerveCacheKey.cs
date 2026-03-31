@@ -3,15 +3,15 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 [StructLayout(LayoutKind.Sequential)]
 public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
 {
-    public UInt128 Hash { get; } = XxHash128.HashToUInt128(bytes);
+    public readonly UInt128 Hash = XxHash128.HashToUInt128(bytes);
 
-    public static NerveCacheKey Create<T1>(in T1 t1)
+    public static NerveCacheKey Create<T1>(ref readonly T1 t1)
         where T1 : unmanaged
     {
         return new(AsReadOnlySpan(in t1));
     }
 
-    public static NerveCacheKey Create<T1, T2>(in T1 t1, in T2 t2)
+    public static NerveCacheKey Create<T1, T2>(ref readonly T1 t1, ref readonly T2 t2)
         where T1 : unmanaged
         where T2 : unmanaged
     {
@@ -30,7 +30,7 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
         return new(destination);
     }
 
-    public static NerveCacheKey Create<T1, T2, T3>(in T1 t1, in T2 t2, in T3 t3)
+    public static NerveCacheKey Create<T1, T2, T3>(ref readonly T1 t1, ref readonly T2 t2, ref readonly T3 t3)
         where T1 : unmanaged
         where T2 : unmanaged
         where T3 : unmanaged
@@ -53,7 +53,7 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
         return new(destination);
     }
 
-    public static NerveCacheKey Create<T1, T2, T3, T4>(in T1 t1, in T2 t2, in T3 t3, in T4 t4)
+    public static NerveCacheKey Create<T1, T2, T3, T4>(ref readonly T1 t1, ref readonly T2 t2, ref readonly T3 t3, ref readonly T4 t4)
         where T1 : unmanaged
         where T2 : unmanaged
         where T3 : unmanaged
@@ -80,7 +80,7 @@ public readonly struct NerveCacheKey(ReadOnlySpan<byte> bytes)
         return new(destination);
     }
 
-    public static ReadOnlySpan<byte> AsReadOnlySpan<T>(in T value)
+    public static ReadOnlySpan<byte> AsReadOnlySpan<T>(ref readonly T value)
     {
         return MemoryMarshal.CreateReadOnlySpan(
             ref Unsafe.As<T, byte>(ref Unsafe.AsRef(in value)),

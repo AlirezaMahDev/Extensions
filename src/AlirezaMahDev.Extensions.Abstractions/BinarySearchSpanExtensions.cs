@@ -2,113 +2,122 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class BinarySearchSpanExtensions
 {
-    extension<T>(ReadOnlySpan<T> readonlySpan)
+    extension<T>(ReadOnlySpan<T> readOnlySpan)
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int BinarySearchLowerBound<TComparable>(in TComparable value)
-            where TComparable : IComparable<T>, allows ref struct
+        public int BinarySearchLowerBound<TComparable>(scoped ref readonly TComparable value)
+            where TComparable : IScopedRefReadOnlyComparable<T>, allows ref struct
         {
-            var lower = readonlySpan.LowerBound(value);
+            var lower = readOnlySpan.LowerBound(in value);
 
-            return lower < readonlySpan.Length && value.CompareTo(readonlySpan[lower]) == 0
+            return lower < readOnlySpan.Length && value.CompareTo(in readOnlySpan[lower]) == 0
                 ? lower
                 : ~lower;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int BinarySearchLowerBound(in T value, Comparison<T> comparison)
+        public int BinarySearchLowerBound(T value, ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return readonlySpan.BinarySearchLowerBound(new ComparableComparison<T>(value, comparison));
+            ScopedReadOnlyComparableComparison<T> scopedReadOnlyComparableComparison = new(value, readOnlyComparison);
+            return readOnlySpan.BinarySearchLowerBound(ref scopedReadOnlyComparableComparison);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int BinarySearchLowerBound<TComparer>(in T value, in TComparer comparison)
+        public int BinarySearchLowerBound<TComparer>(T value, ref TComparer comparison)
             where TComparer : IComparer<T>
         {
-            return readonlySpan.BinarySearchLowerBound(new ComparableComparer<T, TComparer>(value, comparison));
+            ScopedReadOnlyComparableComparer<T, TComparer> scopedReadOnlyComparableComparer = new(value, comparison);
+            return readOnlySpan.BinarySearchLowerBound(ref scopedReadOnlyComparableComparer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int BinarySearchLowerBound<TBridge>(in TBridge value,
-            Func<T, TBridge> func,
-            Comparison<TBridge> comparison)
+        public int BinarySearchLowerBound<TBridge>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ScopedRefReadOnlyComparison<TBridge> readOnlyComparison)
             where TBridge : allows ref struct
         {
-            return readonlySpan.BinarySearchLowerBound(
-                new ComparableComparisonBridge<T, TBridge>(value, func, comparison));
+            ScopedReadOnlyComparableComparisonBridge<T, TBridge> scopedReadOnlyComparableComparisonBridge =
+                new(value, func, readOnlyComparison);
+            return readOnlySpan.BinarySearchLowerBound(ref scopedReadOnlyComparableComparisonBridge);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int BinarySearchLowerBound<TBridge, TComparer>(in TBridge value,
-            Func<T, TBridge> func,
-            in TComparer comparison)
+        public int BinarySearchLowerBound<TBridge, TComparer>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ref TComparer comparison)
+            where TComparer : IScopedRefReadOnlyComparer<TBridge>
             where TBridge : allows ref struct
-            where TComparer : IComparer<TBridge>
         {
-            return readonlySpan.BinarySearchLowerBound(
-                new ComparableComparerBridge<T, TBridge, TComparer>(value, func, comparison));
+            ScopedReadOnlyComparableComparerBridge<T, TBridge, TComparer> scopedReadOnlyComparableComparerBridge =
+                new(value, func, comparison);
+            return readOnlySpan.BinarySearchLowerBound(ref scopedReadOnlyComparableComparerBridge);
         }
 
-        public int BinarySearchUpperBound<TComparable>(TComparable value)
-            where TComparable : IComparable<T>, allows ref struct
+        public int BinarySearchUpperBound<TComparable>(scoped ref readonly TComparable value)
+            where TComparable : IScopedRefReadOnlyComparable<T>, allows ref struct
         {
-            var lower = readonlySpan.LowerBound(value);
+            var lower = readOnlySpan.LowerBound(in value);
 
-            if (lower >= readonlySpan.Length || value.CompareTo(readonlySpan[lower]) != 0)
+            if (lower >= readOnlySpan.Length || value.CompareTo(in readOnlySpan[lower]) != 0)
             {
                 return ~lower;
             }
 
-            var upper = readonlySpan[lower..].UpperBound(value) + lower;
+            var upper = readOnlySpan[lower..].UpperBound(in value) + lower;
 
             return upper - 1;
         }
 
-        public int BinarySearchUpperBound(T value, Comparison<T> comparison)
+        public int BinarySearchUpperBound(T value, ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return readonlySpan.BinarySearchUpperBound(new ComparableComparison<T>(value, comparison));
+            ScopedReadOnlyComparableComparison<T> scopedReadOnlyComparableComparison = new(value, readOnlyComparison);
+            return readOnlySpan.BinarySearchUpperBound(ref scopedReadOnlyComparableComparison);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int BinarySearchUpperBound<TComparer>(T value, in TComparer comparison)
+        public int BinarySearchUpperBound<TComparer>(T value, ref TComparer comparison)
             where TComparer : IComparer<T>
         {
-            return readonlySpan.BinarySearchUpperBound(new ComparableComparer<T, TComparer>(value, comparison));
+            ScopedReadOnlyComparableComparer<T, TComparer> scopedReadOnlyComparableComparer = new(value, comparison);
+            return readOnlySpan.BinarySearchUpperBound(ref scopedReadOnlyComparableComparer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int BinarySearchUpperBound<TBridge>(in TBridge value,
-            Func<T, TBridge> func,
-            Comparison<TBridge> comparison)
+        public int BinarySearchUpperBound<TBridge>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ScopedRefReadOnlyComparison<TBridge> readOnlyComparison)
+            where TBridge : allows ref struct
+
+        {
+            ScopedReadOnlyComparableComparisonBridge<T, TBridge> scopedReadOnlyComparableComparisonBridge =
+                new(value, func, readOnlyComparison);
+            return readOnlySpan.BinarySearchUpperBound(ref scopedReadOnlyComparableComparisonBridge);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public int BinarySearchUpperBound<TBridge, TComparer>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ref TComparer comparison)
+            where TComparer : IScopedRefReadOnlyComparer<TBridge>
             where TBridge : allows ref struct
         {
-            return readonlySpan.BinarySearchUpperBound(
-                new ComparableComparisonBridge<T, TBridge>(value, func, comparison));
+            ScopedReadOnlyComparableComparerBridge<T, TBridge, TComparer> scopedReadOnlyComparableComparerBridge =
+                new(value, func, comparison);
+            return readOnlySpan.BinarySearchUpperBound(ref scopedReadOnlyComparableComparerBridge);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int BinarySearchUpperBound<TBridge, TComparer>(in TBridge value,
-            Func<T, TBridge> func,
-            in TComparer comparison)
-            where TBridge : allows ref struct
-            where TComparer : IComparer<TBridge>
-        {
-            return readonlySpan.BinarySearchUpperBound(
-                new ComparableComparerBridge<T, TBridge, TComparer>(value, func, comparison));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int LowerBound<TComparable>(TComparable value)
-            where TComparable : IComparable<T>, allows ref struct
+        public int LowerBound<TComparable>(scoped ref readonly TComparable value)
+            where TComparable : IScopedRefReadOnlyComparable<T>, allows ref struct
         {
             var lo = 0;
-            var hi = readonlySpan.Length;
+            var hi = readOnlySpan.Length;
 
             while (lo < hi)
             {
                 var mid = lo + ((hi - lo) >> 1);
 
-                if (value.CompareTo(readonlySpan[mid]) > 0)
+                if (value.CompareTo(in readOnlySpan[mid]) > 0)
                 {
                     lo = mid + 1;
                 }
@@ -122,45 +131,55 @@ public static class BinarySearchSpanExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int LowerBound(T value, Comparison<T> comparison)
+        public int LowerBound(T value, ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return readonlySpan.LowerBound(new ComparableComparison<T>(value, comparison));
+            ScopedReadOnlyComparableComparison<T> scopedReadOnlyComparableComparison = new(value, readOnlyComparison);
+            return readOnlySpan.LowerBound(ref scopedReadOnlyComparableComparison);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int LowerBound<TComparer>(T value, in TComparer comparison)
+        public int LowerBound<TComparer>(T value, ref TComparer comparison)
             where TComparer : IComparer<T>
         {
-            return readonlySpan.LowerBound(new ComparableComparer<T, TComparer>(value, comparison));
+            ScopedReadOnlyComparableComparer<T, TComparer> scopedReadOnlyComparableComparer = new(value, comparison);
+            return readOnlySpan.LowerBound(ref scopedReadOnlyComparableComparer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int LowerBound<TBridge>(in TBridge value, Func<T, TBridge> func, Comparison<TBridge> comparison)
+        public int LowerBound<TBridge>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ScopedRefReadOnlyComparison<TBridge> readOnlyComparison)
             where TBridge : allows ref struct
+
         {
-            return readonlySpan.LowerBound(new ComparableComparisonBridge<T, TBridge>(value, func, comparison));
+            ScopedReadOnlyComparableComparisonBridge<T, TBridge> scopedReadOnlyComparableComparisonBridge =
+                new(value, func, readOnlyComparison);
+            return readOnlySpan.LowerBound(ref scopedReadOnlyComparableComparisonBridge);
         }
 
-        public int LowerBound<TBridge, TComparer>(in TBridge value, Func<T, TBridge> func, in TComparer comparison)
-            where TBridge : allows ref struct
-            where TComparer : IComparer<TBridge>
+        public int LowerBound<TBridge, TComparer>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ref TComparer comparison)
+            where TComparer : IScopedRefReadOnlyComparer<TBridge>
+
         {
-            return readonlySpan.LowerBound(
-                new ComparableComparerBridge<T, TBridge, TComparer>(value, func, comparison));
+            ScopedReadOnlyComparableComparerBridge<T, TBridge, TComparer> scopedReadOnlyComparableComparerBridge =
+                new(value, func, comparison);
+            return readOnlySpan.LowerBound(ref scopedReadOnlyComparableComparerBridge);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int UpperBound<TComparable>(TComparable value)
-            where TComparable : IComparable<T>, allows ref struct
+        public int UpperBound<TComparable>(scoped ref readonly TComparable value)
+            where TComparable : IScopedRefReadOnlyComparable<T>, allows ref struct
         {
             var lo = 0;
-            var hi = readonlySpan.Length;
+            var hi = readOnlySpan.Length;
 
             while (lo < hi)
             {
                 var mid = lo + ((hi - lo) >> 1);
 
-                if (value.CompareTo(readonlySpan[mid]) >= 0)
+                if (value.CompareTo(in readOnlySpan[mid]) >= 0)
                 {
                     lo = mid + 1;
                 }
@@ -174,46 +193,56 @@ public static class BinarySearchSpanExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int UpperBound(T value, Comparison<T> comparison)
+        public int UpperBound(T value, ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return readonlySpan.UpperBound(new ComparableComparison<T>(value, comparison));
+            ScopedReadOnlyComparableComparison<T> scopedReadOnlyComparableComparison = new(value, readOnlyComparison);
+            return readOnlySpan.UpperBound(ref scopedReadOnlyComparableComparison);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int UpperBound<TComparer>(T value, in TComparer comparison)
+        public int UpperBound<TComparer>(T value, ref TComparer comparison)
             where TComparer : IComparer<T>
         {
-            return readonlySpan.UpperBound(new ComparableComparer<T, TComparer>(value, comparison));
+            ScopedReadOnlyComparableComparer<T, TComparer> scopedReadOnlyComparableComparer = new(value, comparison);
+            return readOnlySpan.UpperBound(ref scopedReadOnlyComparableComparer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int UpperBound<TBridge>(in TBridge value, Func<T, TBridge> func, Comparison<TBridge> comparison)
+        public int UpperBound<TBridge>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ScopedRefReadOnlyComparison<TBridge> readOnlyComparison)
+            where TBridge : allows ref struct
+
+        {
+            ScopedReadOnlyComparableComparisonBridge<T, TBridge> scopedReadOnlyComparableComparisonBridge =
+                new(value, func, readOnlyComparison);
+            return readOnlySpan.UpperBound(ref scopedReadOnlyComparableComparisonBridge);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public int UpperBound<TBridge, TComparer>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ref TComparer comparison)
+            where TComparer : IScopedRefReadOnlyComparer<TBridge>
             where TBridge : allows ref struct
         {
-            return readonlySpan.UpperBound(new ComparableComparisonBridge<T, TBridge>(value, func, comparison));
+            ScopedReadOnlyComparableComparerBridge<T, TBridge, TComparer> scopedReadOnlyComparableComparerBridge =
+                new(value, func, comparison);
+            return readOnlySpan.UpperBound(ref scopedReadOnlyComparableComparerBridge);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public int UpperBound<TBridge, TComparer>(in TBridge value, Func<T, TBridge> func, in TComparer comparison)
-            where TBridge : allows ref struct
-            where TComparer : IComparer<TBridge>
+        public BinarySearchRange BinarySearchRange<TComparable>(scoped ref readonly TComparable value)
+            where TComparable : IScopedRefReadOnlyComparable<T>, allows ref struct
         {
-            return readonlySpan.UpperBound(
-                new ComparableComparerBridge<T, TBridge, TComparer>(value, func, comparison));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public BinarySearchRange BinarySearchRange<TComparable>(TComparable value)
-            where TComparable : IComparable<T>, allows ref struct
-        {
-            var lower = readonlySpan.BinarySearchLowerBound(value);
+            var lower = readOnlySpan.BinarySearchLowerBound(in value);
 
             if (lower < 0)
             {
                 return new(lower, lower);
             }
 
-            var upper = readonlySpan[lower..].BinarySearchUpperBound(value);
+            var upper = readOnlySpan[lower..].BinarySearchUpperBound(in value);
 
             if (upper < 0)
             {
@@ -224,45 +253,53 @@ public static class BinarySearchSpanExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public BinarySearchRange BinarySearchRange(T value, Comparison<T> comparison)
+        public BinarySearchRange BinarySearchRange(T value, ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return readonlySpan.BinarySearchRange(new ComparableComparison<T>(value, comparison));
+            ScopedReadOnlyComparableComparison<T> scopedReadOnlyComparableComparison = new(value, readOnlyComparison);
+            return readOnlySpan.BinarySearchRange(ref scopedReadOnlyComparableComparison);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public BinarySearchRange BinarySearchRange<TComparer>(T value, in TComparer comparison)
+        public BinarySearchRange BinarySearchRange<TComparer>(T value, ref TComparer comparison)
             where TComparer : IComparer<T>
         {
-            return readonlySpan.BinarySearchRange(new ComparableComparer<T, TComparer>(value, comparison));
+            ScopedReadOnlyComparableComparer<T, TComparer> scopedReadOnlyComparableComparer = new(value, comparison);
+            return readOnlySpan.BinarySearchRange(ref scopedReadOnlyComparableComparer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public BinarySearchRange BinarySearchRange<TBridge>(in TBridge value,
-            Func<T, TBridge> func,
-            Comparison<TBridge> comparison)
+        public BinarySearchRange BinarySearchRange<TBridge>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ScopedRefReadOnlyComparison<TBridge> readOnlyComparison)
             where TBridge : allows ref struct
+
         {
-            return readonlySpan.BinarySearchRange(new ComparableComparisonBridge<T, TBridge>(value, func, comparison));
+            ScopedReadOnlyComparableComparisonBridge<T, TBridge> scopedReadOnlyComparableComparisonBridge =
+                new(value, func, readOnlyComparison);
+            return readOnlySpan.BinarySearchRange(ref scopedReadOnlyComparableComparisonBridge);
         }
 
-        public BinarySearchRange BinarySearchRange<TBridge, TComparer>(in TBridge value,
-            Func<T, TBridge> func,
-            in TComparer comparison)
+        public BinarySearchRange BinarySearchRange<TBridge, TComparer>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ref TComparer comparison)
+            where TComparer : IScopedRefReadOnlyComparer<TBridge>
             where TBridge : allows ref struct
-            where TComparer : IComparer<TBridge>
+
         {
-            return readonlySpan.BinarySearchRange(
-                new ComparableComparerBridge<T, TBridge, TComparer>(value, func, comparison));
+            ScopedReadOnlyComparableComparerBridge<T, TBridge, TComparer> scopedReadOnlyComparableComparerBridge =
+                new(value, func, comparison);
+            return readOnlySpan.BinarySearchRange(ref scopedReadOnlyComparableComparerBridge);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public bool TryBinarySearchRangeSlice<TComparable>(TComparable value, out ReadOnlySpan<T> values)
-            where TComparable : IComparable<T>, allows ref struct
+        public bool TryBinarySearchRangeSlice<TComparable>(scoped ref readonly TComparable value,
+            out ReadOnlySpan<T> values)
+            where TComparable : IScopedRefReadOnlyComparable<T>, allows ref struct
         {
-            var binarySearchRange = readonlySpan.BinarySearchRange(value);
+            var binarySearchRange = readOnlySpan.BinarySearchRange(in value);
             if (binarySearchRange.TryGetRange(out var range))
             {
-                values = readonlySpan[range];
+                values = readOnlySpan[range];
                 return true;
             }
 
@@ -271,180 +308,98 @@ public static class BinarySearchSpanExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public bool TryBinarySearchRangeSlice(T value, Comparison<T> comparison, out ReadOnlySpan<T> values)
+        public bool TryBinarySearchRangeSlice(T value,
+            ScopedRefReadOnlyComparison<T> readOnlyComparison,
+            out ReadOnlySpan<T> values)
         {
-            return readonlySpan.TryBinarySearchRangeSlice(new ComparableComparison<T>(value, comparison), out values);
+            ScopedReadOnlyComparableComparison<T> scopedReadOnlyComparableComparison = new(value, readOnlyComparison);
+            return readOnlySpan.TryBinarySearchRangeSlice(ref scopedReadOnlyComparableComparison, out values);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public bool TryBinarySearchRangeSlice<TComparer>(T value, in TComparer comparison, out ReadOnlySpan<T> values)
+        public bool TryBinarySearchRangeSlice<TComparer>(T value,
+            ref TComparer comparison,
+            out ReadOnlySpan<T> values)
             where TComparer : IComparer<T>
         {
-            return readonlySpan.TryBinarySearchRangeSlice(new ComparableComparer<T, TComparer>(value, comparison),
-                out values);
+            ScopedReadOnlyComparableComparer<T, TComparer> scopedReadOnlyComparableComparer = new(value, comparison);
+            return readOnlySpan.TryBinarySearchRangeSlice(ref scopedReadOnlyComparableComparer, out values);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public bool TryBinarySearchRangeSlice<TBridge>(in TBridge value,
-            Func<T, TBridge> func,
-            Comparison<TBridge> comparison,
+        public bool TryBinarySearchRangeSlice<TBridge>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ScopedRefReadOnlyComparison<TBridge> readOnlyComparison,
             out ReadOnlySpan<T> values)
             where TBridge : allows ref struct
+
         {
-            return readonlySpan.TryBinarySearchRangeSlice(
-                new ComparableComparisonBridge<T, TBridge>(value, func, comparison),
-                out values);
+            ScopedReadOnlyComparableComparisonBridge<T, TBridge> scopedReadOnlyComparableComparisonBridge =
+                new(value, func, readOnlyComparison);
+            return readOnlySpan.TryBinarySearchRangeSlice(ref scopedReadOnlyComparableComparisonBridge, out values);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public bool TryBinarySearchRangeSlice<TBridge, TComparer>(in TBridge value,
-            Func<T, TBridge> func,
-            in TComparer comparison,
+        public bool TryBinarySearchRangeSlice<TBridge, TComparer>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ref TComparer comparison,
             out ReadOnlySpan<T> values)
-            where TComparer : IComparer<TBridge>
+            where TComparer : IScopedRefReadOnlyComparer<TBridge>
             where TBridge : allows ref struct
+
         {
-            return readonlySpan.TryBinarySearchRangeSlice(
-                new ComparableComparerBridge<T, TBridge, TComparer>(value, func, comparison),
-                out values);
+            ScopedReadOnlyComparableComparerBridge<T, TBridge, TComparer> scopedReadOnlyComparableComparerBridge =
+                new(value, func, comparison);
+            return readOnlySpan.TryBinarySearchRangeSlice(ref scopedReadOnlyComparableComparerBridge, out values);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ReadOnlySpan<T> BinarySearchRangeSlice<TComparable>(TComparable value)
-            where TComparable : IComparable<T>, allows ref struct
+        public ReadOnlySpan<T> BinarySearchRangeSlice<TComparable>(scoped ref readonly TComparable value)
+            where TComparable : IScopedRefReadOnlyComparable<T>, allows ref struct
         {
-            return readonlySpan.TryBinarySearchRangeSlice(value, out var values)
+            return readOnlySpan.TryBinarySearchRangeSlice(in value, out var values)
                 ? values
-                : throw new("not found in slice");
+                : throw new("not found ref slice");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ReadOnlySpan<T> BinarySearchRangeSlice(T value, Comparison<T> comparison)
+        public ReadOnlySpan<T> BinarySearchRangeSlice(T value, ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return readonlySpan.BinarySearchRangeSlice(new ComparableComparison<T>(value, comparison));
+            ScopedReadOnlyComparableComparison<T> scopedReadOnlyComparableComparison = new(value, readOnlyComparison);
+            return readOnlySpan.BinarySearchRangeSlice(ref scopedReadOnlyComparableComparison);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ReadOnlySpan<T> BinarySearchRangeSlice<TComparer>(T value, in TComparer comparison)
-            where TComparer : IComparer<T>
+        public ReadOnlySpan<T> BinarySearchRangeSlice<TComparer>(T value,
+            ref TComparer comparison)
+            where TComparer : IComparer<T>, allows ref struct
         {
-            return readonlySpan.BinarySearchRangeSlice(new ComparableComparer<T, TComparer>(value, comparison));
+            ScopedReadOnlyComparableComparer<T, TComparer> scopedReadOnlyComparableComparer = new(value, comparison);
+            return readOnlySpan.BinarySearchRangeSlice(ref scopedReadOnlyComparableComparer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ReadOnlySpan<T> BinarySearchRangeSlice<TBridge>(in TBridge value,
-            Func<T, TBridge> func,
-            Comparison<TBridge> comparison)
+        public ReadOnlySpan<T> BinarySearchRangeSlice<TBridge>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ScopedRefReadOnlyComparison<TBridge> readOnlyComparison)
             where TBridge : allows ref struct
+
         {
-            return readonlySpan.BinarySearchRangeSlice(
-                new ComparableComparisonBridge<T, TBridge>(value, func, comparison));
+            ScopedReadOnlyComparableComparisonBridge<T, TBridge> scopedReadOnlyComparableComparisonBridge =
+                new(value, func, readOnlyComparison);
+            return readOnlySpan.BinarySearchRangeSlice(ref scopedReadOnlyComparableComparisonBridge);
         }
 
-        public ReadOnlySpan<T> BinarySearchRangeSlice<TBridge, TComparer>(in TBridge value,
-            Func<T, TBridge> func,
-            in TComparer comparison)
+        public ReadOnlySpan<T> BinarySearchRangeSlice<TBridge, TComparer>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ref TComparer comparison)
+            where TComparer : IScopedRefReadOnlyComparer<TBridge>, allows ref struct
             where TBridge : allows ref struct
-            where TComparer : IComparer<TBridge>
-        {
-            return readonlySpan.BinarySearchRangeSlice(
-                new ComparableComparerBridge<T, TBridge, TComparer>(value, func, comparison));
-        }
-    }
 
-    extension<T>(Span<T> span)
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public bool TryBinarySearchRangeSlice<TComparable>(TComparable value, out Span<T> values)
-            where TComparable : IComparable<T>, allows ref struct
         {
-            var binarySearchRange = span.BinarySearchRange(value);
-            if (binarySearchRange.TryGetRange(out var range))
-            {
-                values = span[range];
-                return true;
-            }
-
-            values = default;
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public bool TryBinarySearchRangeSlice(T value, Comparison<T> comparison, out Span<T> values)
-        {
-            return span.TryBinarySearchRangeSlice(new ComparableComparison<T>(value, comparison), out values);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public bool TryBinarySearchRangeSlice<TComparer>(T value, in TComparer comparison, out Span<T> values)
-            where TComparer : IComparer<T>
-        {
-            return span.TryBinarySearchRangeSlice(new ComparableComparer<T, TComparer>(value, comparison), out values);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public bool TryBinarySearchRangeSlice<TBridge>(in TBridge value,
-            Func<T, TBridge> func,
-            Comparison<TBridge> comparison,
-            out ReadOnlySpan<T> values)
-            where TBridge : allows ref struct
-        {
-            return span.TryBinarySearchRangeSlice(new ComparableComparisonBridge<T, TBridge>(value, func, comparison),
-                out values);
-        }
-
-        public bool TryBinarySearchRangeSlice<TBridge, TComparer>(in TBridge value,
-            Func<T, TBridge> func,
-            in TComparer comparison,
-            out ReadOnlySpan<T> values)
-            where TBridge : allows ref struct
-            where TComparer : IComparer<TBridge>
-        {
-            return span.TryBinarySearchRangeSlice(
-                new ComparableComparerBridge<T, TBridge, TComparer>(value, func, comparison),
-                out values);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public Span<T> BinarySearchRangeSlice<TComparable>(TComparable value)
-            where TComparable : IComparable<T>, allows ref struct
-        {
-            return span.TryBinarySearchRangeSlice(value, out var values)
-                ? values
-                : throw new("not found in slice");
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public Span<T> BinarySearchRangeSlice(T value, Comparison<T> comparison)
-        {
-            return span.BinarySearchRangeSlice(new ComparableComparison<T>(value, comparison));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public Span<T> BinarySearchRangeSlice<TComparer>(T value, in TComparer comparison)
-            where TComparer : IComparer<T>
-        {
-            return span.BinarySearchRangeSlice(new ComparableComparer<T, TComparer>(value, comparison));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public Span<T> BinarySearchRangeSlice<TBridge>(in TBridge value,
-            Func<T, TBridge> func,
-            Comparison<TBridge> comparison)
-            where TBridge : allows ref struct
-        {
-            return span.BinarySearchRangeSlice(new ComparableComparisonBridge<T, TBridge>(value, func, comparison));
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public Span<T> BinarySearchRangeSlice<TBridge, TComparer>(in TBridge value,
-            Func<T, TBridge> func,
-            in TComparer comparison)
-            where TBridge : allows ref struct
-            where TComparer : IComparer<TBridge>
-        {
-            return span.BinarySearchRangeSlice(
-                new ComparableComparerBridge<T, TBridge, TComparer>(value, func, comparison));
+            ScopedReadOnlyComparableComparerBridge<T, TBridge, TComparer> scopedReadOnlyComparableComparerBridge =
+                new(value, func, comparison);
+            return readOnlySpan.BinarySearchRangeSlice(ref scopedReadOnlyComparableComparerBridge);
         }
     }
 }

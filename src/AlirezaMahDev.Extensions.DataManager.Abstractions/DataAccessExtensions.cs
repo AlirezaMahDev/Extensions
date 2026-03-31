@@ -5,12 +5,6 @@ public static class DataAccessExtensions
     extension(IDataAccess access)
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public void Create(int length, out DataLocation result)
-        {
-            DataLocation.Create(access, length, out result);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public void Create<TDataValue>(out DataLocation<TDataValue> result)
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {

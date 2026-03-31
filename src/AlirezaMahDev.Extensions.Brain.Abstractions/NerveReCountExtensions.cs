@@ -8,7 +8,7 @@ public static class NerveReCountExtensions
     {
         public void ReCount(IProgressLogger progressLogger)
         {
-            nerve.Counter.RefValue.NeuronCount = 0;
+            nerve.Counter.UnsafeRefValue.NeuronCount = 0;
             using (var wraps =
                    nerve.RootNeuronWrap.GetConnectionsWrapRaw().ToMemoryList())
             {
@@ -20,23 +20,22 @@ public static class NerveReCountExtensions
                 SmartParallel.For(0,
                     wraps.Count,
                     CancellationToken.None,
-                    (index, _) =>
+                    (index, cancellationToken) =>
                     {
-                        wraps[index]
-                            .Lock((ref readonly location) =>
-                                location.RefValue.NextCount = wraps.Count - index - 1);
+                        wraps[index].Location.WriteLock((scoped ref value) =>
+                            value.NextCount = wraps.Count - index - 1, cancellationToken);
                         progressLogger.IncrementCount();
                     });
-                Interlocked.Add(ref nerve.Counter.RefValue.NeuronCount, wraps.Count);
+                Interlocked.Add(ref nerve.Counter.UnsafeRefValue.NeuronCount, wraps.Count);
             }
 
-            nerve.Counter.RefValue.ConnectionCount = 0;
+            nerve.Counter.UnsafeRefValue.ConnectionCount = 0;
             var connectionWrap = nerve.RootConnectionWrap;
             INerve<TData, TLink>.ReCountCore(progressLogger, connectionWrap);
         }
 
         public static void ReCountCore(IProgressLogger progressLogger,
-            CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
+            CellWrap<ConnectionValue<TLink>, TData, TLink> connectionWrap)
         {
             using (var wraps =
                    connectionWrap.GetConnectionsWrapRaw().ToMemoryList())
@@ -49,14 +48,13 @@ public static class NerveReCountExtensions
                 SmartParallel.For(0,
                     wraps.Count,
                     CancellationToken.None,
-                    (index, _) =>
+                    (index, cancellationToken) =>
                     {
-                        wraps[index]
-                            .Lock((ref readonly location) =>
-                                location.RefValue.NextCount = wraps.Count - index - 1);
+                        wraps[index].Location.WriteLock((scoped ref value) =>
+                            value.NextCount = wraps.Count - index - 1, cancellationToken);
                         progressLogger.IncrementCount();
                     });
-                Interlocked.Add(ref connectionWrap.Nerve.Counter.RefValue.ConnectionCount, wraps.Count);
+                Interlocked.Add(ref connectionWrap.Nerve.Counter.UnsafeRefValue.ConnectionCount, wraps.Count);
             }
 
             SmartParallel.ForEach(connectionWrap.GetConnectionsWrapRaw(),

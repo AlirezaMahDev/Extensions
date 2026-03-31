@@ -4,6 +4,18 @@ public static class SpanExtensions
 {
     extension<T>(Span<T> span)
     {
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        public IEnumerable<TOut> Select<TOut>(RefFunc<T, TOut> refFunc)
+        {
+            var result = new TOut[span.Length];
+            for (var index = 0; index < span.Length; index++)
+            {
+                result[index] = refFunc(ref span[index]);
+            }
+
+            return result;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ref T First()
         {
@@ -16,7 +28,7 @@ public static class SpanExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ref T First(InFunc<T, bool> predicate)
+        public ref T First(RefFunc<T, bool> predicate)
         {
             if (span.IsEmpty)
             {
@@ -25,7 +37,7 @@ public static class SpanExtensions
 
             foreach (ref var item in span)
             {
-                if (predicate.Invoke(in item))
+                if (predicate.Invoke(ref item))
                 {
                     return ref item;
                 }
@@ -37,17 +49,12 @@ public static class SpanExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ref T FirstOrDefault()
         {
-            if (span.IsEmpty)
-            {
-                return ref Unsafe.NullRef<T>();
-            }
-
-            return ref span[0];
+            return ref span.IsEmpty ? ref Unsafe.NullRef<T>() : ref span[0];
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ref T FirstOrDefault(InFunc<T, bool> predicate)
+        public ref T FirstOrDefault(RefFunc<T, bool> predicate)
         {
             if (span.IsEmpty)
             {
@@ -56,7 +63,7 @@ public static class SpanExtensions
 
             foreach (ref var item in span)
             {
-                if (predicate.Invoke(in item))
+                if (predicate.Invoke(ref item))
                 {
                     return ref item;
                 }

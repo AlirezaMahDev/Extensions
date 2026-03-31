@@ -8,7 +8,7 @@ public static class ReadOnlySpanValueExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ReadOnlySpanValue<T> AsReadOnlySpanValue()
         {
-            return new(in t);
+            return new(ref t);
         }
     }
 }

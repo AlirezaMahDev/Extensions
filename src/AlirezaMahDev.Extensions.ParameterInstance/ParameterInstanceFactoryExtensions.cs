@@ -19,29 +19,6 @@ public static class ParameterInstanceFactoryExtensions
             services.TryAddSingleton(factoryType);
             return services;
         }
-
-
-        public IServiceCollection AddScopedParameterInstanceFactory<TFactory>()
-        {
-            return services.AddScopedParameterInstanceFactory(typeof(TFactory));
-        }
-
-        public IServiceCollection AddScopedParameterInstanceFactory(Type factoryType)
-        {
-            services.TryAddScoped(factoryType);
-            return services;
-        }
-
-        public IServiceCollection AddTransientParameterInstanceFactory<TFactory>()
-        {
-            return services.AddTransientParameterInstanceFactory(typeof(TFactory));
-        }
-
-        public IServiceCollection AddTransientParameterInstanceFactory(Type factoryType)
-        {
-            services.TryAddTransient(factoryType);
-            return services;
-        }
     }
 
 

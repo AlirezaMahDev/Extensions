@@ -9,18 +9,25 @@ public struct ConnectionValue<TLink> :
 {
     public TLink Link;
 
-    public DataOffset Neuron;
-    public DataOffset Child;
-    public DataOffset Next;
-    public DataOffset Previous;
+    public Neuron Neuron;
+    public Connection Child;
+    public Connection Next;
+    public Connection Previous;
 
     public int NextCount;
-    public uint Weight;
-    public float Score;
-    public int _lock;
+    private uint _weight;
+    private float _score;
+
+    private DataLock _lock;
+
+    public readonly ref DataLock Lock
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._lock;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Equals(in ConnectionValue<TLink> other)
+    public bool Equals(scoped ref readonly ConnectionValue<TLink> other)
     {
         return Link.Equals(in other.Link) &&
                Neuron == other.Neuron &&
@@ -28,19 +35,40 @@ public struct ConnectionValue<TLink> :
                Next == other.Next &&
                Previous == other.Previous &&
                NextCount == other.NextCount &&
-               Weight == other.Weight &&
-               Score == other.Score;
+               _weight == other._weight &&
+               _score == other._score;
     }
 
-    private static readonly ConnectionValue<TLink> DefaultField = new()
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public override bool Equals([NotNullWhen(true)] object? obj)
     {
-        Neuron = DataOffset.Null,
-        Next = DataOffset.Null,
+        return obj is ConnectionValue<TLink> connectionValue && Equals(ref connectionValue);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public override readonly int GetHashCode()
+    {
+        using var xxHash3Builder = XxHash3.Builder();
+        xxHash3Builder.Add(in Link);
+        xxHash3Builder.Add(in Neuron);
+        xxHash3Builder.Add(in Child);
+        xxHash3Builder.Add(in Next);
+        xxHash3Builder.Add(in Previous);
+        xxHash3Builder.Add(in NextCount);
+        xxHash3Builder.Add(in _weight);
+        xxHash3Builder.Add(in _score);
+        return xxHash3Builder.ToHashCode();
+    }
+
+    private static ConnectionValue<TLink> DefaultField = new()
+    {
+        Neuron = Neuron.Null,
+        Next = Connection.Null,
         NextCount = 0,
-        Child = DataOffset.Null,
-        Previous = DataOffset.Null,
-        Score = 1f,
-        Weight = 0u,
+        Child = Connection.Null,
+        Previous = Connection.Null,
+        _score = 1f,
+        _weight = 0u,
         Link = default
     };
 
@@ -50,31 +78,30 @@ public struct ConnectionValue<TLink> :
         get => ref DefaultField;
     }
 
-
-    public readonly ref int Lock
+    public readonly ref float Score
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this)._lock;
-        }
+        get => ref Unsafe.AsRef(in this)._score;
     }
 
-    public readonly ref float RefScore
+    public readonly ref uint Weight
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this).Score;
-        }
+        get => ref Unsafe.AsRef(in this)._weight;
     }
 
-    public readonly ref uint RefWeight
+    public override readonly string ToString()
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this).Weight;
-        }
+        return $"{Link}";
+    }
+
+    public static bool operator ==(ConnectionValue<TLink> left, ConnectionValue<TLink> right)
+    {
+        return left.Equals(in right);
+    }
+
+    public static bool operator !=(ConnectionValue<TLink> left, ConnectionValue<TLink> right)
+    {
+        return !(left == right);
     }
 }

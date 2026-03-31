@@ -4,14 +4,15 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [StructLayout(LayoutKind.Sequential)]
 [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-public struct DataTrashItem(in DataOffset offset, in DataOffset next)
+public struct DataTrashItem(DataOffset offset, DataOffset next)
     : IDataCollectionItem<DataTrashItem>, IDataValueDefault<DataTrashItem>
 {
     private DataOffset _offset = offset;
     private DataOffset _next = next;
-    private int _lock;
+    private DataLock _lock;
 
-    public bool Equals(in DataTrashItem other)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public readonly bool Equals(scoped ref readonly DataTrashItem other)
     {
         return Vector256.LoadUnsafe(ref Unsafe.As<DataTrashItem, byte>(ref Unsafe.AsRef(in this))) ==
                Vector256.LoadUnsafe(ref Unsafe.As<DataTrashItem, byte>(ref Unsafe.AsRef(in other)));
@@ -26,30 +27,21 @@ public struct DataTrashItem(in DataOffset offset, in DataOffset next)
     }
 
 
-    public ref int Lock
+    public readonly ref DataLock Lock
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this)._lock;
-        }
+        get => ref Unsafe.AsRef(in this)._lock;
     }
 
-    public ref DataOffset Offset
+    public readonly ref DataOffset Offset
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this)._offset;
-        }
+        get => ref Unsafe.AsRef(in this)._offset;
     }
 
-    public ref DataOffset Next
+    public readonly ref DataOffset Next
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.AsRef(in this)._next;
-        }
+        get => ref Unsafe.AsRef(in this)._next;
     }
 }

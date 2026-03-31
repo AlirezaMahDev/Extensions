@@ -6,63 +6,93 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class SmartParallel
 {
-    private static readonly SemaphoreSlim Semaphore = new(Environment.ProcessorCount, Environment.ProcessorCount);
-    private static readonly AsyncLocal<MemoryValue<int>> AsyncLocalReservedCount = new();
-    private readonly struct Work(CancellationToken cancellationToken, MemoryValue<int> index, int length, Func<int, CancellationToken, ValueTask> body)
+    private readonly struct Work(
+        CancellationToken cancellationToken,
+        MemoryValue<int> index,
+        int length,
+        bool async,
+        Func<int, CancellationToken, ValueTask>? bodyAsync,
+        Action<int, CancellationToken>? bodySync)
     {
         public readonly CancellationToken CancellationToken = cancellationToken;
         public readonly MemoryValue<int> Index = index;
         public readonly int Length = length;
-        public readonly Func<int, CancellationToken, ValueTask> Body = body;
+        public readonly bool Async = async;
+        public readonly Func<int, CancellationToken, ValueTask>? BodyAsync = bodyAsync;
+        public readonly Action<int, CancellationToken>? BodySync = bodySync;
+        public TaskCompletionSource TaskCompletionSource { get; } = new();
     }
 
-
+    private static readonly AsyncLocal<bool> IsWorker = new();
     private static readonly Channel<Work> Channel = System.Threading.Channels.Channel.CreateUnbounded<Work>();
-    private static readonly Task[] Tasks = [.. Enumerable.Repeat(Task.Run(async () =>
+    private static readonly Task[] Tasks = [.. Enumerable.Repeat(Task.Run(Worker), Environment.ProcessorCount)];
+
+    private static async Task Worker()
     {
+        IsWorker.Value = true;
         await foreach (var work in Channel.Reader.ReadAllAsync())
         {
-            while (!work.CancellationToken.IsCancellationRequested)
+            if (work.Async)
             {
-                var index = Interlocked.Increment(ref work.Index.Value) - 1;
-                if (index >= work.Length)
+                while (!work.CancellationToken.IsCancellationRequested)
                 {
-                    break;
+                    var index = Interlocked.Increment(ref work.Index.Value) - 1;
+                    if (index >= work.Length)
+                    {
+                        work.TaskCompletionSource.TrySetResult();
+                        break;
+                    }
+
+                    try
+                    {
+                        await work.BodyAsync!(index, work.CancellationToken);
+                    }
+                    catch (Exception e)
+                    {
+                        work.TaskCompletionSource.TrySetException(e);
+                    }
                 }
 
-                await work.Body(index, work.CancellationToken);
+                if (work.CancellationToken.IsCancellationRequested)
+                {
+                    work.TaskCompletionSource.TrySetCanceled(work.CancellationToken);
+                }
             }
-        }
-    }), Environment.ProcessorCount)];
-
-    private static ref int CurrentCountReserved
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            if (!AsyncLocalReservedCount.Value.HasValue)
+            else
             {
-                AsyncLocalReservedCount.Value = new(0);
+                while (!work.CancellationToken.IsCancellationRequested)
+                {
+                    var index = Interlocked.Increment(ref work.Index.Value) - 1;
+                    if (index >= work.Length)
+                    {
+                        work.TaskCompletionSource.TrySetResult();
+                        break;
+                    }
+
+                    try
+                    {
+                        work.BodySync!(index, work.CancellationToken);
+                    }
+                    catch (Exception e)
+                    {
+                        work.TaskCompletionSource.TrySetException(e);
+                    }
+                }
+
+                if (work.CancellationToken.IsCancellationRequested)
+                {
+                    work.TaskCompletionSource.TrySetCanceled(work.CancellationToken);
+                }
             }
-
-            return ref AsyncLocalReservedCount.Value.Value;
         }
-    }
 
-    private static bool CurrentHasReserve
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get
-        {
-            var value = AsyncLocalReservedCount.Value;
-            return value.HasValue && value.Value > 0;
-        }
+        IsWorker.Value = false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static async ValueTask ForEachAsync<T>(IAsyncEnumerable<T> values,
-    CancellationToken cancellationToken,
-    Func<T, CancellationToken, ValueTask> body)
+        CancellationToken cancellationToken,
+        Func<T, CancellationToken, ValueTask> body)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -78,14 +108,7 @@ public static class SmartParallel
                 while (!token.IsCancellationRequested)
                 {
                     T current;
-                    try
-                    {
-                        await state.semaphoreSlim.WaitAsync(token);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return;
-                    }
+                    await state.semaphoreSlim.WaitAsync(token);
 
                     try
                     {
@@ -109,8 +132,8 @@ public static class SmartParallel
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static async ValueTask ForEachAsync<T>(IEnumerable<T> values,
-    CancellationToken cancellationToken,
-    Func<T, CancellationToken, ValueTask> body)
+        CancellationToken cancellationToken,
+        Func<T, CancellationToken, ValueTask> body)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -126,14 +149,7 @@ public static class SmartParallel
                 while (!token.IsCancellationRequested)
                 {
                     T current;
-                    try
-                    {
-                        await state.semaphoreSlim.WaitAsync(token);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return;
-                    }
+                    await state.semaphoreSlim.WaitAsync(token);
 
                     try
                     {
@@ -158,8 +174,8 @@ public static class SmartParallel
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void ForEach<T>(IEnumerable<T> values,
-    CancellationToken cancellationToken,
-    Action<T, CancellationToken> body)
+        CancellationToken cancellationToken,
+        Action<T, CancellationToken> body)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -175,14 +191,7 @@ public static class SmartParallel
                 while (!token.IsCancellationRequested)
                 {
                     T current;
-                    try
-                    {
-                        state.semaphoreSlim.Wait(token);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return;
-                    }
+                    state.semaphoreSlim.Wait(token);
 
                     try
                     {
@@ -212,10 +221,11 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
+            static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void ForEach<T>(T[] values,
         CancellationToken cancellationToken,
@@ -224,7 +234,7 @@ public static class SmartParallel
         InvokeCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
+            static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
@@ -237,7 +247,7 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Count,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
+            static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
@@ -250,7 +260,7 @@ public static class SmartParallel
         InvokeCore(values.Count,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
+            static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
@@ -263,7 +273,7 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
+            static (index, state, token) =>
                 state.body(state.values.Span[index], token),
             cancellationToken);
     }
@@ -274,11 +284,11 @@ public static class SmartParallel
         Action<T, CancellationToken> body)
     {
         InvokeCore(values.Length,
-           (values, body),
-           [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
-               state.body(state.values.Span[index], token),
-           cancellationToken);
+            (values, body),
+            [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+            static (index, state, token) =>
+                state.body(state.values.Span[index], token),
+            cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -289,21 +299,22 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
+            static (index, state, token) =>
                 state.body(state.values.Span[index], token),
             cancellationToken);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void ForEach<T>(ReadOnlyMemory<T> values,
         CancellationToken cancellationToken,
         Action<T, CancellationToken> body)
     {
         InvokeCore(values.Length,
-           (values, body),
-           [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
-               state.body(state.values.Span[index], token),
-           cancellationToken);
+            (values, body),
+            [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+            static (index, state, token) =>
+                state.body(state.values.Span[index], token),
+            cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -314,21 +325,22 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Count,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
+            static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void ForEach<T>(IReadOnlyList<T> values,
         CancellationToken cancellationToken,
         Action<T, CancellationToken> body)
     {
         InvokeCore(values.Count,
-           (values, body),
-           [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
-               state.body(state.values[index], token),
-           cancellationToken);
+            (values, body),
+            [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+            static (index, state, token) =>
+                state.body(state.values[index], token),
+            cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -340,10 +352,11 @@ public static class SmartParallel
         return InvokeAsyncCore(Math.Max(0, toExclusive - fromInclusive),
             (fromInclusive, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
+            static (index, state, token) =>
                 state.body(state.fromInclusive + index, token),
             cancellationToken);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public static void For(int fromInclusive,
         int toExclusive,
@@ -351,11 +364,11 @@ public static class SmartParallel
         Action<int, CancellationToken> body)
     {
         InvokeCore(Math.Max(0, toExclusive - fromInclusive),
-           (fromInclusive, body),
-           [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
-               state.body(state.fromInclusive + index, token),
-           cancellationToken);
+            (fromInclusive, body),
+            [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+            static (index, state, token) =>
+                state.body(state.fromInclusive + index, token),
+            cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -365,34 +378,59 @@ public static class SmartParallel
         return InvokeAsyncCore(actions.Length,
             actions,
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
+            static (index, state, token) =>
                 state[index](token),
             cancellationToken);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    public static void InvokeAsync(CancellationToken cancellationToken,
+    public static void Invoke(CancellationToken cancellationToken,
         params Action<CancellationToken>[] actions)
     {
         InvokeCore(actions.Length,
-           actions,
-           [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        static (index, state, token) =>
-               state[index](token),
-           cancellationToken);
+            actions,
+            [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+            static (index, state, token) =>
+                state[index](token),
+            cancellationToken);
     }
 
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-    public static ValueTask InvokeAsyncCore<TState>(int count,
+    public static async ValueTask InvokeAsyncCore<TState>(int count,
         TState state,
         Func<int, TState, CancellationToken, ValueTask> body,
         CancellationToken cancellationToken)
     {
-        return cancellationToken.IsCancellationRequested || count == 0
-            ? ValueTask.CompletedTask
-            : CurrentHasReserve
-                ? InvokeAsyncCoreNeedReserve(count, state, body, cancellationToken)
-                : InvokeAsyncCoreHasReserve(count, state, body, cancellationToken);
+        if (IsWorker.Value)
+        {
+            for (var index = 0; index < count; index++)
+            {
+                await body(index, state, cancellationToken);
+            }
+
+            return;
+        }
+
+        Work work = new(
+            cancellationToken,
+            0,
+            count,
+            true,
+            (index, token) => body(index, state, token),
+            null
+        );
+        for (var i = 0; i < Tasks.Length; i++)
+        {
+            if (work.TaskCompletionSource.Task.IsCompleted)
+            {
+                break;
+            }
+
+            await Channel.Writer.WriteAsync(work, cancellationToken);
+        }
+
+        await work.TaskCompletionSource.Task;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -401,228 +439,37 @@ public static class SmartParallel
         Action<int, TState, CancellationToken> body,
         CancellationToken cancellationToken)
     {
-        if (Volatile.Read(ref CurrentCountReserved) == 0)
+        if (IsWorker.Value)
         {
-            if (!cancellationToken.IsCancellationRequested && count != 0)
+            for (var index = 0; index < count; index++)
             {
-                InvokeCoreNeedReserve(count, state, body, cancellationToken);
-            }
-        }
-        else
-        {
-            if (!cancellationToken.IsCancellationRequested && count != 0)
-            {
-                InvokeCoreHasReserve(count, state, body, cancellationToken);
-            }
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static async ValueTask InvokeAsyncCoreNeedReserve<TState>(int count,
-        TState state,
-        Func<int, TState, CancellationToken, ValueTask> body,
-        CancellationToken cancellationToken)
-    {
-        await Semaphore.WaitAsync(cancellationToken);
-        Interlocked.Increment(ref CurrentCountReserved);
-        try
-        {
-            await InvokeAsyncCoreHasReserve(count, state, body, cancellationToken);
-        }
-        finally
-        {
-            Interlocked.Decrement(ref CurrentCountReserved);
-            Semaphore.Release();
-        }
-    }
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static void InvokeCoreNeedReserve<TState>(int count,
-        TState state,
-        Action<int, TState, CancellationToken> body,
-        CancellationToken cancellationToken)
-    {
-        Semaphore.Wait(cancellationToken);
-        Interlocked.Increment(ref CurrentCountReserved);
-        try
-        {
-            InvokeCoreHasReserve(count, state, body, cancellationToken);
-        }
-        finally
-        {
-            Interlocked.Decrement(ref CurrentCountReserved);
-            Semaphore.Release();
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static async ValueTask InvokeAsyncCoreHasReserve<TState>(int count,
-    TState state,
-    Func<int, TState, CancellationToken, ValueTask> body,
-    CancellationToken cancellationToken)
-    {
-        var reserveCount = 1;
-        var index = 0;
-
-        MemoryList<Task>? tasks = null;
-        CancellationTokenSource? cancellationTokenSource = null;
-
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var maxWorkerCountNeed = count - Volatile.Read(ref index) - Volatile.Read(ref reserveCount);
-                if (maxWorkerCountNeed > 0)
-                {
-                    for (var i = 0; i < maxWorkerCountNeed; i++)
-                    {
-                        if (!Semaphore.Wait(0, CancellationToken.None))
-                        {
-                            break;
-                        }
-
-                        cancellationTokenSource ??= CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                        tasks ??= [with(Semaphore.CurrentCount + 1)];
-
-                        Interlocked.Increment(ref reserveCount);
-                        tasks.Add(Task.Run(async () =>
-                            {
-                                try
-                                {
-                                    while (!cancellationTokenSource.Token.IsCancellationRequested)
-                                    {
-                                        var funcIndex = Interlocked.Increment(ref index) - 1;
-                                        if (funcIndex >= count)
-                                        {
-                                            break;
-                                        }
-
-                                        await body(funcIndex, state, cancellationTokenSource.Token);
-                                    }
-                                }
-                                finally
-                                {
-                                    Interlocked.Decrement(ref reserveCount);
-                                    Semaphore.Release();
-                                }
-                            },
-                            CancellationToken.None));
-                    }
-                }
-
-                var funcIndex = Interlocked.Increment(ref index) - 1;
-                if (funcIndex >= count)
-                {
-                    break;
-                }
-
-                await body(funcIndex, state, cancellationToken);
+                body(index, state, cancellationToken);
             }
 
-            if (tasks is not null && cancellationTokenSource is not null)
-            {
-                await Task.WhenAll(tasks.Memory.Span);
-            }
+            return;
         }
-        catch
+
+        Work work = new(
+            cancellationToken,
+            0,
+            count,
+            false,
+            null,
+            (index, token) => body(index, state, token)
+        );
+        for (var i = 0; i < Tasks.Length; i++)
         {
-            if (tasks is not null && cancellationTokenSource is not null)
+            cancellationToken.ThrowIfCancellationRequested();
+            if (work.TaskCompletionSource.Task.IsCompleted)
             {
-                await cancellationTokenSource.CancelAsync();
-                await Task.WhenAll(tasks.Memory.Span).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-            }
-
-            throw;
-        }
-        finally
-        {
-            cancellationTokenSource?.Dispose();
-            tasks?.Dispose();
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static void InvokeCoreHasReserve<TState>(int count,
-    TState state,
-    Action<int, TState, CancellationToken> body,
-    CancellationToken cancellationToken)
-    {
-        var reserveCount = 1;
-        var index = 0;
-
-        MemoryList<Task>? tasks = null;
-        CancellationTokenSource? cancellationTokenSource = null;
-
-        try
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var maxWorkerCountNeed = count - Volatile.Read(ref index) - Volatile.Read(ref reserveCount);
-                if (maxWorkerCountNeed > 0)
-                {
-                    for (var i = 0; i < maxWorkerCountNeed; i++)
-                    {
-                        if (!Semaphore.Wait(0, CancellationToken.None))
-                        {
-                            break;
-                        }
-
-                        cancellationTokenSource ??= CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                        tasks ??= [];
-
-                        Interlocked.Increment(ref reserveCount);
-                        tasks.Add(Task.Run(() =>
-                            {
-                                try
-                                {
-                                    while (!cancellationTokenSource.Token.IsCancellationRequested)
-                                    {
-                                        var funcIndex = Interlocked.Increment(ref index) - 1;
-                                        if (funcIndex >= count)
-                                        {
-                                            break;
-                                        }
-
-                                        body(funcIndex, state, cancellationTokenSource.Token);
-                                    }
-                                }
-                                finally
-                                {
-                                    Interlocked.Decrement(ref reserveCount);
-                                    Semaphore.Release();
-                                }
-                            },
-                            CancellationToken.None));
-                    }
-                }
-
-                var funcIndex = Interlocked.Increment(ref index) - 1;
-                if (funcIndex >= count)
-                {
-                    break;
-                }
-
-                body(funcIndex, state, cancellationToken);
+                break;
             }
 
-            if (tasks is not null && cancellationTokenSource is not null)
+            while (!Channel.Writer.TryWrite(work))
             {
-                Task.WhenAll(tasks.Memory.Span).GetAwaiter().GetResult();
             }
         }
-        catch
-        {
-            if (tasks is not null && cancellationTokenSource is not null)
-            {
-                cancellationTokenSource.Cancel();
-                Task.WhenAll(tasks.Memory.Span).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
-            }
 
-            throw;
-        }
-        finally
-        {
-            cancellationTokenSource?.Dispose();
-            tasks?.Dispose();
-        }
+        work.TaskCompletionSource.Task.GetAwaiter().GetResult();
     }
 }

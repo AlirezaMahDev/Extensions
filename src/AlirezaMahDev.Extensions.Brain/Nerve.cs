@@ -2,9 +2,9 @@ namespace AlirezaMahDev.Extensions.Brain;
 
 internal class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TData,
+TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TLink> : INerve<TData, TLink>, IDisposable
+TLink> : INerve<TData, TLink>, IDisposable
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
@@ -12,14 +12,15 @@ internal class Nerve<
     private readonly DataLocation<DataPath> _connectionLocation;
     private readonly DataLocation<DataPath> _neuronLocation;
     private readonly Neuron _neuron;
-    private readonly CellWrap<Neuron, NeuronValue<TData>, TData, TLink> _rootNeuronWrap;
+    private readonly CellWrap<NeuronValue<TData>, TData, TLink> _rootNeuronWrap;
     private readonly Connection _connection;
-    private readonly CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> _rootConnectionWrap;
+    private readonly CellWrap<ConnectionValue<TLink>, TData, TLink> _rootConnectionWrap;
     private readonly DataLocation<DataPath> _counterLocation;
-    private readonly DataWrap<NerveCounter> _counter;
+    private readonly DataLocation<NerveCounter> _counter;
+    private readonly NerveCache _cache;
 
     public ConcurrentDictionary<DataOffset,
-        Lazy<CellMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>> MemoryCache
+        Lazy<CellMemory<CellWrap<ConnectionValue<TLink>, TData, TLink>>>> MemoryCache
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get;
@@ -34,7 +35,7 @@ internal class Nerve<
     public INerveCache Cache
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get;
+        get => _cache;
     }
 
     public string Name { get; }
@@ -63,7 +64,7 @@ internal class Nerve<
         get => ref _neuron;
     }
 
-    public ref readonly CellWrap<Neuron, NeuronValue<TData>, TData, TLink> RootNeuronWrap
+    public ref readonly CellWrap<NeuronValue<TData>, TData, TLink> RootNeuronWrap
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get => ref _rootNeuronWrap;
@@ -75,7 +76,7 @@ internal class Nerve<
         get => ref _connection;
     }
 
-    public ref readonly CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> RootConnectionWrap
+    public ref readonly CellWrap<ConnectionValue<TLink>, TData, TLink> RootConnectionWrap
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get => ref _rootConnectionWrap;
@@ -87,7 +88,7 @@ internal class Nerve<
         get => ref _counterLocation;
     }
 
-    public ref readonly DataWrap<NerveCounter> Counter
+    public ref readonly DataLocation<NerveCounter> Counter
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get => ref _counter;
@@ -96,12 +97,13 @@ internal class Nerve<
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public Nerve(IDataManager dataManager, string name)
     {
-        Cache = new NerveCache();
+        _cache = new();
 
         MemoryCache = new();
         Name = name;
         Access = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
-        _location = Access.Root.Wrap(Access, x => x.Dictionary()).GetOrAdd(".nerve");
+        var root = Access.Root;
+        _location = root.Wrap(Access, x => x.Dictionary()).GetOrAdd(".nerve");
         _connectionLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".connection");
         _neuronLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".neuron");
         _counterLocation = Location.Wrap(Access, x => x.Dictionary()).GetOrAdd(".counter");
@@ -111,16 +113,14 @@ internal class Nerve<
             .GetOrCreateData(NeuronValue<TData>.Default);
         var connection = ConnectionLocation
             .Wrap(Access, x => x.Storage())
-            .GetOrCreateData(ConnectionValue<TLink>.Default with { Neuron = neuron.Offset });
-        _counter = CounterLocation
-            .Wrap(Access, x => x.Storage())
-            .GetOrCreateData(NerveCounter.Default)
-            .Wrap(Access);
+            .GetOrCreateData(ConnectionValue<TLink>.Default with { Neuron = new(neuron.Offset) });
+        var dataWrap = _counterLocation.Wrap(Access, x => x.Storage());
+        _counter = dataWrap.GetOrCreateData(NerveCounter.Default);
 
         _neuron = new(neuron.Offset);
-        _rootNeuronWrap = Neuron.Wrap(this);
+        _rootNeuronWrap = Neuron.NewWrap(this);
         _connection = new(connection.Offset);
-        _rootConnectionWrap = Connection.Wrap(this);
+        _rootConnectionWrap = Connection.NewWrap(this);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -132,6 +132,7 @@ internal class Nerve<
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
+        _cache.Dispose();
         this.CleanThink();
     }
 }

@@ -4,23 +4,23 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    public Guid Id { get; }
-    public int Count { get; }
+    public readonly Guid Id;
+    public readonly int Count;
 
-    public ReadOnlyMemoryValue<TData> Data { get; }
-    public ReadOnlyMemoryValue<TLink> Link { get; }
-    public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> ConnectionWrap { get; }
-    private Think<TData, TLink>? Previous { get; }
+    public readonly ReadOnlyMemoryValue<TData> Data;
+    public readonly ReadOnlyMemoryValue<TLink> Link;
+    public readonly CellWrap<ConnectionValue<TLink>, TData, TLink> ConnectionWrap;
+    public readonly Think<TData, TLink>? Previous;
 
-    public TData DataDifferenceSum { get; }
-    public TData DataDifferenceSumAbs { get; }
-    public TLink LinkDifference { get; }
+    public TData DataDifference;
+    public TLink LinkDifference;
 
-    public double ScoreSum { get; }
-    public ulong WeightSum { get; }
+    public readonly double ScoreSum;
+    public readonly ulong WeightSum;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private Think(
-        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap)
+        CellWrap<ConnectionValue<TLink>, TData, TLink> connectionWrap)
     {
         Id = Guid.CreateVersion7();
         Count = 1;
@@ -28,14 +28,15 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         ConnectionWrap = connectionWrap;
         Previous = null;
 
-        ScoreSum = connectionWrap.RefValue.Score;
-        WeightSum = connectionWrap.RefValue.Weight;
+        ScoreSum = connectionWrap.Location.CopyValue.Score;
+        WeightSum = connectionWrap.Location.CopyValue.Weight;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private Think(
         ReadOnlyMemoryValue<TData> data,
         ReadOnlyMemoryValue<TLink> link,
-        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connectionWrap,
+        CellWrap<ConnectionValue<TLink>, TData, TLink> connectionWrap,
         Think<TData, TLink> previous)
     {
         Id = Guid.CreateVersion7();
@@ -47,41 +48,44 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         ConnectionWrap = connectionWrap;
         Previous = previous;
 
-        var dataDifference = data.Value.Normalize() - connectionWrap.NeuronWrap.RefData.Normalize();
-        DataDifferenceSum = previous.DataDifferenceSum + dataDifference;
-        var dataDifferenceAbs = dataDifference.Abs();
-        DataDifferenceSumAbs = previous.DataDifferenceSumAbs + dataDifferenceAbs;
-
+        using var connectionWrapNeuronWrap = connectionWrap.NeuronWrap.Location.ReadLock();
+        using var connectionValue = connectionWrap.Location.ReadLock();
+        DataDifference = TData.ThinkDifference(ref previous.DataDifference,
+            in data.Value,
+            in connectionWrapNeuronWrap.RefReadOnlyValue.Data);
         if (Count > 2)
         {
-            LinkDifference = link.Value.Normalize() - connectionWrap.RefLink.Normalize();
+            LinkDifference = TLink.ThinkDifference(ref previous.LinkDifference, in link.Value, in connectionValue.RefReadOnlyValue.Link);
         }
 
-        ScoreSum = previous.ScoreSum + connectionWrap.RefValue.Score;
-        WeightSum = previous.WeightSum + connectionWrap.RefValue.Weight;
+        ScoreSum = previous.ScoreSum + connectionValue.RefReadOnlyValue.Score;
+        WeightSum = previous.WeightSum + connectionValue.RefReadOnlyValue.Weight;
     }
 
-    public static Think<TData, TLink> Create(CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static Think<TData, TLink> Create(CellWrap<ConnectionValue<TLink>, TData, TLink> connection)
     {
         return new(connection);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public Think<TData, TLink> Append(ReadOnlyMemoryValue<TData> data,
         ReadOnlyMemoryValue<TLink> link,
-        CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> connection)
+        CellWrap<ConnectionValue<TLink>, TData, TLink> connection)
     {
         return new(data, link, connection, this);
     }
 
     [MustDisposeResource]
-    public IReadonlyMemoryList<ReadOnlyMemory<CellWrap<Connection, ConnectionValue<TLink>, TData, TLink>>>
-        GetNextConnectionWrap(
-            PredictValueRef<TLink> link,
-            int depth)
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public MemoryList<Memory<CellWrap<ConnectionValue<TLink>, TData, TLink>>> GetNextConnectionWrap(
+        PredictValueRef<TLink> link,
+        int depth)
     {
-        return ConnectionWrap.GetConnectionsWrapCache().Memory.NearConnection(link, depth);
+        return ConnectionWrap.GetConnectionsWrapCache().Memory.NearConnection(ref link, depth);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public IEnumerator<Think<TData, TLink>> GetEnumerator()
     {
         Stack<Think<TData, TLink>> stack = [];
@@ -95,16 +99,19 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         return stack.GetEnumerator();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public override int GetHashCode()
     {
         return Id.GetHashCode();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool Equals(Think<TData, TLink>? other)
     {
         return Id == other?.Id;
@@ -114,7 +121,7 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     {
         return $"Count:{Count}" +
                " " +
-               $"DataDifferenceSum:{DataDifferenceSum}" +
+               $"DataDifference:{DataDifference}" +
                " " +
                $"LinkDifference:{LinkDifference}";
     }

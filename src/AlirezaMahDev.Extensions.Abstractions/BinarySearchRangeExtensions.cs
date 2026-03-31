@@ -2,7 +2,7 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class BinarySearchRangeExtensions
 {
-    extension(in BinarySearchRange binarySearchRange)
+    extension(ref BinarySearchRange binarySearchRange)
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public bool TryGetRange(out Range range)

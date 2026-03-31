@@ -11,26 +11,28 @@ public static class DataLocationStorageExtensions
         }
     }
 
-    extension<TValue>(DataWrap<TValue, IDataStorage<TValue>> wrap)
+    extension<TValue>(in DataLocationWrap<TValue, IDataStorage<TValue>> wrap)
         where TValue : unmanaged, IDataStorage<TValue>
     {
-        public bool GetData(out DataLocation result)
+        public bool GetData(out DataOffset result)
         {
-            ref readonly var refVal = ref wrap.Location.GetRefValue(wrap.Access);
+            using var @lock = wrap.Location.ReadLock();
+            ref readonly var refVal = ref @lock.RefReadOnlyValue;
             if (refVal.Data.IsNull)
             {
                 result = default;
                 return false;
             }
 
-            result = new(refVal.Data);
+            result = refVal.Data;
             return true;
         }
 
         public bool GetData<TDataValue>(out DataLocation<TDataValue> result)
             where TDataValue : unmanaged, IDataValue<TDataValue>
         {
-            ref readonly var refVal = ref wrap.Location.GetRefValue(wrap.Access);
+            using var @lock = wrap.Location.ReadLock();
+            ref readonly var refVal = ref @lock.RefReadOnlyValue;
 
             if (refVal.Data.IsNull)
             {
@@ -44,21 +46,22 @@ public static class DataLocationStorageExtensions
                     $"{typeof(TDataValue).Name} size must be {refVal.Data.Length}");
             }
 
-            result = new(refVal.Data);
+            DataLocation<TDataValue>.Read(wrap.Access, refVal.Data, out result);
             return true;
         }
 
 
-        public DataLocation CreateNewData(int length)
+        public DataOffset CreateNewData(int length)
         {
             if (wrap.GetData(out var dataLocation))
             {
-                wrap.Access.GetTrash().Add(wrap.Access, in dataLocation);
+                wrap.Access.Trash.Add(wrap.Access, in dataLocation);
             }
 
-            wrap.Access.Create(length, out var newDataLocation);
-            wrap.Location.GetRefValue(wrap.Access).Data = newDataLocation.Offset;
-            return newDataLocation;
+            var result = wrap.Access.AllocateOffset(length);
+            using var writeLock = wrap.Location.WriteLock();
+            writeLock.RefValue.Data = result;
+            return result;
         }
 
         public DataLocation<TDataValue> CreateNewData<TDataValue>()
@@ -66,11 +69,12 @@ public static class DataLocationStorageExtensions
         {
             if (wrap.GetData(out var dataLocation))
             {
-                wrap.Access.GetTrash().Add(wrap.Access, in dataLocation);
+                wrap.Access.Trash.Add(wrap.Access, in dataLocation);
             }
 
-            wrap.Access.Create<TDataValue>(out var newDataLocation);
-            wrap.Location.GetRefValue(wrap.Access).Data = newDataLocation.Offset;
+            wrap.Access.Create(out DataLocation<TDataValue> newDataLocation);
+            using var @lock = wrap.Location.WriteLock();
+            @lock.RefValue.Data = newDataLocation.Offset;
             return newDataLocation;
         }
 
@@ -79,28 +83,29 @@ public static class DataLocationStorageExtensions
         {
             if (wrap.GetData(out var dataLocation))
             {
-                wrap.Access.GetTrash().Add(wrap.Access, in dataLocation);
+                wrap.Access.Trash.Add(wrap.Access, in dataLocation);
             }
 
             wrap.Access.Create(@default, out var newDataLocation);
-            wrap.Location.GetRefValue(wrap.Access).Data = newDataLocation.Offset;
+            using var @lock = wrap.Location.WriteLock();
+            @lock.RefValue.Data = newDataLocation.Offset;
             return newDataLocation;
         }
 
-        public DataLocation GetOrCreateData(int length)
+        public DataOffset GetOrCreateData(int length)
         {
             return wrap.GetData(out var dataLocation)
-                ? dataLocation.Offset.Length == length
+                ? dataLocation.Length == length
                     ? dataLocation
                     : throw new InvalidDataException(
-                        $"data length is {dataLocation.Offset.Length} but you need {length}")
+                        $"data length is {dataLocation.Length} but you need {length}")
                 : wrap.CreateNewData(length);
         }
 
         public DataLocation<TDataValue> GetOrCreateData<TDataValue>()
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {
-            return wrap.GetData<TValue, TDataValue>(out var dataLocation)
+            return wrap.GetData(out DataLocation<TDataValue> dataLocation)
                 ? dataLocation.Offset.Length == TDataValue.ValueSize
                     ? dataLocation
                     : throw new InvalidDataException(
@@ -111,7 +116,7 @@ public static class DataLocationStorageExtensions
         public DataLocation<TDataValue> GetOrCreateData<TDataValue>(TDataValue @default)
             where TDataValue : unmanaged, IDataValue<TDataValue>
         {
-            return wrap.GetData<TValue, TDataValue>(out var dataLocation)
+            return wrap.GetData(out DataLocation<TDataValue> dataLocation)
                 ? dataLocation.Offset.Length == TDataValue.ValueSize
                     ? dataLocation
                     : throw new InvalidDataException(
@@ -119,9 +124,9 @@ public static class DataLocationStorageExtensions
                 : wrap.CreateNewData(@default);
         }
 
-        public DataLocation GetOrCreateNewData(int length)
+        public DataOffset GetOrCreateNewData(int length)
         {
-            return wrap.GetData(out var dataLocation) && dataLocation.Offset.Length == length
+            return wrap.GetData(out var dataLocation) && dataLocation.Length == length
                 ? dataLocation
                 : wrap.CreateNewData(length);
         }
@@ -129,7 +134,7 @@ public static class DataLocationStorageExtensions
         public DataLocation<TDataValue> GetOrCreateNewData<TDataValue>()
             where TDataValue : unmanaged, IDataValue<TDataValue>, IDataValueDefault<TDataValue>
         {
-            return wrap.GetData<TValue, TDataValue>(out var dataLocation) &&
+            return wrap.GetData(out DataLocation<TDataValue> dataLocation) &&
                    dataLocation.Offset.Length == TDataValue.ValueSize
                 ? dataLocation
                 : wrap.CreateNewData<TValue, TDataValue>();
@@ -138,7 +143,7 @@ public static class DataLocationStorageExtensions
         public DataLocation<TDataValue> GetOrCreateNewData<TDataValue>(TDataValue @default)
             where TDataValue : unmanaged, IDataValue<TDataValue>
         {
-            return wrap.GetData<TValue, TDataValue>(out var dataLocation) &&
+            return wrap.GetData(out DataLocation<TDataValue> dataLocation) &&
                    dataLocation.Offset.Length == TDataValue.ValueSize
                 ? dataLocation
                 : wrap.CreateNewData(@default);

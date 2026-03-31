@@ -16,43 +16,48 @@ public static class ComparisonCollectionExtensions
         where T : allows ref struct
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ComparisonWrap<TComparisonCollection, T> With(Comparison<T> comparison)
+        public ComparisonWrap<TComparisonCollection, T> With(ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return new(wrap.UnWrap with { Enumerable = wrap.UnWrap.Enumerable.Append(comparison) });
+            return new(wrap.UnWrap with { Enumerable = wrap.UnWrap.Enumerable.Append(readOnlyComparison) });
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ComparisonWrap<TComparisonCollection, T> WithDescending(Comparison<T> comparison)
+        public ComparisonWrap<TComparisonCollection, T> WithDescending(ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return new(wrap.UnWrap with { Enumerable = wrap.UnWrap.Enumerable.Append((x, y) => comparison(y, x)) });
+            return new(wrap.UnWrap with
+            {
+                Enumerable =
+                wrap.UnWrap.Enumerable.Append((scoped ref readonly x, scoped ref readonly y) =>
+                    readOnlyComparison(in y, in x))
+            });
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ComparisonWrap<TComparisonCollection, T> With(Comparison<T> comparison,
-            ComparisonBuilder<ComparisonChain<T>, T> builder)
+        public ComparisonWrap<TComparisonCollection, T> With(ScopedRefReadOnlyComparison<T> readOnlyComparison,
+            ComparisonBuilder<ScopedComparisonChain<T>, T> builder)
         {
-            return wrap.With(builder(ComparisonChain<T>.ChainOrder(comparison)).UnWrap.Comparison);
+            return wrap.With(builder(ScopedComparisonChain<T>.ChainOrder(readOnlyComparison)).UnWrap.Comparison);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ComparisonWrap<TComparisonCollection, T> WithDescending(Comparison<T> comparison,
-            ComparisonBuilder<ComparisonChain<T>, T> builder)
+        public ComparisonWrap<TComparisonCollection, T> WithDescending(ScopedRefReadOnlyComparison<T> readOnlyComparison,
+            ComparisonBuilder<ScopedComparisonChain<T>, T> builder)
         {
-            return wrap.With(builder(ComparisonChain<T>.ChainOrderDescending(comparison)).UnWrap.Comparison);
+            return wrap.With(builder(ScopedComparisonChain<T>.ChainOrderDescending(readOnlyComparison)).UnWrap.Comparison);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ComparisonWrap<TComparisonCollection, T> WithBy<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey>
         {
-            return wrap.With((x, y) => func(x).CompareTo(func(y)));
+            return wrap.With((scoped ref readonly x, scoped ref readonly y) => func(x).CompareTo(func(y)));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ComparisonWrap<TComparisonCollection, T> WithByDescending<TKey>(Func<T, TKey> func)
             where TKey : IComparable<TKey>
         {
-            return wrap.WithDescending((x, y) => func(x).CompareTo(func(y)));
+            return wrap.WithDescending((scoped ref readonly x, scoped ref readonly y) => func(x).CompareTo(func(y)));
         }
     }
 }

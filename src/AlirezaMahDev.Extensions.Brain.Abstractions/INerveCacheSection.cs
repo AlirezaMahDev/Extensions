@@ -2,18 +2,28 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public interface INerveCacheSection
 {
-    bool TryGet(in NerveCacheKey key, [NotNullWhen(true)] out DataOffset? value);
+    bool TryGet(ref readonly NerveCacheKey key, [NotNullWhen(true)] out DataOffset? value);
 
-    bool TryGet<TKey>(in TKey key, [NotNullWhen(true)] out DataOffset? value)
+    bool TryGet<TKey>(ref readonly TKey key, [NotNullWhen(true)] out DataOffset? value)
         where TKey : unmanaged;
 
-    DataOffset? GetOrNull(in NerveCacheKey key);
+    DataOffset? GetOrNull(ref readonly NerveCacheKey key);
 
-    DataOffset? GetOrNull<TKey>(in TKey key)
+    DataOffset? GetOrNull<TKey>(ref readonly TKey key)
         where TKey : unmanaged;
 
-    DataOffset Set(in NerveCacheKey key, DataOffset value);
+    void Set(ref readonly NerveCacheKey key, ref readonly DataOffset value);
 
-    DataOffset Set<TKey>(in TKey key, DataOffset value)
+    void Set<TKey>(ref readonly TKey key, ref readonly DataOffset value)
+        where TKey : unmanaged;
+
+    bool TrySet(ref readonly NerveCacheKey key, ref readonly DataOffset value);
+
+    bool TrySet<TKey>(ref readonly TKey key, ref readonly DataOffset value)
+        where TKey : unmanaged;
+
+    DataOffset GetOrAdd(ref readonly NerveCacheKey key, ref readonly DataOffset value);
+
+    DataOffset GetOrAdd<TKey>(ref readonly TKey key, ref readonly DataOffset value)
         where TKey : unmanaged;
 }

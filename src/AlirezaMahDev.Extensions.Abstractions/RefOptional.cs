@@ -1,7 +1,7 @@
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public readonly ref struct RefOptional<TValue>
-    where TValue : struct, IInEquatable<TValue>
+    where TValue : struct, IScopedRefReadOnlyEquatable<TValue>
 {
     private readonly ref TValue _value;
 
@@ -14,10 +14,7 @@ public readonly ref struct RefOptional<TValue>
     public static RefOptional<TValue> Null
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return new(ref Unsafe.NullRef<TValue>());
-        }
+        get => new(ref Unsafe.NullRef<TValue>());
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -29,24 +26,20 @@ public readonly ref struct RefOptional<TValue>
     public bool HasValue
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return !Unsafe.IsNullRef(ref _value);
-        }
+        get => !Unsafe.IsNullRef(ref _value);
     }
 
     public ref TValue Value
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref _value;
-        }
+        get => ref _value;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public Optional<TValue> AsOptional()
-        => HasValue
-            ? Optional<TValue>.From(in Value)
+    {
+        return HasValue
+            ? Optional<TValue>.From(Value)
             : Optional<TValue>.Null;
+    }
 }

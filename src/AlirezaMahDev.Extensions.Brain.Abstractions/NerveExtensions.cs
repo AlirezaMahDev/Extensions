@@ -7,7 +7,7 @@ public static class NerveExtensions
         where TLink : unmanaged, ICellLink<TLink>
     {
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        public Optional<Neuron> FindNeuronCore(in NerveCacheKey cacheKey, in TData data)
+        public Optional<Neuron> FindNeuronCore(ref readonly NerveCacheKey cacheKey, ref readonly TData data)
         {
             if (nerve.TryGetNeuronCacheCore(in cacheKey, out var offset))
             {
@@ -18,57 +18,62 @@ public static class NerveExtensions
             var cellMemory = nerve.RootNeuronWrap
                 .GetUnloadedConnectionsWrap();
             var connection = cellMemory
-                .FirstOrDefault(x => x.Neuron.Wrap(nerve).RefData.Equals(localData))
+                .FirstOrDefault(x =>
+                {
+                    using var neuronValue = x.NeuronWrap.Location.ReadLock();
+                    return neuronValue.RefReadOnlyValue.Data == localData;
+                })
                 .NullWhenDefault();
             if (!connection.HasValue)
             {
                 return Optional<Neuron>.Null;
             }
 
-            offset = connection.Value.RefValue.Neuron;
-            nerve.SetNeuronCacheCore(in cacheKey, offset.Value);
-            return Optional<Neuron>.From(new(offset.Value));
+            using var connectionValue = connection.Value.Location.ReadLock();
+            nerve.TrySetNeuronCacheCore(in cacheKey, in connectionValue.RefReadOnlyValue.Neuron.Offset);
+            return Optional<Neuron>.From(connectionValue.RefReadOnlyValue.Neuron);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-        public Neuron FindOrAddNeuron(in TData data)
+        public Neuron FindOrAddNeuron(ref readonly TData data)
         {
             var cacheKey = nerve.CreateNeuronCacheKey(in data);
-            return nerve.FindNeuronCore(in cacheKey, in data) is { HasValue: true } optional
+            return nerve.FindNeuronCore(ref cacheKey, in data) is { HasValue: true } optional
                 ? optional.Value
-                : nerve.AddNeuronCore(in cacheKey, in data);
+                : nerve.AddNeuronCore(ref cacheKey, in data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
         private Neuron AddNeuronCore(
-            in NerveCacheKey cacheKey,
-            in TData data)
+            ref readonly NerveCacheKey cacheKey,
+            ref readonly TData data)
         {
-            using var @lock = nerve.RootNeuronWrap.Lock();
+            using var @lock = nerve.RootNeuronWrap.Location.WriteLock();
             if (nerve.FindNeuronCore(in cacheKey, in data) is { HasValue: true } neuron)
             {
                 return neuron.Value;
             }
 
             nerve.Access.Create(NeuronValue<TData>.Default with { Data = data }, out var neuronValue);
-            Interlocked.Increment(ref nerve.Counter.RefValue.NeuronCount);
+            Interlocked.Increment(ref nerve.Counter.UnsafeRefValue.NeuronCount);
 
-            var location = nerve.RootNeuronWrap.Location;
+            var locationWrap = nerve.RootNeuronWrap.LocationWrap;
             nerve.Access
                 .Create(ConnectionValue<TLink>.Default with
                 {
-                    Neuron = neuronValue.Offset,
-                    Next = location.RefValue.Connection,
+                    Neuron = new(neuronValue.Offset),
+                    Next = @lock.RefValue.Connection,
                     NextCount = nerve.RootNeuronWrap.ConnectionWrap is { HasValue: true } connectionWrap
-                            ? connectionWrap.Value.RefValue.NextCount + 1
+                            ? connectionWrap.Value.Location.ReadLock((scoped ref readonly x) => x.NextCount) + 1
                             : 0
                 },
                     out var connectionValue);
-            Interlocked.Increment(ref nerve.Counter.RefValue.ConnectionCount);
+            Interlocked.Increment(ref nerve.Counter.UnsafeRefValue.ConnectionCount);
 
-            location.RefValue.Connection = connectionValue.Offset;
+            locationWrap.Location.WriteLock((scoped ref x) =>
+                x.Connection = new(connectionValue.Offset));
 
-            nerve.SetNeuronCacheCore(in cacheKey, in neuronValue.Offset);
+            nerve.TrySetNeuronCacheCore(in cacheKey, in neuronValue.Offset);
             return new(neuronValue.Offset);
         }
     }

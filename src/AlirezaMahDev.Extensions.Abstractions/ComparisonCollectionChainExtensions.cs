@@ -5,29 +5,35 @@ public static class ComparisonCollectionChainExtensions
     extension<T>(ComparisonCollectionChain<T>)
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public static ComparisonCollectionChain<T> OrderBy(Comparison<T> comparison)
+        public static ComparisonCollectionChain<T> OrderBy(ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return new([], comparison, comparison, null);
+            return new([], readOnlyComparison, readOnlyComparison, null);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public static ComparisonCollectionChain<T> OrderByDescending(Comparison<T> comparison)
+        public static ComparisonCollectionChain<T> OrderByDescending(ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return new([], (x, y) => comparison(y, x), (x, y) => comparison(y, x), null);
+            return new([],
+                (scoped ref readonly x, scoped ref readonly y) => readOnlyComparison(in y, in x),
+                (scoped ref readonly x, scoped ref readonly y) => readOnlyComparison(in y, in x),
+                null);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public static ComparisonCollectionChain<T> OrderBy(IEnumerable<Comparison<T>> enumerable,
-            Comparison<T> comparison)
+        public static ComparisonCollectionChain<T> OrderBy(IEnumerable<ScopedRefReadOnlyComparison<T>> enumerable,
+            ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return new(enumerable, comparison, comparison, null);
+            return new(enumerable, readOnlyComparison, readOnlyComparison, null);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public static ComparisonCollectionChain<T> OrderByDescending(IEnumerable<Comparison<T>> enumerable,
-            Comparison<T> comparison)
+        public static ComparisonCollectionChain<T> OrderByDescending(IEnumerable<ScopedRefReadOnlyComparison<T>> enumerable,
+            ScopedRefReadOnlyComparison<T> readOnlyComparison)
         {
-            return new(enumerable, (x, y) => comparison(y, x), (x, y) => comparison(y, x), null);
+            return new(enumerable,
+                (scoped ref readonly x, scoped ref readonly y) => readOnlyComparison(in y, in x),
+                (scoped ref readonly x, scoped ref readonly y) => readOnlyComparison(in y, in x),
+                null);
         }
     }
 

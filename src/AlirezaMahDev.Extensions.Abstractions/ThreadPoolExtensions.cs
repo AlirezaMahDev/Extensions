@@ -26,12 +26,7 @@ public static class ThreadPoolExtensions
     {
         public async Task<T> AsTaskRun()
         {
-            if (task.IsCompleted)
-            {
-                return await task;
-            }
-
-            return await task.AsTaskRunCore();
+            return task.IsCompleted ? await task : await task.AsTaskRunCore();
         }
 
         private async Task<T> AsTaskRunCore()
@@ -59,13 +54,7 @@ public static class ThreadPoolExtensions
     {
         public async ValueTask<T> AsTaskRun()
         {
-            if (valueTask.IsCompleted)
-            {
-                return await valueTask;
-            }
-
-
-            return await valueTask.AsTask().AsTaskRunCore();
+            return valueTask.IsCompleted ? await valueTask : await valueTask.AsTask().AsTaskRunCore();
         }
     }
 
@@ -86,12 +75,7 @@ public static class ThreadPoolExtensions
     {
         public async ValueTask<T> AsTaskRun()
         {
-            if (awaitable.GetAwaiter().IsCompleted)
-            {
-                return await awaitable;
-            }
-
-            return await Task.Run(async () => await awaitable);
+            return awaitable.GetAwaiter().IsCompleted ? await awaitable : await Task.Run(async () => await awaitable);
         }
     }
 
@@ -112,12 +96,7 @@ public static class ThreadPoolExtensions
     {
         public async ValueTask<T> AsTaskRun()
         {
-            if (awaitable.GetAwaiter().IsCompleted)
-            {
-                return await awaitable;
-            }
-
-            return await Task.Run(async () => await awaitable);
+            return awaitable.GetAwaiter().IsCompleted ? await awaitable : await Task.Run(async () => await awaitable);
         }
     }
 }

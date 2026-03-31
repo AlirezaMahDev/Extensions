@@ -8,21 +8,16 @@ public readonly struct CellEnumerable<T>(int count, IEnumerable<T> enumerable) :
     public int Count
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return count;
-        }
+        get => count;
     }
 
     public bool IsReadOnly
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return true;
-        }
+        get => true;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     public IEnumerator<T> GetEnumerator()
     {
         if (count == 0)
@@ -36,6 +31,7 @@ public readonly struct CellEnumerable<T>(int count, IEnumerable<T> enumerable) :
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();

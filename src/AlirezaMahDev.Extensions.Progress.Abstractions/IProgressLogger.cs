@@ -30,4 +30,5 @@ public interface IProgressLogger
     Disposable Listener(EventHandler<ProgressLoggerState> action);
 }
 
+// ReSharper disable once UnusedTypeParameter
 public interface IProgressLogger<T> : IProgressLogger;

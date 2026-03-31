@@ -17,9 +17,9 @@ public static class ComparerExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public static int NullUp(T? x, T? y, Comparison<T> comparison)
+        public static int NullUp(T? x, T? y, ScopedRefReadOnlyComparison<T> comparison)
         {
-            return Comparer<T>.NullUp(x, y) ?? comparison(x!, y!);
+            return Comparer<T>.NullUp(x, y) ?? comparison(ref x!, ref y!);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -35,9 +35,9 @@ public static class ComparerExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public static int NullDown(T? x, T? y, Comparison<T> comparison)
+        public static int NullDown(T? x, T? y, ScopedRefReadOnlyComparison<T> comparison)
         {
-            return Comparer<T>.NullDown(x, y) ?? comparison(x!, y!);
+            return Comparer<T>.NullDown(x, y) ?? comparison(ref x!, ref y!);
         }
     }
 }

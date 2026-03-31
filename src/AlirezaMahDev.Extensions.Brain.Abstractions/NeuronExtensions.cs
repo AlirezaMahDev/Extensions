@@ -2,21 +2,22 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NeuronExtensions
 {
-    extension<TData, TLink>(Neuron neuron)
+    extension<TData, TLink>(in Neuron neuron)
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public CellWrap<Neuron, NeuronValue<TData>, TData, TLink> Wrap(INerve<TData, TLink> nerve)
+        public CellWrap<NeuronValue<TData>, TData, TLink> NewWrap(INerve<TData, TLink> nerve)
         {
-            return new(nerve, neuron);
+            DataLocation<NeuronValue<TData>>.Read(nerve.Access, neuron.Offset, out var location);
+            return new(nerve, location);
         }
 
-        public CellWrap<Neuron, NeuronValue<TData>, TData, TLink> Wrap<TCell, TValue>(
-            in CellWrap<TCell, TValue, TData, TLink> wrap)
-            where TCell : ICell
+        public CellWrap<NeuronValue<TData>, TData, TLink> NewWrap<TValue>(
+            ref CellWrap<TValue, TData, TLink> wrap)
             where TValue : unmanaged, ICellValue<TValue>
         {
-            return new(wrap.Nerve, neuron);
+            DataLocation<NeuronValue<TData>>.Read(wrap.Nerve.Access, neuron.Offset, out var location);
+            return new(wrap.Nerve, location);
         }
     }
 }

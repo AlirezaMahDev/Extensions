@@ -1,12 +1,12 @@
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public struct Optional<TValue>
-    where TValue : struct, IInEquatable<TValue>
+    where TValue : struct, IEquatable<TValue>
 {
     private TValue _value;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private Optional(in TValue value)
+    private Optional(TValue value)
     {
         _value = value;
         HasValue = true;
@@ -19,15 +19,20 @@ public struct Optional<TValue>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static Optional<TValue> From(TValue value) => new(in value);
+    public static Optional<TValue> From(TValue value)
+    {
+        return new(value);
+    }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static Optional<TValue> From(in TValue value) => new(in value);
+    public static implicit operator Optional<TValue>(TValue value)
+    {
+        return new(value);
+    }
 
-    public static implicit operator Optional<TValue>(in TValue value) => new(in value);
-
-    public static implicit operator Optional<TValue>(in TValue? value) =>
-        value is null ? Null : From(value.Value);
+    public static implicit operator Optional<TValue>(TValue? value)
+    {
+        return value is null ? Null : From(value.Value);
+    }
 
     public bool HasValue
     {
@@ -35,7 +40,7 @@ public struct Optional<TValue>
         get;
     }
 
-    public ref TValue Value
+    public readonly ref TValue Value
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get => ref Unsafe.AsRef(in this)._value;
@@ -43,8 +48,10 @@ public struct Optional<TValue>
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public RefOptional<TValue> AsRefOptional()
-        => HasValue
-            ? RefOptional<TValue>.From(ref Value)
-            : RefOptional<TValue>.Null;
+    public readonly Optional<TValue> AsOptional()
+    {
+        return HasValue
+            ? Optional<TValue>.From(Value)
+            : Optional<TValue>.Null;
+    }
 }

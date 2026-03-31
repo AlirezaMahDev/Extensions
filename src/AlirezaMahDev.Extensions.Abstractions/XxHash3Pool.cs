@@ -3,7 +3,7 @@ using System.IO.Hashing;
 
 namespace AlirezaMahDev.Extensions.Abstractions;
 
-static class XxHash3Pool
+internal static class XxHash3Pool
 {
     private static readonly ConcurrentBag<XxHash3> Pool = [];
     private const int MaxPoolSize = 64;
@@ -26,8 +26,12 @@ static class XxHash3Pool
     public static void Return(XxHash3 hasher)
     {
         if (Interlocked.Increment(ref s_count) <= MaxPoolSize)
+        {
             Pool.Add(hasher);
+        }
         else
+        {
             Interlocked.Decrement(ref s_count);
+        }
     }
 }

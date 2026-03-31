@@ -1,186 +1,138 @@
-using System.Runtime.InteropServices;
-
 namespace AlirezaMahDev.Extensions.Brain;
 
-public sealed class NerveCacheSectionDictionary
-{
-    private readonly Dictionary<UInt128, DataOffset> _cache = new(capacity: 1 << 16);
-    private readonly ReaderWriterLockSlim _lockSlim = new();
-
-    public DataOffset this[UInt128 key]
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        set
-        {
-            _lockSlim.EnterWriteLock();
-            _cache[key] = value;
-            _lockSlim.ExitWriteLock();
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryGetValue(UInt128 key, [NotNullWhen(true)] out DataOffset value)
-    {
-        _lockSlim.EnterReadLock();
-        try
-        {
-            return _cache.TryGetValue(key, out value);
-        }
-        finally
-        {
-            _lockSlim.ExitReadLock();
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset GetOrAdd(UInt128 key, DataOffset value)
-    {
-        _lockSlim.EnterUpgradeableReadLock();
-        try
-        {
-            if (TryGetValue(key, out var result))
-            {
-                return result;
-            }
-
-            result = value;
-            this[key] = result;
-            return result;
-
-        }
-        finally
-        {
-            _lockSlim.ExitUpgradeableReadLock();
-        }
-
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset GetOrAdd(UInt128 key, Func<UInt128, DataOffset> factory)
-    {
-        _lockSlim.EnterUpgradeableReadLock();
-        try
-        {
-            if (TryGetValue(key, out var result))
-            {
-                return result;
-            }
-
-            result = factory(key);
-            this[key] = result;
-            return result;
-
-        }
-        finally
-        {
-            _lockSlim.ExitUpgradeableReadLock();
-        }
-    }
-}
-
-internal class NerveCacheSection : INerveCacheSection
+internal sealed class NerveCacheSection : INerveCacheSection, IDisposable
 {
     private readonly NerveCacheSectionDictionary _cache = new();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private static UInt128 GenerateHash<TKey>(in TKey key)
+    private static UInt128 GenerateHash<TKey>(ref readonly TKey key)
         where TKey : unmanaged
     {
         return NerveCacheKey.Create(in key).Hash;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryGet<TKey>(in TKey key, [NotNullWhen(true)] out DataOffset? value)
+    public bool TryGet<TKey>(ref readonly TKey key, [NotNullWhen(true)] out DataOffset? value)
         where TKey : unmanaged
     {
-        return TryGetCore(GenerateHash(in key), out value);
+        var hash = GenerateHash(in key);
+        return TryGetCore(ref hash, out value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryGet(in NerveCacheKey key, [NotNullWhen(true)] out DataOffset? value)
+    public bool TryGet(ref readonly NerveCacheKey key, [NotNullWhen(true)] out DataOffset? value)
     {
-        return TryGetCore(key.Hash, out value);
+        return TryGetCore(in key.Hash, out value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private bool TryGetCore(in UInt128 key, [NotNullWhen(true)] out DataOffset? value)
+    private bool TryGetCore(ref readonly UInt128 key, [NotNullWhen(true)] out DataOffset? value)
     {
-        return (value = GetOrDefaultCore(key)) is not null;
+        return (value = GetOrDefaultCore(in key)) is not null;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset? GetOrNull<TKey>(in TKey key)
+    public DataOffset? GetOrNull<TKey>(ref readonly TKey key)
         where TKey : unmanaged
     {
-        return GetOrDefaultCore(GenerateHash(in key)) is { IsDefault: false } value ? value : null;
+        var hash = GenerateHash(in key);
+        return GetOrDefaultCore(ref hash) is { IsDefault: false } value ? value : null;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset? GetOrNull(in NerveCacheKey key)
+    public DataOffset? GetOrNull(ref readonly NerveCacheKey key)
     {
-        return GetOrDefaultCore(key.Hash);
+        return GetOrDefaultCore(in key.Hash);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private DataOffset? GetOrDefaultCore(in UInt128 key)
+    private DataOffset? GetOrDefaultCore(ref readonly UInt128 key)
     {
-        return _cache.TryGetValue(key, out var result) ? result : null;
+        return _cache.TryGetValue(in key, out var result) ? result : null;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset Set<TKey>(in TKey key, DataOffset value)
+    public void Set<TKey>(ref readonly TKey key, ref readonly DataOffset value)
         where TKey : unmanaged
     {
-        return SetCore(GenerateHash(in key), value);
+        var hash = GenerateHash(in key);
+        SetCore(ref hash, in value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset Set(in NerveCacheKey key, DataOffset value)
+    public void Set(ref readonly NerveCacheKey key, ref readonly DataOffset value)
     {
-        return SetCore(key.Hash, value);
+        SetCore(in key.Hash, in value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private DataOffset SetCore(in UInt128 key, DataOffset value)
+    private void SetCore(ref readonly UInt128 key, ref readonly DataOffset value)
     {
-        return _cache[key] = value;
+        _cache.Set(in key, in value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset GetOrAdd<TKey>(in TKey key, Func<UInt128, DataOffset> factory)
+    public DataOffset GetOrAdd<TKey>(ref readonly TKey key, Func<UInt128, DataOffset> factory)
         where TKey : unmanaged
     {
-        return GetOrAddCore(GenerateHash(in key), factory);
+        var hash = GenerateHash(in key);
+        return GetOrAddCore(ref hash, factory);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset GetOrAdd(in NerveCacheKey key, Func<UInt128, DataOffset> factory)
+    public DataOffset GetOrAdd(ref readonly NerveCacheKey key, Func<UInt128, DataOffset> factory)
     {
-        return GetOrAddCore(key.Hash, factory);
+        return GetOrAddCore(in key.Hash, factory);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset GetOrAdd<TKey>(in TKey key, DataOffset value)
+    public DataOffset GetOrAdd<TKey>(ref readonly TKey key, ref readonly DataOffset value)
         where TKey : unmanaged
     {
-        return GetOrAddCore(GenerateHash(in key), value);
+        var hash = GenerateHash(in key);
+        return GetOrAddCore(ref hash, in value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataOffset GetOrAdd(in NerveCacheKey key, DataOffset value)
+    public DataOffset GetOrAdd(ref readonly NerveCacheKey key, ref readonly DataOffset value)
     {
-        return GetOrAddCore(key.Hash, value);
+        return GetOrAddCore(in key.Hash, in value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private DataOffset GetOrAddCore(in UInt128 key, Func<UInt128, DataOffset> factory)
+    private DataOffset GetOrAddCore(ref readonly UInt128 key, Func<UInt128, DataOffset> factory)
     {
-        return _cache.GetOrAdd(key, factory);
+        return _cache.GetOrAdd(in key, factory);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private DataOffset GetOrAddCore(in UInt128 key, DataOffset value)
+    private DataOffset GetOrAddCore(ref readonly UInt128 key, ref readonly DataOffset value)
     {
-        return _cache.GetOrAdd(key, value);
+        return _cache.GetOrAdd(in key, in value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool TrySet(ref readonly NerveCacheKey key, ref readonly DataOffset value)
+    {
+        return TrySetCore(in key.Hash, in value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool TrySet<TKey>(ref readonly TKey key, ref readonly DataOffset value)
+        where TKey : unmanaged
+    {
+        var hash = GenerateHash(in key);
+        return TrySetCore(ref hash, in value);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private bool TrySetCore(ref readonly UInt128 key, ref readonly DataOffset value)
+    {
+        return _cache.TrySet(in key, in value);
+    }
+
+    public void Dispose()
+    {
+        _cache.Dispose();
     }
 }

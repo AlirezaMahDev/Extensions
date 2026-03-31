@@ -85,28 +85,19 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
     private Memory<T> OriginalMemory
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return MemoryOwner.Memory;
-        }
+        get => MemoryOwner.Memory;
     }
 
     private int OriginalCount
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return OriginalMemory.Length;
-        }
+        get => OriginalMemory.Length;
     }
 
     public Memory<T> Memory
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return OriginalMemory[..Count];
-        }
+        get => OriginalMemory[..Count];
     }
 
     public int Count
@@ -117,13 +108,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
         private set;
     }
 
-    public bool IsReadOnly
-    {
-        get
-        {
-            return false;
-        }
-    }
+    public bool IsReadOnly => false;
 
     public IEnumerator<T> GetEnumerator()
     {
@@ -223,10 +208,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
     public ref T this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Memory.Span[index];
-        }
+        get => ref Memory.Span[index];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

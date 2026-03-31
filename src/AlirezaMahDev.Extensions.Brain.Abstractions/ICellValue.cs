@@ -1,4 +1,4 @@
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-public interface ICellValue<TSelf> : IDataLock<TSelf>
-    where TSelf : unmanaged, IDataLock<TSelf>;
+public interface ICellValue<TSelf> : IDataValue<TSelf>
+    where TSelf : unmanaged, IDataValue<TSelf>;

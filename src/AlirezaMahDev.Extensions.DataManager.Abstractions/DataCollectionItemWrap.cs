@@ -1,19 +1,20 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-[StructLayout(LayoutKind.Sequential)]
-public readonly struct DataCollectionItemWrap<TValue>(GetRefValueFunc<TValue, DataOffset> getRefNext)
+public class DataCollectionItemWrap<TValue>(
+    ScopedRefValueFunc<TValue, DataOffset> getRefNext,
+    ScopedRefReadOnlyValueFunc<TValue, DataOffset> getRefReadOnlyNext)
     where TValue : unmanaged, IDataValue<TValue>
 {
-    public GetRefValueFunc<TValue, DataOffset> GetRefNext
+
+    public ScopedRefReadOnlyValueFunc<TValue, DataOffset> RefReadOnlyNext
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    } = getRefReadOnlyNext;
+
+    public ScopedRefValueFunc<TValue, DataOffset> RefNext
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get;
     } = getRefNext;
-
-
-    public GetValueFunc<TValue, DataOffset> GetValueNext
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get;
-    } = (ref value) => getRefNext(ref value);
 }

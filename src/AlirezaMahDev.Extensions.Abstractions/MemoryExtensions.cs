@@ -23,12 +23,12 @@ public static class MemoryExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public Memory<T> TakeWhile(InFunc<T, bool> predicate)
+        public Memory<T> TakeWhile(RefFunc<T, bool> predicate)
         {
             var span = memory.Span;
             for (var index = 0; index <= span.Length; index++)
             {
-                if (!predicate(in span[index]))
+                if (!predicate(ref span[index]))
                 {
                     return memory[..index];
                 }
@@ -38,11 +38,11 @@ public static class MemoryExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public IEnumerable<T> Where(InFunc<T, bool> predicate)
+        public IEnumerable<T> Where(RefFunc<T, bool> predicate)
         {
             for (var index = 0; index <= memory.Length; index++)
             {
-                if (predicate(in memory.Span[index]))
+                if (predicate(ref memory.Span[index]))
                 {
                     yield return memory.Span[index];
                 }

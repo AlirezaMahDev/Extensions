@@ -7,18 +7,19 @@ public static class ConnectionExtensions
         where TLink : unmanaged, ICellLink<TLink>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> Wrap(INerve<TData, TLink> nerve)
+        public CellWrap<ConnectionValue<TLink>, TData, TLink> NewWrap(INerve<TData, TLink> nerve)
         {
-            return new(nerve, in connection);
+            DataLocation<ConnectionValue<TLink>>.Read(nerve.Access, connection.Offset, out var location);
+            return new(nerve, location);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public CellWrap<Connection, ConnectionValue<TLink>, TData, TLink> Wrap<TCell, TValue>(
-            in CellWrap<TCell, TValue, TData, TLink> wrap)
-            where TCell : ICell
+        public CellWrap<ConnectionValue<TLink>, TData, TLink> NewWrap<TValue>(
+            ref CellWrap<TValue, TData, TLink> wrap)
             where TValue : unmanaged, ICellValue<TValue>
         {
-            return new(wrap.Nerve, in connection);
+            DataLocation<ConnectionValue<TLink>>.Read(wrap.Nerve.Access, connection.Offset, out var location);
+            return new(wrap.Nerve, location);
         }
     }
 }

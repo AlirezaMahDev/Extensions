@@ -2,18 +2,18 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class NearBinarySearchSpanExtensions
 {
-    extension<T>(ReadOnlyMemory<T> readonlyMemory)
+    extension<T>(Memory<T> memory)
     {
         [MustDisposeResource]
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public MemoryList<ReadOnlyMemory<T>> Near(T value,
-            ComparisonChain<T> comparisonChain,
+        public MemoryList<Memory<T>> Near(T value,
+            ScopedComparisonChain<T> comparisonChain,
             int depth)
         {
-            MemoryList<ReadOnlyMemory<T>> result = [readonlyMemory];
+            MemoryList<Memory<T>> result = [memory];
             foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
-                MemoryList<ReadOnlyMemory<T>> newResult = [];
+                MemoryList<Memory<T>> newResult = [];
                 foreach (var item in result)
                 {
                     item.NearCore(newResult, value, comparison.CurrentComparison, depth);
@@ -27,20 +27,20 @@ public static class NearBinarySearchSpanExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private void NearCore(MemoryList<ReadOnlyMemory<T>> result,
+        private void NearCore(MemoryList<Memory<T>> result,
             T value,
-            Comparison<T> comparison,
+            ScopedRefReadOnlyComparison<T> readOnlyComparison,
             int depth)
         {
-            if (readonlyMemory.IsEmpty)
+            if (memory.IsEmpty)
             {
                 return;
             }
 
-            var binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, comparison);
+            var binarySearchRange = memory.Span.BinarySearchRange(value, readOnlyComparison);
             if (binarySearchRange.TryGetRange(out var range))
             {
-                result.Add(readonlyMemory[range]);
+                result.Add(memory[range]);
             }
 
             if (depth == 0)
@@ -62,34 +62,34 @@ public static class NearBinarySearchSpanExtensions
             }
 
 
-            if (before >= 0 && before < readonlyMemory.Length)
+            if (before >= 0 && before < memory.Length)
             {
-                readonlyMemory[..(before + 1)]
-                    .NearCore(result, readonlyMemory.Span[before], comparison, depth - 1);
+                memory[..(before + 1)]
+                    .NearCore(result, memory.Span[before], readOnlyComparison, depth - 1);
             }
 
-            if (after >= 0 && after < readonlyMemory.Length)
+            if (after >= 0 && after < memory.Length)
             {
-                readonlyMemory[after..]
-                    .NearCore(result, readonlyMemory.Span[after], comparison, depth - 1);
+                memory[after..]
+                    .NearCore(result, memory.Span[after], readOnlyComparison, depth - 1);
             }
         }
 
         [MustDisposeResource]
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public MemoryList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
-            Func<T, TBridge> func,
-            ComparisonChain<TBridge> comparisonChain,
+        public MemoryList<Memory<T>> Near<TBridge>(ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ScopedComparisonChain<TBridge> comparisonChain,
             int depth)
             where TBridge : allows ref struct
         {
-            MemoryList<ReadOnlyMemory<T>> result = [readonlyMemory];
+            MemoryList<Memory<T>> result = [memory];
             foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
-                MemoryList<ReadOnlyMemory<T>> newResult = [];
+                MemoryList<Memory<T>> newResult = [];
                 foreach (var item in result)
                 {
-                    item.NearCore(newResult, value, func, comparison.CurrentComparison, depth);
+                    item.NearCore(newResult, ref value, func, comparison.CurrentComparison, depth);
                 }
 
                 result.Dispose();
@@ -100,22 +100,23 @@ public static class NearBinarySearchSpanExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private void NearCore<TBridge>(MemoryList<ReadOnlyMemory<T>> result,
-            TBridge value,
-            Func<T, TBridge> func,
-            Comparison<TBridge> comparison,
+        private void NearCore<TBridge>(MemoryList<Memory<T>> result,
+            ref TBridge value,
+            ScopedRefReadOnlyFunc<T, TBridge> func,
+            ScopedRefReadOnlyComparison<TBridge> readOnlyComparison,
             int depth)
             where TBridge : allows ref struct
         {
-            if (readonlyMemory.IsEmpty)
+            if (memory.IsEmpty)
             {
                 return;
             }
 
-            var binarySearchRange = readonlyMemory.Span.BinarySearchRange(value, func, comparison);
+            var span = memory.Span;
+            var binarySearchRange = span.BinarySearchRange(ref value, func, readOnlyComparison);
             if (binarySearchRange.TryGetRange(out var range))
             {
-                result.Add(readonlyMemory[range]);
+                result.Add(memory[range]);
             }
 
             if (depth == 0)
@@ -137,38 +138,19 @@ public static class NearBinarySearchSpanExtensions
             }
 
 
-            if (before >= 0 && before < readonlyMemory.Length)
+            if (before >= 0 && before < memory.Length)
             {
-                readonlyMemory[..(before + 1)]
-                    .NearCore(result, func(readonlyMemory.Span[before]), func, comparison, depth - 1);
+                var bridge = func(ref span[before]);
+                memory[..(before + 1)]
+                    .NearCore(result, ref bridge, func, readOnlyComparison, depth - 1);
             }
 
-            if (after >= 0 && after < readonlyMemory.Length)
+            if (after >= 0 && after < memory.Length)
             {
-                readonlyMemory[after..]
-                    .NearCore(result, func(readonlyMemory.Span[after]), func, comparison, depth - 1);
+                var bridge = func(ref span[after]);
+                memory[after..]
+                    .NearCore(result, ref bridge, func, readOnlyComparison, depth - 1);
             }
-        }
-    }
-
-    extension<T>(Memory<T> memory)
-    {
-        [MustDisposeResource]
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public MemoryList<ReadOnlyMemory<T>> Near(T value, ComparisonChain<T> comparisonChainWrap, int depth)
-        {
-            return ((ReadOnlyMemory<T>)memory).Near(value, comparisonChainWrap, depth);
-        }
-
-        [MustDisposeResource]
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public MemoryList<ReadOnlyMemory<T>> Near<TBridge>(TBridge value,
-            Func<T, TBridge> func,
-            ComparisonChain<TBridge> comparisonChainWrap,
-            int depth)
-            where TBridge : allows ref struct
-        {
-            return ((ReadOnlyMemory<T>)memory).Near(value, func, comparisonChainWrap, depth);
         }
     }
 }

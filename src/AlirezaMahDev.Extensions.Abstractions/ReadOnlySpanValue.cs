@@ -7,7 +7,7 @@ public readonly ref struct ReadOnlySpanValue<T>
     private readonly ReadOnlySpan<T> _readOnlySpan;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public ReadOnlySpanValue(in T value)
+    public ReadOnlySpanValue(ref readonly T value)
     {
         _readOnlySpan = MemoryMarshal.CreateReadOnlySpan(in value, 1);
     }
@@ -21,19 +21,13 @@ public readonly ref struct ReadOnlySpanValue<T>
     public bool HasValue
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return !_readOnlySpan.IsEmpty;
-        }
+        get => !_readOnlySpan.IsEmpty;
     }
 
-    public ref readonly T Value
+    public ref T Value
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref MemoryMarshal.GetReference(_readOnlySpan);
-        }
+        get => ref MemoryMarshal.GetReference(_readOnlySpan);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

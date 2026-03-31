@@ -8,6 +8,7 @@ public static class MemoryListBuilder
     {
         return new(values);
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     [MustDisposeResource]
     public static MemoryList<T> Create<T>(int capacity, ReadOnlySpan<T> values)

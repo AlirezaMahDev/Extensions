@@ -2,13 +2,13 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class ReadOnlyMemoryValueExtensions
 {
-    extension<T>(ref T t)
+    extension<T>(T t)
         where T : struct
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public ReadOnlyMemoryValue<T> AsReadonlyMemoryValue()
         {
-            return new(in t);
+            return new(t);
         }
     }
 

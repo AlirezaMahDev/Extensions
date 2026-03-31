@@ -11,18 +11,27 @@ public readonly ref struct XxHash3Builder() : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Add<T>(in T value)
         where T : unmanaged
-        => _hasher.Append(MemoryMarshal.AsBytes(
+    {
+        _hasher.Append(MemoryMarshal.AsBytes(
             MemoryMarshal.CreateReadOnlySpan(in value, 1)));
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void AddSpan<T>(ReadOnlySpan<T> values)
         where T : unmanaged
-        => _hasher.Append(MemoryMarshal.AsBytes(values));
+    {
+        _hasher.Append(MemoryMarshal.AsBytes(values));
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int ToHashCode()
-        => (int)_hasher.GetCurrentHashAsUInt64();
+    {
+        return (int)_hasher.GetCurrentHashAsUInt64();
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public void Dispose() => XxHash3Pool.Return(_hasher);
+    public void Dispose()
+    {
+        XxHash3Pool.Return(_hasher);
+    }
 }
