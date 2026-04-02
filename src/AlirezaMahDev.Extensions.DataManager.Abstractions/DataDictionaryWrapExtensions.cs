@@ -1,12 +1,12 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public class DataDictionaryWrap<TValue, TItem, TKey>(
-    ScopedRefValueFunc<TValue, DataOffset> refChild,
-    ScopedRefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
-    ScopedRefValueFunc<TItem, DataOffset> refNext,
-    ScopedRefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext,
-    ScopedRefValueFunc<TItem, TKey> refKey,
-    ScopedRefReadOnlyValueFunc<TItem, TKey> refReadOnlyKey)
+    RefValueFunc<TValue, DataOffset> refChild,
+    RefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
+    RefValueFunc<TItem, DataOffset> refNext,
+    RefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext,
+    RefValueFunc<TItem, TKey> refKey,
+    RefReadOnlyValueFunc<TItem, TKey> refReadOnlyKey)
         : DataDictionaryWrap<TValue, TItem, TKey, DataDictionaryItemWrap<TItem, TKey>>(refChild, refReadOnlyChild,
         new(refNext, refReadOnlyNext, refKey, refReadOnlyKey))
     where TValue : unmanaged, IDataValue<TValue>
@@ -23,12 +23,12 @@ public static class DataDictionaryWrapExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataDictionaryWrap<TValue, TItem, TKey> Dictionary(
-            ScopedRefValueFunc<TValue, DataOffset> refChild,
-            ScopedRefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
-            ScopedRefValueFunc<TItem, DataOffset> refNext,
-            ScopedRefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext,
-            ScopedRefValueFunc<TItem, TKey> refKey,
-            ScopedRefReadOnlyValueFunc<TItem, TKey> refReadOnlyKey)
+            RefValueFunc<TValue, DataOffset> refChild,
+            RefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
+            RefValueFunc<TItem, DataOffset> refNext,
+            RefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext,
+            RefValueFunc<TItem, TKey> refKey,
+            RefReadOnlyValueFunc<TItem, TKey> refReadOnlyKey)
         {
             return new(
                 refChild,
@@ -46,10 +46,10 @@ public static class DataDictionaryWrapExtensions
         where TKey : unmanaged, IScopedRefReadOnlyEquatable<TKey>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataDictionaryWrap<TValue, TItem, TKey> Dictionary(ScopedRefValueFunc<TItem, DataOffset> refNext,
-            ScopedRefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext,
-            ScopedRefValueFunc<TItem, TKey> refKey,
-            ScopedRefReadOnlyValueFunc<TItem, TKey> refReadOnlyKey)
+        public DataDictionaryWrap<TValue, TItem, TKey> Dictionary(RefValueFunc<TItem, DataOffset> refNext,
+            RefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext,
+            RefValueFunc<TItem, TKey> refKey,
+            RefReadOnlyValueFunc<TItem, TKey> refReadOnlyKey)
         {
             return new(
                 DataCollectionWrapChildDefault<TValue>.RefChild,
@@ -67,8 +67,8 @@ public static class DataDictionaryWrapExtensions
         where TKey : unmanaged, IScopedRefReadOnlyEquatable<TKey>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataDictionaryWrap<TValue, TItem, TKey> Dictionary(ScopedRefValueFunc<TItem, TKey> refKey,
-            ScopedRefReadOnlyValueFunc<TItem, TKey> refReadOnlyKey)
+        public DataDictionaryWrap<TValue, TItem, TKey> Dictionary(RefValueFunc<TItem, TKey> refKey,
+            RefReadOnlyValueFunc<TItem, TKey> refReadOnlyKey)
         {
             return new(
                 DataCollectionWrapChildDefault<TValue>.RefChild,
@@ -97,10 +97,10 @@ public static class DataDictionaryWrapExtensions
         where TKey : unmanaged, IScopedRefReadOnlyEquatable<TKey>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataDictionaryItemWrap<TValue, TKey> DictionaryItem(ScopedRefValueFunc<TValue, DataOffset> refNext,
-            ScopedRefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyNext,
-            ScopedRefValueFunc<TValue, TKey> refKey,
-            ScopedRefReadOnlyValueFunc<TValue, TKey> refReadOnlyKey)
+        public DataDictionaryItemWrap<TValue, TKey> DictionaryItem(RefValueFunc<TValue, DataOffset> refNext,
+            RefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyNext,
+            RefValueFunc<TValue, TKey> refKey,
+            RefReadOnlyValueFunc<TValue, TKey> refReadOnlyKey)
         {
             return new(
                 refNext,
@@ -115,8 +115,8 @@ public static class DataDictionaryWrapExtensions
         where TKey : unmanaged, IScopedRefReadOnlyEquatable<TKey>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataDictionaryItemWrap<TValue, TKey> DictionaryItem(ScopedRefValueFunc<TValue, TKey> refKey,
-            ScopedRefReadOnlyValueFunc<TValue, TKey> refReadOnlyKey)
+        public DataDictionaryItemWrap<TValue, TKey> DictionaryItem(RefValueFunc<TValue, TKey> refKey,
+            RefReadOnlyValueFunc<TValue, TKey> refReadOnlyKey)
         {
             return new(
                 DataCollectionWrapNextDefault<TValue>.RefNext,
@@ -143,10 +143,10 @@ public static class DataDictionaryWrapExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataDictionaryWrap<TValue, TValue, TKey> TreeDictionary(
-            ScopedRefValueFunc<TValue, DataOffset> getRefChildOrRefNext,
-            ScopedRefReadOnlyValueFunc<TValue, DataOffset> getRefReAdOnlyChildOrReAdOnlyNext,
-            ScopedRefValueFunc<TValue, TKey> refKey,
-            ScopedRefReadOnlyValueFunc<TValue, TKey> refReadOnlyKey)
+            RefValueFunc<TValue, DataOffset> getRefChildOrRefNext,
+            RefReadOnlyValueFunc<TValue, DataOffset> getRefReAdOnlyChildOrReAdOnlyNext,
+            RefValueFunc<TValue, TKey> refKey,
+            RefReadOnlyValueFunc<TValue, TKey> refReadOnlyKey)
         {
             return new(getRefChildOrRefNext,
                 getRefReAdOnlyChildOrReAdOnlyNext,
@@ -162,8 +162,8 @@ public static class DataDictionaryWrapExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataDictionaryWrap<TValue, TValue, TKey> TreeDictionary(
-            ScopedRefValueFunc<TValue, TKey> refKey,
-            ScopedRefReadOnlyValueFunc<TValue, TKey> refReadOnlyKey)
+            RefValueFunc<TValue, TKey> refKey,
+            RefReadOnlyValueFunc<TValue, TKey> refReadOnlyKey)
         {
             return new(
                 DataCollectionWrapChildDefault<TValue>.RefChild,

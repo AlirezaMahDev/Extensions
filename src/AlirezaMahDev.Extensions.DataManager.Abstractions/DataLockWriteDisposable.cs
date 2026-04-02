@@ -7,6 +7,7 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
     private readonly CancellationToken _cancellationToken;
     private readonly bool _isChild;
     private readonly ref readonly DataLocation<TValue> _location;
+    private readonly ref TValue _pointer;
 
     public DataLockWriteDisposable(ref readonly DataLocation<TValue> location,
         CancellationToken cancellationToken = default)
@@ -62,6 +63,9 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
                 break;
             }
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        _pointer = ref _location.UnsafeRefValue;
     }
 
     public ref TValue RefValue
@@ -74,7 +78,7 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
                 throw new ObjectDisposedException(nameof(DataLockWriteDisposable<>));
             }
 
-            return ref _location.UnsafeRefValue;
+            return ref _pointer;
         }
     }
 

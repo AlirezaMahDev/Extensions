@@ -1,20 +1,20 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public class DataCollectionWrap<TValue, TItem, TItemWrap>(
-    ScopedRefValueFunc<TValue, DataOffset> refChild,
-    ScopedRefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
+    RefValueFunc<TValue, DataOffset> refChild,
+    RefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
     TItemWrap itemWrap)
     where TValue : unmanaged, IDataValue<TValue>
     where TItem : unmanaged, IDataValue<TItem>
     where TItemWrap : DataCollectionItemWrap<TItem>
 {
-    public ScopedRefValueFunc<TValue, DataOffset> RefChild
+    public RefValueFunc<TValue, DataOffset> RefChild
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get;
     } = refChild;
 
-    public ScopedRefReadOnlyValueFunc<TValue, DataOffset> RefReadOnlyChild
+    public RefReadOnlyValueFunc<TValue, DataOffset> RefReadOnlyChild
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get;
@@ -28,10 +28,10 @@ public class DataCollectionWrap<TValue, TItem, TItemWrap>(
 }
 
 public class DataCollectionWrap<TValue, TItem>(
-    ScopedRefValueFunc<TValue, DataOffset> refChild,
-    ScopedRefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
-    ScopedRefValueFunc<TItem, DataOffset> refNext,
-    ScopedRefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext)
+    RefValueFunc<TValue, DataOffset> refChild,
+    RefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
+    RefValueFunc<TItem, DataOffset> refNext,
+    RefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext)
         : DataCollectionWrap<TValue, TItem, DataCollectionItemWrap<TItem>>(refChild, refReadOnlyChild,
         new(refNext, refReadOnlyNext))
     where TValue : unmanaged, IDataValue<TValue>

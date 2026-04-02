@@ -110,7 +110,6 @@ TLink> : INerve<TData, TLink>, IDisposable
         var connection = _connectionLocation
             .Wrap(Access, x => x.Storage())
             .GetOrCreateData(ConnectionValue<TLink>.Default with { Neuron = new(neuron.Offset) });
-        var dataWrap = _counterLocation.Wrap(Access, x => x.Storage());
 
         _neuron = new(neuron.Offset);
         _rootNeuronWrap = _neuron.NewWrap(this);

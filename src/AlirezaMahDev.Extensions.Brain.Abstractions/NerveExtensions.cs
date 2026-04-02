@@ -9,7 +9,7 @@ public static class NerveExtensions
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
         public Neuron FindOrAddNeuron(ref readonly TData data)
         {
-            var cacheKey = nerve.CreateNeuronCacheKey(in data);
+            var cacheKey = INerve<TData, TLink>.CreateNeuronCacheKey(in data);
             return nerve.FindNeuronCore(ref cacheKey, in data) is { HasValue: true } optional
                 ? optional.Value
                 : nerve.AddNeuronCore(ref cacheKey, in data);
@@ -18,18 +18,18 @@ public static class NerveExtensions
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
         public Optional<Neuron> FindNeuronCore(ref readonly NerveCacheKey cacheKey, ref readonly TData data)
         {
-            if (nerve.TryGetNeuronCacheCore(in cacheKey, out var offset))
+            if (nerve.TryGetNeuronCacheCore(in cacheKey, out var neuron))
             {
-                return Optional<Neuron>.From(new(offset.Value));
+                return Optional<Neuron>.From(neuron);
             }
 
             var localData = data;
             var cellMemory = nerve.RootNeuronWrap.GetUnloadedNeuronsWrap();
-            var neuron = cellMemory.FirstOrDefault(x =>
+            var neuronWrap = cellMemory.FirstOrDefault(x =>
                     x.Location.ReadLock((scoped ref readonly value) => value.Data == localData))
                 .NullWhenDefault();
-            return neuron.HasValue
-                ? Optional<Neuron>.From(new(neuron.Value.Location.Offset))
+            return neuronWrap.HasValue
+                ? Optional<Neuron>.From(new(neuronWrap.Value.Location.Offset))
                 : Optional<Neuron>.Null;
         }
 
@@ -45,13 +45,14 @@ public static class NerveExtensions
             }
 
             nerve.Access.Create(NeuronValue<TData>.Default with
-            {
-                Data = data,
-                Next = @lock.RefValue.Next,
-            }, out var neuronValue);
+                {
+                    Data = data,
+                    Next = @lock.RefValue.Next,
+                },
+                out var neuronValue);
             Neuron newNeuron = new(neuronValue.Offset);
             @lock.RefValue.Next = newNeuron;
-            nerve.TrySetNeuronCacheCore(in cacheKey, in neuronValue.Offset);
+            nerve.TrySetNeuronCacheCore(in cacheKey, in newNeuron);
             return newNeuron;
         }
     }

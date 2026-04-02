@@ -1,5 +1,3 @@
-using AlirezaMahDev.Extensions.DataManager.Abstractions;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;

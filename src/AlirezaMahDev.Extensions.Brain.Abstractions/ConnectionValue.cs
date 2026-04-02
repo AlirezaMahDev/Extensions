@@ -12,7 +12,6 @@ public struct ConnectionValue<TLink> :
     public Neuron Neuron;
     public Connection Child;
     public Connection Next;
-    public Connection Previous;
     private DataLock _lock;
 
     public int Count;
@@ -33,7 +32,6 @@ public struct ConnectionValue<TLink> :
                Neuron == other.Neuron &&
                Child == other.Child &&
                Next == other.Next &&
-               Previous == other.Previous &&
                Count == other.Count &&
                _weight == other._weight &&
                _score == other._score;
@@ -53,7 +51,6 @@ public struct ConnectionValue<TLink> :
         xxHash3Builder.Add(in Neuron);
         xxHash3Builder.Add(in Child);
         xxHash3Builder.Add(in Next);
-        xxHash3Builder.Add(in Previous);
         xxHash3Builder.Add(in Count);
         xxHash3Builder.Add(in _weight);
         xxHash3Builder.Add(in _score);
@@ -66,7 +63,6 @@ public struct ConnectionValue<TLink> :
         Next = Connection.Null,
         Count = 0,
         Child = Connection.Null,
-        Previous = Connection.Null,
         _score = 1f,
         _weight = 0u,
         Link = default

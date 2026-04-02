@@ -10,10 +10,10 @@ public static class NeuronWrapExtensions
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             get => wrap.Location.ReadLock((scoped ref readonly x, scoped ref readonly nerve) =>
-                x.Next.Offset.IsNull
-                    ? Optional<CellWrap<NeuronValue<TData>, TData, TLink>>.Null
-                    : x.Next.NewWrap(nerve),
-                    wrap.Nerve);
+                    x.Next.Offset.IsNull
+                        ? Optional<CellWrap<NeuronValue<TData>, TData, TLink>>.Null
+                        : x.Next.NewWrap(nerve),
+                wrap.Nerve);
         }
 
         public DataOffset? NextUnloadItem
@@ -63,13 +63,18 @@ public static class NeuronWrapExtensions
             }
 
             var lastNeuronWrap = unloaded.HasValue
-                ? new Neuron(unloaded.Value).NewWrap(wrap.Nerve) : wrap.NextWrap;
+                ? new Neuron(unloaded.Value).NewWrap(wrap.Nerve)
+                : wrap.NextWrap;
             while (lastNeuronWrap.HasValue)
             {
                 var neuronWrap = lastNeuronWrap.Value;
-                wrap.Nerve.TrySetNeuronCache(in neuronWrap);
-                wrap.NextUnloadItem = neuronWrap.Location
-                    .ReadLock((scoped ref readonly x) => x.Next.Offset);
+                neuronWrap.Location.ReadLock(
+                    (scoped ref readonly value, scoped ref readonly neuron) =>
+                    {
+                        wrap.Nerve.TrySetNeuronCache(in value.Data, in neuron);
+                        wrap.NextUnloadItem = value.Next.Offset;
+                    },
+                    new Neuron(neuronWrap.Location.Offset));
                 lastNeuronWrap = neuronWrap.NextWrap;
                 yield return neuronWrap;
             }

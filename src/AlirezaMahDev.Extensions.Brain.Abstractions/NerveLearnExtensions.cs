@@ -13,7 +13,7 @@ public static class NerveLearnExtensions
             {
                 var neuron = nerve.FindOrAddNeuron(in data.ElementAt(i).Value);
                 var link = linkFunc(data[..i]);
-                var findOrAdd = connectionWrap.FindOrAdd(in neuron, in link);
+                var findOrAdd = connectionWrap.FindOrAdd(in link, in neuron);
                 connectionWrap = findOrAdd.NewWrap(nerve);
                 var neuronWrapLocationWrap = connectionWrap.NeuronWrap.Wrap;
                 Interlocked.Increment(ref neuronWrapLocationWrap.Location.UnsafeRefValue.Weight);

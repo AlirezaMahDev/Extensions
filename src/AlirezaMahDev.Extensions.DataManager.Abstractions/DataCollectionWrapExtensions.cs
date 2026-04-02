@@ -8,10 +8,10 @@ public static class DataCollectionWrapExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataCollectionWrap<TValue, TItem> Collection(
-            ScopedRefValueFunc<TValue, DataOffset> refChild,
-            ScopedRefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
-            ScopedRefValueFunc<TItem, DataOffset> refNext,
-            ScopedRefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext)
+            RefValueFunc<TValue, DataOffset> refChild,
+            RefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
+            RefValueFunc<TItem, DataOffset> refNext,
+            RefReadOnlyValueFunc<TItem, DataOffset> refReadOnlyNext)
         {
             return new(refChild, refReadOnlyChild, refNext, refReadOnlyNext);
         }
@@ -21,11 +21,10 @@ public static class DataCollectionWrapExtensions
         where TValue : unmanaged, IDataCollection<TValue>
         where TItem : unmanaged, IDataValue<TItem>
     {
-
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataCollectionWrap<TValue, TItem> Collection(
-            ScopedRefValueFunc<TItem, DataOffset> getRefNext,
-            ScopedRefReadOnlyValueFunc<TItem, DataOffset> getRefReadOnlyNext)
+            RefValueFunc<TItem, DataOffset> getRefNext,
+            RefReadOnlyValueFunc<TItem, DataOffset> getRefReadOnlyNext)
         {
             return new(
                 DataCollectionWrapChildDefault<TValue>.RefChild,
@@ -50,7 +49,8 @@ public static class DataCollectionWrapExtensions
         where TValue : unmanaged, IDataValue<TValue>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataCollectionItemWrap<TValue> CollectionItem(ScopedRefValueFunc<TValue, DataOffset> getRefNext, ScopedRefReadOnlyValueFunc<TValue, DataOffset> getRefReadOnlyNext)
+        public DataCollectionItemWrap<TValue> CollectionItem(RefValueFunc<TValue, DataOffset> getRefNext,
+            RefReadOnlyValueFunc<TValue, DataOffset> getRefReadOnlyNext)
         {
             return new(getRefNext, getRefReadOnlyNext);
         }
@@ -71,8 +71,8 @@ public static class DataCollectionWrapExtensions
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataCollectionWrap<TValue, TValue> TreeCollection(
-            ScopedRefValueFunc<TValue, DataOffset> getRefChildOrRefNext,
-            ScopedRefReadOnlyValueFunc<TValue, DataOffset> getRefReAdOnlyChildOrReAdOnlyNext)
+            RefValueFunc<TValue, DataOffset> getRefChildOrRefNext,
+            RefReadOnlyValueFunc<TValue, DataOffset> getRefReAdOnlyChildOrReAdOnlyNext)
         {
             return new(getRefChildOrRefNext,
                 getRefReAdOnlyChildOrReAdOnlyNext,
@@ -98,7 +98,7 @@ public static class DataCollectionWrapExtensions
         public bool GetNext(out DataLocation<TValue> result)
         {
             using var @lock = wrap.Location.ReadLock();
-            ref readonly var next = ref wrap.Wrap.RefReadOnlyNext(in @lock.RefReadOnlyValue);
+            var next = wrap.Wrap.RefReadOnlyNext(in @lock.RefReadOnlyValue);
             if (next.IsNull)
             {
                 result = default;
@@ -118,7 +118,7 @@ public static class DataCollectionWrapExtensions
         public bool GetChild(out DataLocation<TItem> result)
         {
             using var @lock = wrap.Location.ReadLock();
-            ref readonly var child = ref wrap.Wrap.RefReadOnlyChild(in @lock.RefReadOnlyValue);
+            var child = wrap.Wrap.RefReadOnlyChild(in @lock.RefReadOnlyValue);
             if (child.IsNull)
             {
                 result = default;

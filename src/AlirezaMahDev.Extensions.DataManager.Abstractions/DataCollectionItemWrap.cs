@@ -1,18 +1,18 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public class DataCollectionItemWrap<TValue>(
-    ScopedRefValueFunc<TValue, DataOffset> getRefNext,
-    ScopedRefReadOnlyValueFunc<TValue, DataOffset> getRefReadOnlyNext)
+    RefValueFunc<TValue, DataOffset> getRefNext,
+    RefReadOnlyValueFunc<TValue, DataOffset> getRefReadOnlyNext)
     where TValue : unmanaged, IDataValue<TValue>
 {
 
-    public ScopedRefReadOnlyValueFunc<TValue, DataOffset> RefReadOnlyNext
+    public RefReadOnlyValueFunc<TValue, DataOffset> RefReadOnlyNext
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get;
     } = getRefReadOnlyNext;
 
-    public ScopedRefValueFunc<TValue, DataOffset> RefNext
+    public RefValueFunc<TValue, DataOffset> RefNext
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get;

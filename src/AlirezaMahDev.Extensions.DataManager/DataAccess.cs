@@ -56,7 +56,7 @@ internal class DataAccess : IDisposable, IDataAccess
             DataOffset.Create(_value.Offset.Length, Unsafe.SizeOf<DataPath>()),
             out _root);
 
-        _trash = Root.Wrap(this, x => x.TreeDictionary())
+        _trash = Root.Wrap(this, x => x.Dictionary())
             .GetOrAdd(".trash")
             .Wrap(this, x => x.Storage())
             .GetOrCreateData<DataPath, DataTrash>();
