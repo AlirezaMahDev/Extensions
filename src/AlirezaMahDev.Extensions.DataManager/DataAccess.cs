@@ -42,7 +42,7 @@ internal class DataAccess : IDisposable, IDataAccess
         Path = path;
 
         _map = new(System.IO.Path.Combine(Path, DataDefaults.FileFormat));
-        DataLocation<DataAccessValue>.Read(this, DataOffset.Create(0, sizeof(long)), out _value);
+        DataLocation<DataAccessValue>.Read(this, DataOffset.Create(0, Unsafe.SizeOf<DataAccessValue>()), out _value);
 
         if (_value.ReadLock((scoped ref readonly x) => x.LastOffset == 0))
         {
@@ -95,15 +95,15 @@ internal class DataAccess : IDisposable, IDataAccess
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private DataMapFilePart AccessPart(ref DataOffset offset)
+    private DataMapFilePart AccessPart(in DataOffset offset)
     {
-        return _map.File(ref offset).Part(ref offset);
+        return _map.File(in offset).Part(in offset);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public IDataMapFilePartOwner GetOwner(ref DataOffset offset)
+    public IDataMapFilePartOwner GetOwner(in DataOffset offset)
     {
-        return AccessPart(ref offset).GetOwner();
+        return AccessPart(in offset).GetOwner();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

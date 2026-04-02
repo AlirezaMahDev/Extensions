@@ -1,6 +1,6 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public static class DataLocationStorageExtensions
+public static class DataStorageExtensions
 {
     extension<TValue>(IDataStorage<TValue> value)
         where TValue : unmanaged, IDataStorage<TValue>
@@ -11,7 +11,7 @@ public static class DataLocationStorageExtensions
         }
     }
 
-    extension<TValue>(in DataLocationWrap<TValue, IDataStorage<TValue>> wrap)
+    extension<TValue>(in DataWrap<TValue, IDataStorage<TValue>> wrap)
         where TValue : unmanaged, IDataStorage<TValue>
     {
         public bool GetData(out DataOffset result)

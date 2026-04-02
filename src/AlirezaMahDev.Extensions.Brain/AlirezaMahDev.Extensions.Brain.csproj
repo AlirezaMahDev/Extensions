@@ -14,10 +14,11 @@
     <ProjectReference Include="..\AlirezaMahDev.Extensions\AlirezaMahDev.Extensions.csproj"/>
   </ItemGroup>
 
-
   <ItemGroup>
-    <PackageReference Include="ILGPU" Version="1.5.3"/>
-    <PackageReference Include="ILGPU.Algorithms" Version="1.5.3"/>
+    <PackageReference Include="Microsoft.FASTER.Core" Version="2.6.5" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1">
+      <ExcludeAssets>compile</ExcludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

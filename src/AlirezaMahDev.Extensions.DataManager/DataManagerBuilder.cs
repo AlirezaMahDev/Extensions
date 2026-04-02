@@ -15,7 +15,7 @@ public class DataManagerBuilder : BuilderBase
 
     public DataManagerBuilder UseDefault()
     {
-        Services.TryAddSingleton<IDataAccess>(provider =>
+        Services.TryAddSingleton(provider =>
         {
             var options = provider.GetRequiredService<IOptions<DataManagerOptions>>().Value;
             return provider.GetRequiredService<IDataManager>()
@@ -26,7 +26,7 @@ public class DataManagerBuilder : BuilderBase
 
     public DataManagerBuilder AddAccess(string key)
     {
-        Services.TryAddKeyedSingleton<IDataAccess>(key,
+        Services.TryAddKeyedSingleton(key,
             (provider, _) =>
             {
                 var options = provider.GetRequiredService<IOptions<DataManagerOptions>>().Value;

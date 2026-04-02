@@ -48,13 +48,13 @@ public static class NerveSleepExtensions
 
             SmartParallel.Invoke(cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (_) => INerve<TData, TLink>.SelfSleep(progressLogger,
+            (_) => INerve<TData, TLink>.SelfSleep(progressLogger,
                     cellWrap,
                     comparisonChain,
                     cellMemory,
                     cancellationToken),
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (_) => INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, cancellationToken));
+            (_) => INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, cancellationToken));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -72,7 +72,7 @@ public static class NerveSleepExtensions
                 comparisonChain.Comparison);
             SmartParallel.Invoke(cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (token) =>
+            (token) =>
                 {
                     progressLogger.IncrementLength();
                     if (cellWrap.Location.ReadLock((scoped ref readonly x) =>
@@ -88,39 +88,33 @@ public static class NerveSleepExtensions
                     }
                 },
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (token) =>
+            (token) =>
                 {
                     CellWrap<ConnectionValue<TLink>, TData, TLink> second = default;
                     for (var index = 0; index < cellMemory.Count - 1; index++)
                     {
-                        var
-                            first = cellMemory.Memory.Span[index];
+                        var first = cellMemory.Memory.Span[index];
                         second = cellMemory.Memory.Span[index + 1];
 
                         progressLogger.IncrementLength();
                         if (first.Location.ReadLock((scoped ref readonly x) =>
-                                    x.Next.Offset != second.Location.Offset ||
-                                    x.NextCount != cellMemory.Count - index - 1,
-                                token))
+                                    x.Next.Offset != second.Location.Offset, token))
                         {
                             first.Location.WriteLock((scoped ref location) =>
                             {
                                 location.Next = new(second.Location.Offset);
-                                location.NextCount = cellMemory.Count - index - 1;
                                 progressLogger.IncrementCount();
-                            });
+                            }, token);
                         }
                     }
 
                     progressLogger.IncrementLength();
                     if (second.Location.ReadLock((scoped ref readonly x) =>
-                                x.Next.Offset != DataOffset.Null || x.NextCount != 0,
-                            token))
+                        x.Next.Offset != DataOffset.Null, token))
                     {
                         second.Location.WriteLock((scoped ref location) =>
                             {
                                 location.Next = new(DataOffset.Null);
-                                location.NextCount = 0;
                                 progressLogger.IncrementCount();
                             },
                             token);
@@ -139,7 +133,7 @@ public static class NerveSleepExtensions
                 cellMemory.Count,
                 cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (index, token) =>
+            (index, token) =>
                     INerve<TData, TLink>.SleepCore(progressLogger,
                         cellMemory.Memory.Span[index],
                         comparisonChain,

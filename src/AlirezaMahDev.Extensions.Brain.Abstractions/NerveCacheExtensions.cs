@@ -8,7 +8,7 @@ public static class NerveCacheExtensions
     {
         public INerveCacheSection NeuronSectionCache => nerve.Cache.GetOrAdd("n");
         public INerveCacheSection ConnectionSectionCache => nerve.Cache.GetOrAdd("c");
-        public INerveCacheSection LastLoadedConnectionCache => nerve.Cache.GetOrAdd("l");
+        public INerveCacheSection NextUnloadItem => nerve.Cache.GetOrAdd("l");
     }
 
     extension<TData, TLink>(INerve<TData, TLink> nerve)
@@ -53,8 +53,7 @@ public static class NerveCacheExtensions
 
         public NerveCacheKey CreateNeuronCacheKey(ref readonly TData data)
         {
-            return NerveCacheKey.Create(in data)
-                ;
+            return NerveCacheKey.Create(in data);
         }
     }
 

@@ -1,39 +1,64 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
+[StructLayout(LayoutKind.Auto)]
 public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
     where TValue : unmanaged, IDataValue<TValue>
 {
+    private readonly CancellationToken _cancellationToken;
+    private readonly bool _isChild;
     private readonly ref readonly DataLocation<TValue> _location;
 
-    public DataLockWriteDisposable(ref readonly DataLocation<TValue> location, CancellationToken cancellationToken = default)
+    public DataLockWriteDisposable(ref readonly DataLocation<TValue> location,
+        CancellationToken cancellationToken = default)
     {
         _location = ref location;
+        _cancellationToken = cancellationToken;
 
-        ref var state = ref location.UnsafeRefValue.Lock.State;
+        ref var @lock = ref location.UnsafeRefValue.Lock;
+        ref var ulongLock = ref Unsafe.As<DataLock, ulong>(ref @lock);
         SpinWait spinner = default;
         while (!cancellationToken.IsCancellationRequested)
         {
-            int lastState = Volatile.Read(ref state);
-
-            if (lastState > 0)
+            var lastUlongLock = Volatile.Read(ref ulongLock);
+            var newUlongLock = lastUlongLock;
+            ref var newLock = ref Unsafe.As<ulong, DataLock>(ref newUlongLock);
+            if (newLock.Session != DataLockWrapExtensions.CurrentSession)
             {
-                Interlocked.CompareExchange(ref state,
-                    ~lastState,
-                    lastState);
-                continue;
+                newLock.Session = DataLockWrapExtensions.CurrentSession;
+                newLock.Thread = 0;
+                newLock.State = 0;
+                if (Interlocked.CompareExchange(ref ulongLock, newUlongLock, lastUlongLock) != lastUlongLock)
+                {
+                    spinner.SpinOnce();
+                    continue;
+                }
             }
 
-            if (lastState != 0)
+            if (newLock.Thread == DataLockWrapExtensions.CurrentThread)
+            {
+                _isChild = true;
+                break;
+            }
+
+            if (newLock.State < 0)
             {
                 spinner.SpinOnce();
                 continue;
             }
 
-            if (Interlocked.CompareExchange(
-                    ref state,
-                    -1,
-                    lastState) == lastState)
+            if (newLock.State >= 0)
             {
+                newLock.Thread = DataLockWrapExtensions.CurrentThread;
+                newLock.State = (short)~newLock.State;
+                if (Interlocked.CompareExchange(ref ulongLock, newUlongLock, lastUlongLock) != lastUlongLock)
+                {
+                    spinner.SpinOnce();
+                    continue;
+                }
+
+                while (Volatile.Read(ref @lock.State) != -1)
+                    spinner.SpinOnce();
+
                 break;
             }
         }
@@ -46,7 +71,7 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
         {
             if (Volatile.Read(ref _location.UnsafeRefValue.Lock.State) != -1)
             {
-                throw new ObjectDisposedException(nameof(DataLockReadDisposable<>));
+                throw new ObjectDisposedException(nameof(DataLockWriteDisposable<>));
             }
 
             return ref _location.UnsafeRefValue;
@@ -56,11 +81,35 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        if (Interlocked.CompareExchange(ref _location.UnsafeRefValue.Lock.State, 0, -1) == -1)
+        if (_isChild)
         {
             return;
         }
 
-        throw new ObjectDisposedException(nameof(DataLockReadDisposable<>));
+        ref var @lock = ref _location.UnsafeRefValue.Lock;
+        ref var ulongLock = ref Unsafe.As<DataLock, ulong>(ref @lock);
+        SpinWait spinner = default;
+        while (!_cancellationToken.IsCancellationRequested)
+        {
+            var lastUlongLock = Volatile.Read(ref ulongLock);
+            var newUlongLock = lastUlongLock;
+            ref var newLock = ref Unsafe.As<ulong, DataLock>(ref newUlongLock);
+            if (newLock.State != -1)
+            {
+                break;
+            }
+
+            newLock.Thread = 0;
+            newLock.State = 0;
+            if (Interlocked.CompareExchange(ref ulongLock, newUlongLock, lastUlongLock) != lastUlongLock)
+            {
+                spinner.SpinOnce();
+                continue;
+            }
+
+            return;
+        }
+
+        throw new ObjectDisposedException(nameof(DataLockWriteDisposable<>));
     }
 }

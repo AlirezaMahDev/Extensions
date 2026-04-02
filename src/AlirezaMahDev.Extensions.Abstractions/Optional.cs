@@ -1,7 +1,7 @@
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public struct Optional<TValue>
-    where TValue : struct, IEquatable<TValue>
+    where TValue : struct
 {
     private TValue _value;
 
@@ -51,7 +51,7 @@ public struct Optional<TValue>
     public readonly Optional<TValue> AsOptional()
     {
         return HasValue
-            ? Optional<TValue>.From(Value)
-            : Optional<TValue>.Null;
+            ? From(Value)
+            : Null;
     }
 }

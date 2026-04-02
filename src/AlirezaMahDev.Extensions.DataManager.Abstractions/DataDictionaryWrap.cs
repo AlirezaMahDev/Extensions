@@ -1,6 +1,5 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-[StructLayout(LayoutKind.Sequential)]
 public class DataDictionaryWrap<TValue, TItem, TKey, TItemWrap>(
     ScopedRefValueFunc<TValue, DataOffset> refChild,
     ScopedRefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,

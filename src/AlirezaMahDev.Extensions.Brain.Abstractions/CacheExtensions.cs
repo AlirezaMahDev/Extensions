@@ -6,7 +6,7 @@ public static class CacheExtensions
     {
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataLocationWrap<CacheValue, DataEmptyWrap> NewWrap(IDataAccess access)
+        public DataWrap<CacheValue, DataEmptyWrap> NewWrap(IDataAccess access)
         {
             DataLocation<CacheValue>.Read(access, cache.Offset, out var location);
             return new(access, location, DataEmptyWrap.Default);

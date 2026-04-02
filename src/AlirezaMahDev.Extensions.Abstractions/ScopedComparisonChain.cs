@@ -8,7 +8,7 @@ public readonly record struct ScopedComparisonChain<T>(
     where T : allows ref struct
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public readonly int Compare(scoped ref readonly T x, scoped ref readonly T y)
+    public int Compare(scoped ref readonly T x, scoped ref readonly T y)
     {
         return Comparison(in x, in y);
     }

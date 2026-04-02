@@ -9,13 +9,13 @@ using Microsoft.Win32.SafeHandles;
 namespace AlirezaMahDev.Extensions.DataManager;
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-internal unsafe class DataMapFilePart(DataMapFile file, SafeFileHandle safeFileHandle, int fileOffset) : IDisposable
+internal unsafe class DataMapFilePart(DataMapFile file, SafeFileHandle safeFileHandle, int filePartOffset) : IDisposable
 {
     private readonly ReaderWriterLockSlim _pointerLock = new();
     private readonly ReaderWriterLockSlim _ownerLock = new();
     private readonly DataMapFile _file = file;
     private readonly SafeFileHandle _safeFileHandle = safeFileHandle;
-    private readonly int _fileOffset = fileOffset;
+    private readonly int _filePartOffset = filePartOffset;
     private DataMapFilePartOwner? _owner;
     private ulong _lastHash;
     private nint _pointer;
@@ -56,7 +56,7 @@ internal unsafe class DataMapFilePart(DataMapFile file, SafeFileHandle safeFileH
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            return new Span<byte>((byte*)_pointer, DataDefaults.PartSize);
+            return new((byte*)_pointer, DataDefaults.PartSize);
         }
     }
 
@@ -100,11 +100,12 @@ internal unsafe class DataMapFilePart(DataMapFile file, SafeFileHandle safeFileH
                 try
                 {
                     _pointer = (nint)NativeMemory.AlignedAlloc(DataDefaults.PartSize, 64);
+                    NativeMemory.Clear((void*)_pointer, DataDefaults.PartSize);
                     try
                     {
                         GC.AddMemoryPressure(DataDefaults.PartSize);
                         var cache = Span;
-                        RandomAccess.Read(_safeFileHandle, cache, _fileOffset);
+                        RandomAccess.Read(_safeFileHandle, cache, _filePartOffset);
                         _lastHash = GenerateHash(cache);
                         return (byte*)_pointer;
                     }
@@ -186,7 +187,7 @@ internal unsafe class DataMapFilePart(DataMapFile file, SafeFileHandle safeFileH
                 var currentHash = GenerateHash(cache);
                 if (_lastHash != currentHash)
                 {
-                    RandomAccess.Write(_safeFileHandle, cache, _fileOffset);
+                    RandomAccess.Write(_safeFileHandle, cache, _filePartOffset);
                     _lastHash = currentHash;
                 }
 

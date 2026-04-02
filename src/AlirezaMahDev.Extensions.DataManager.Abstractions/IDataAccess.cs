@@ -9,7 +9,7 @@ public interface IDataAccess
     ref readonly DataLocation<DataTrash> Trash { get; }
 
     DataOffset AllocateOffset(int length);
-    IDataMapFilePartOwner GetOwner(ref DataOffset offset);
+    IDataMapFilePartOwner GetOwner(in DataOffset offset);
 
     void Flush();
 }

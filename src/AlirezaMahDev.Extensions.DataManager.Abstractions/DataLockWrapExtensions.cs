@@ -4,32 +4,22 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public static class DataLockWrapExtensions
 {
-    private static readonly uint CurrentSession =
-        XxHash32.HashToUInt32(Guid.NewGuid().ToByteArray()) | 1;
+    public static readonly ushort CurrentSession =
+        (ushort)(XxHash32.HashToUInt32(Guid.NewGuid().ToByteArray()) | 1);
+
+    public static int CurrentThread
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => Environment.CurrentManagedThreadId;
+    }
 
     extension<TValue>(in DataLocation<TValue> location)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private void FreeLastLock()
-        {
-            ref var lastSession = ref Unsafe.As<DataLock, ulong>(ref location.UnsafeRefValue.Lock);
-            ulong currentSession = CurrentSession;
-            var read = Volatile.Read(ref lastSession);
-            if (read != 0 && (read >> 32) != CurrentSession)
-            {
-                Interlocked.CompareExchange(
-                    ref lastSession,
-                    currentSession << 32,
-                    read);
-            }
-        }
-
         [MustDisposeResource]
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataLockWriteDisposable<TValue> WriteLock(CancellationToken cancellationToken = default)
         {
-            location.FreeLastLock();
             return new(in location, cancellationToken);
         }
 
@@ -37,7 +27,6 @@ public static class DataLockWrapExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataLockReadDisposable<TValue> ReadLock(CancellationToken cancellationToken = default)
         {
-            location.FreeLastLock();
             return new(in location, cancellationToken);
         }
 
@@ -56,85 +45,86 @@ public static class DataLockWrapExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public void WriteLock<TState>(DataLockScopedRefAction<TValue, TState> action, scoped in TState state, CancellationToken cancellationToken)
+        public void WriteLock<TState>(DataLockScopedRefAction<TValue, TState> action,
+            scoped in TState state,
+            CancellationToken cancellationToken)
         {
             using var lockScope = location.WriteLock(cancellationToken);
             action(ref lockScope.RefValue, in state);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public TResult WriteLock<TResult>(DataLockScopedRefFunc<TValue, TResult> func, CancellationToken cancellationToken = default)
+        public TResult WriteLock<TResult>(DataLockScopedRefFunc<TValue, TResult> func,
+            CancellationToken cancellationToken = default)
         {
             using var lockScope = location.WriteLock(cancellationToken);
             return func(ref lockScope.RefValue);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public TResult WriteLock<TState, TResult>(DataLockScopedRefFunc<TValue, TState, TResult> func, scoped in TState state)
+        public TResult WriteLock<TState, TResult>(DataLockScopedRefFunc<TValue, TState, TResult> func,
+            scoped in TState state)
         {
             using var lockScope = location.WriteLock(CancellationToken.None);
             return func(ref lockScope.RefValue, in state);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public TResult WriteLock<TState, TResult>(DataLockScopedRefFunc<TValue, TState, TResult> func, scoped in TState state, CancellationToken cancellationToken)
+        public TResult WriteLock<TState, TResult>(DataLockScopedRefFunc<TValue, TState, TResult> func,
+            scoped in TState state,
+            CancellationToken cancellationToken)
         {
             using var lockScope = location.WriteLock(cancellationToken);
             return func(ref lockScope.RefValue, in state);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public void ReadLock(DataLockScopedRefReadonlyAction<TValue> action, CancellationToken cancellationToken = default)
+        public void ReadLock(ScopedRefReadOnlyAction<TValue> action,
+            CancellationToken cancellationToken = default)
         {
-            using var lockScope = location.ReadLock(cancellationToken);
+            using var lockScope = location.ReadLock(cancellationToken: cancellationToken);
             action(in lockScope.RefReadOnlyValue);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public void ReadLock<TState>(DataLockScopedRefReadonlyAction<TValue, TState> action, scoped in TState state)
+        public void ReadLock<TState>(ScopedRefReadOnlyAction<TValue, TState> action, scoped in TState state)
         {
-            using var lockScope = location.ReadLock(CancellationToken.None);
+            using var lockScope = location.ReadLock(cancellationToken: CancellationToken.None);
             action(in lockScope.RefReadOnlyValue, in state);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public void ReadLock<TState>(DataLockScopedRefReadonlyAction<TValue, TState> action, scoped in TState state, CancellationToken cancellationToken)
+        public void ReadLock<TState>(ScopedRefReadOnlyAction<TValue, TState> action,
+            scoped in TState state,
+            CancellationToken cancellationToken)
         {
-            using var lockScope = location.ReadLock(cancellationToken);
+            using var lockScope = location.ReadLock(cancellationToken: cancellationToken);
             action(in lockScope.RefReadOnlyValue, in state);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public TResult ReadLock<TResult>(DataLockScopedRefReadonlyFunc<TValue, TResult> func, CancellationToken cancellationToken = default)
+        public TResult ReadLock<TResult>(ScopedRefReadOnlyFunc<TValue, TResult> func,
+            CancellationToken cancellationToken = default)
         {
-            using var lockScope = location.ReadLock(cancellationToken);
+            using var lockScope = location.ReadLock(cancellationToken: cancellationToken);
             return func(in lockScope.RefReadOnlyValue);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public TResult ReadLock<TState, TResult>(DataLockScopedRefReadonlyFunc<TValue, TState, TResult> func, scoped in TState state)
+        public TResult ReadLock<TState, TResult>(ScopedRefReadOnlyFunc<TValue, TState, TResult> func,
+            scoped in TState state)
         {
-            using var lockScope = location.ReadLock(CancellationToken.None);
+            using var lockScope = location.ReadLock(cancellationToken: CancellationToken.None);
             return func(in lockScope.RefReadOnlyValue, in state);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public TResult ReadLock<TState, TResult>(DataLockScopedRefReadonlyFunc<TValue, TState, TResult> func, scoped in TState state, CancellationToken cancellationToken)
+        public TResult ReadLock<TState, TResult>(ScopedRefReadOnlyFunc<TValue, TState, TResult> func,
+            scoped in TState state,
+            CancellationToken cancellationToken)
         {
-            using var lockScope = location.ReadLock(cancellationToken);
+            using var lockScope = location.ReadLock(cancellationToken: cancellationToken);
             return func(in lockScope.RefReadOnlyValue, in state);
         }
     }
 }
-
-public delegate void DataLockScopedRefReadonlyAction<TValue, TState>(scoped ref readonly TValue value, scoped in TState state)
-    where TValue : unmanaged, IDataValue<TValue>;
-
-public delegate void DataLockScopedRefAction<TValue, TState>(scoped ref TValue value, scoped in TState state)
-    where TValue : unmanaged, IDataValue<TValue>;
-
-public delegate TResult DataLockScopedRefReadonlyFunc<TValue, TState, out TResult>(scoped ref readonly TValue value, scoped in TState state)
-    where TValue : unmanaged, IDataValue<TValue>;
-
-public delegate TResult DataLockScopedRefFunc<TValue, TState, out TResult>(scoped ref TValue value, scoped in TState state)
-    where TValue : unmanaged, IDataValue<TValue>;

@@ -1,8 +1,8 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-public static class DataLocationNoWrapExtensions
+public static class DataEmptyWrapExtensions
 {
-    extension(DataLocationWrap)
+    extension(DataWrap)
     {
         public static DataEmptyWrap Empty
         {
@@ -15,17 +15,17 @@ public static class DataLocationNoWrapExtensions
         where TValue : unmanaged, IDataValue<TValue>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataLocationWrap<TValue, DataEmptyWrap> EmptyWrap(IDataAccess access)
+        public DataWrap<TValue, DataEmptyWrap> EmptyWrap(IDataAccess access)
         {
-            return location.Wrap(access, DataLocationWrap.Empty);
+            return location.Wrap(access, DataWrap.Empty);
         }
     }
 
-    extension<TValue, TWrap>(DataLocationWrap<TValue, TWrap> wrap)
+    extension<TValue, TWrap>(DataWrap<TValue, TWrap> wrap)
         where TValue : unmanaged, IDataValue<TValue>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataLocationWrap<TValue, DataEmptyWrap> EmptyWrap()
+        public DataWrap<TValue, DataEmptyWrap> EmptyWrap()
         {
             return new(wrap.Access, wrap.Location, DataEmptyWrap.Default);
         }

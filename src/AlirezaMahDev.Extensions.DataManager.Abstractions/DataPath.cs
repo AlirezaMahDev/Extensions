@@ -16,8 +16,8 @@ public struct DataPath(
     private DataOffset _child = child;
     private DataOffset _data = data;
     private DataOffset _index = index;
-    private int _size = size;
     private DataLock _lock;
+    private int _size = size;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public readonly bool Equals(scoped ref readonly DataPath other)

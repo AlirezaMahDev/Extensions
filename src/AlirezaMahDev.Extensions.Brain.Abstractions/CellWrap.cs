@@ -10,7 +10,7 @@ public readonly struct CellWrap<TValue, TData, TLink>(INerve<TData, TLink> nerve
 {
     public readonly DataLocation<TValue> Location = location;
 
-    public DataLocationWrap<TValue, DataEmptyWrap> LocationWrap
+    public DataWrap<TValue, DataEmptyWrap> Wrap
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get

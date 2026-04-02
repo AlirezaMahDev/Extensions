@@ -9,7 +9,7 @@ public struct NeuronValue<TData> :
 {
     public static readonly NeuronValue<TData> DefaultField = new()
     {
-        Connection = Connection.Null,
+        Next = Neuron.Null,
         Data = default,
         _score = 1f,
         _weight = 0u
@@ -22,12 +22,12 @@ public struct NeuronValue<TData> :
     }
 
     public TData Data;
-    public Connection Connection;
+    public Neuron Next;
+    private DataLock _lock;
 
     private uint _weight;
     private float _score;
 
-    private DataLock _lock;
 
     public readonly ref DataLock Lock
     {
@@ -39,7 +39,7 @@ public struct NeuronValue<TData> :
     public readonly bool Equals(scoped ref readonly NeuronValue<TData> other)
     {
         return Data == other.Data &&
-               Connection == other.Connection &&
+               Next == other.Next &&
                _weight == other._weight &&
                _score == other._score;
     }

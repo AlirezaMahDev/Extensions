@@ -37,7 +37,7 @@ public static class NearBinarySearchSpanExtensions
                 return;
             }
 
-            var binarySearchRange = memory.Span.BinarySearchRange(value, readOnlyComparison);
+            var binarySearchRange = memory.Span.AsReadOnlySpanWrap().BinarySearchRange(value, readOnlyComparison);
             if (binarySearchRange.TryGetRange(out var range))
             {
                 result.Add(memory[range]);
@@ -113,7 +113,7 @@ public static class NearBinarySearchSpanExtensions
             }
 
             var span = memory.Span;
-            var binarySearchRange = span.BinarySearchRange(ref value, func, readOnlyComparison);
+            var binarySearchRange = span.AsReadOnlySpanWrap().BinarySearchRange(ref value, func, readOnlyComparison);
             if (binarySearchRange.TryGetRange(out var range))
             {
                 result.Add(memory[range]);

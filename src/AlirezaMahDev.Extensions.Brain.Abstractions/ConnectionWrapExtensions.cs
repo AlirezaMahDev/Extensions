@@ -9,21 +9,21 @@ public static class ConnectionWrapExtensions
         public CellWrap<NeuronValue<TData>, TData, TLink> NeuronWrap
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            get => wrap.Location.ReadLock((scoped ref readonly x, scoped in nerve) =>
+            get => wrap.Location.ReadLock((scoped ref readonly x, scoped ref readonly nerve) =>
                 x.Neuron.NewWrap(nerve), wrap.Nerve);
         }
 
         public CellWrap<ConnectionValue<TLink>, TData, TLink> PreviousWrap
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            get => wrap.Location.ReadLock((scoped ref readonly x, scoped in nerve) =>
+            get => wrap.Location.ReadLock((scoped ref readonly x, scoped ref readonly nerve) =>
                 x.Previous.NewWrap(nerve), wrap.Nerve);
         }
 
         public Optional<CellWrap<ConnectionValue<TLink>, TData, TLink>> NextWrap
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            get => wrap.Location.ReadLock((scoped ref readonly x, scoped in nerve) =>
+            get => wrap.Location.ReadLock((scoped ref readonly x, scoped ref readonly nerve) =>
                 x.Next.Offset.IsNull
                     ? Optional<CellWrap<ConnectionValue<TLink>, TData, TLink>>.Null
                     : x.Next.NewWrap(nerve), wrap.Nerve);
@@ -32,7 +32,7 @@ public static class ConnectionWrapExtensions
         public Optional<CellWrap<ConnectionValue<TLink>, TData, TLink>> ChildWrap
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            get => wrap.Location.ReadLock((scoped ref readonly x, scoped in nerve) =>
+            get => wrap.Location.ReadLock((scoped ref readonly x, scoped ref readonly nerve) =>
                 x.Child.Offset.IsNull
                     ? Optional<CellWrap<ConnectionValue<TLink>, TData, TLink>>.Null
                     : x.Child.NewWrap(nerve), wrap.Nerve);
@@ -41,10 +41,10 @@ public static class ConnectionWrapExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public CellEnumerable<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrap()
         {
-            var childWrap = wrap.ChildWrap;
-            return childWrap.HasValue
-                ? new(
-                    childWrap.Value.Location.ReadLock((scoped ref readonly x) => x.NextCount) + 1,
+            using var @lock = wrap.Location.ReadLock();
+            var count = @lock.RefReadOnlyValue.Count;
+            return count > 0 && wrap.ChildWrap is { HasValue: true } childWrap
+                ? new(count,
                     CellWrap<ConnectionValue<TLink>, TData, TLink>.GetConnectionsWrapCore(childWrap.Value))
                 : CellEnumerable<CellWrap<ConnectionValue<TLink>, TData, TLink>>.Empty;
         }
@@ -60,15 +60,15 @@ public static class ConnectionWrapExtensions
                 .Value;
         }
 
-        public DataOffset? LastLoadedConnection
+        public DataOffset? NextUnloadItem
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            get => wrap.Nerve.LastLoadedConnectionCache.GetOrNull(in wrap.Location.Offset);
+            get => wrap.Nerve.NextUnloadItem.GetOrNull(in wrap.Location.Offset);
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             set
             {
                 var offset = value ?? DataOffset.Null;
-                wrap.Nerve.LastLoadedConnectionCache.Set(in wrap.Location.Offset, in offset);
+                wrap.Nerve.NextUnloadItem.Set(in wrap.Location.Offset, in offset);
             }
         }
 
@@ -85,18 +85,13 @@ public static class ConnectionWrapExtensions
 
             var localNeuron = neuron;
             var localLink = link;
-            var cellMemory =
-                wrap.GetUnloadedConnectionsWrap();
+
+            var cellMemory = wrap.GetUnloadedConnectionsWrap();
             Optional<CellWrap<ConnectionValue<TLink>, TData, TLink>> result = cellMemory
                 .FirstOrDefault(x =>
-                    x.Location.ReadLock((scoped ref readonly connectionValue, scoped in innerLocalLink) =>
+                    x.Location.ReadLock((scoped ref readonly connectionValue, scoped ref readonly innerLocalLink) =>
                         connectionValue.Neuron == localNeuron && connectionValue.Link == innerLocalLink, in localLink))
                 .NullWhenDefault();
-
-            if (result.HasValue)
-            {
-                wrap.Nerve.TrySetConnectionCacheCore(in cacheKey, in result.Value.Location.Offset);
-            }
 
             return result.HasValue
                 ? Optional<Connection>.From(new(result.Value.Location.Offset))
@@ -131,17 +126,15 @@ public static class ConnectionWrapExtensions
                     Neuron = neuron,
                     Link = link,
                     Next = parent.RefValue.Child,
-                    NextCount = wrap.ChildWrap is { HasValue: true } childWrap
-                            ? childWrap.Value.Location.ReadLock((scoped ref readonly x) => x.NextCount) + 1
-                            : 0
-                },
-                    out var connectionValue);
-            Interlocked.Increment(ref wrap.Nerve.Counter.UnsafeRefValue.ConnectionCount);
+                    Count = parent.RefValue.Count,
+                }, out var connectionValue);
 
-            parent.RefValue.Child = new(connectionValue.Offset);
+            Connection newConnection = new(connectionValue.Offset);
+            parent.RefValue.Child = newConnection;
+            parent.RefValue.Count++;
 
             wrap.Nerve.TrySetConnectionCacheCore(in cacheKey, in connectionValue.Offset);
-            return new(connectionValue.Offset);
+            return newConnection;
         }
     }
 
@@ -149,14 +142,6 @@ public static class ConnectionWrapExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public IEnumerable<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapRaw()
-        {
-            return wrap.ChildWrap is { HasValue: true } childWrap
-                ? CellWrap<ConnectionValue<TLink>, TData, TLink>.GetConnectionsWrapCore(childWrap.Value)
-                : [];
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         private static IEnumerable<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCore(
             CellWrap<ConnectionValue<TLink>, TData, TLink> cellWrap)
@@ -172,21 +157,21 @@ public static class ConnectionWrapExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public IEnumerable<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetUnloadedConnectionsWrap()
         {
-            var unloaded = wrap.LastLoadedConnection;
+            var unloaded = wrap.NextUnloadItem;
             if (unloaded?.IsNull == true)
             {
                 yield break;
             }
 
-            var connection = unloaded.HasValue ? new Connection(unloaded.Value).NewWrap(wrap.Nerve) : wrap.ChildWrap;
-            while (connection.HasValue)
+            var lastConnectionWrap = unloaded.HasValue
+                ? new Connection(unloaded.Value).NewWrap(wrap.Nerve)
+                : wrap.ChildWrap;
+            while (lastConnectionWrap.HasValue)
             {
-                var connectionWrap = connection.Value;
+                var connectionWrap = lastConnectionWrap.Value;
                 wrap.Nerve.TrySetConnectionCache(in connectionWrap);
-                var connectionWrapNeuronWrap = connectionWrap.NeuronWrap;
-                wrap.Nerve.TrySetNeuronCache(in connectionWrapNeuronWrap);
-                wrap.LastLoadedConnection = connectionWrap.Location.ReadLock((scoped ref readonly x) => x.Next.Offset);
-                connection = connectionWrap.NextWrap;
+                wrap.NextUnloadItem = connectionWrap.Location.ReadLock((scoped ref readonly x) => x.Next.Offset);
+                lastConnectionWrap = connectionWrap.NextWrap;
                 yield return connectionWrap;
             }
         }

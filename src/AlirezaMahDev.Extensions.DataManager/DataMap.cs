@@ -105,7 +105,7 @@ internal sealed class DataMap : IDisposable, IDataMap
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataMapFile File(ref DataOffset offset)
+    public DataMapFile File(in DataOffset offset)
     {
         _cleanLock.EnterReadLock();
         try

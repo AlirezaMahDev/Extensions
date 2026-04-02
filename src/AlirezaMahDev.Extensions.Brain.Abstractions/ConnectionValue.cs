@@ -13,12 +13,12 @@ public struct ConnectionValue<TLink> :
     public Connection Child;
     public Connection Next;
     public Connection Previous;
+    private DataLock _lock;
 
-    public int NextCount;
+    public int Count;
     private uint _weight;
     private float _score;
 
-    private DataLock _lock;
 
     public readonly ref DataLock Lock
     {
@@ -34,7 +34,7 @@ public struct ConnectionValue<TLink> :
                Child == other.Child &&
                Next == other.Next &&
                Previous == other.Previous &&
-               NextCount == other.NextCount &&
+               Count == other.Count &&
                _weight == other._weight &&
                _score == other._score;
     }
@@ -54,17 +54,17 @@ public struct ConnectionValue<TLink> :
         xxHash3Builder.Add(in Child);
         xxHash3Builder.Add(in Next);
         xxHash3Builder.Add(in Previous);
-        xxHash3Builder.Add(in NextCount);
+        xxHash3Builder.Add(in Count);
         xxHash3Builder.Add(in _weight);
         xxHash3Builder.Add(in _score);
         return xxHash3Builder.ToHashCode();
     }
 
-    private static ConnectionValue<TLink> DefaultField = new()
+    private static readonly ConnectionValue<TLink> DefaultField = new()
     {
         Neuron = Neuron.Null,
         Next = Connection.Null,
-        NextCount = 0,
+        Count = 0,
         Child = Connection.Null,
         Previous = Connection.Null,
         _score = 1f,

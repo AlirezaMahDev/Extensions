@@ -1,12 +1,11 @@
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public struct CacheValue : IDataValueDefault<CacheValue>, IDataValue<CacheValue>, IDataStorage<CacheValue>
+public struct CacheValue : IDataValueDefault<CacheValue>,
+    IDataValue<CacheValue>,
+    IDataCollection<CacheValue, CacheBlockValue>
 {
-    public static readonly CacheValue DefaultField = new()
-    {
-        _data = default
-    };
+    public static readonly CacheValue DefaultField = new() { _data = default };
 
     public static ref readonly CacheValue Default
     {
@@ -15,19 +14,20 @@ public struct CacheValue : IDataValueDefault<CacheValue>, IDataValue<CacheValue>
     }
 
     private DataOffset _data;
-
+    private DataOffset _child;
     private DataLock _lock;
+    public int Count;
+
+    public readonly ref DataOffset Child
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => ref Unsafe.AsRef(in this)._child;
+    }
 
     public readonly ref DataLock Lock
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get => ref Unsafe.AsRef(in this)._lock;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public readonly bool Equals(scoped ref readonly CacheValue other)
-    {
-        return _data.Equals(in other.Data);
     }
 
     public readonly ref DataOffset Data
@@ -36,7 +36,13 @@ public struct CacheValue : IDataValueDefault<CacheValue>, IDataValue<CacheValue>
         get => ref Unsafe.AsRef(in this)._data;
     }
 
-    public override readonly string ToString()
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public readonly bool Equals(scoped ref readonly CacheValue other)
+    {
+        return _data.Equals(in other.Data);
+    }
+
+    public override string ToString()
     {
         return $"{Data}";
     }

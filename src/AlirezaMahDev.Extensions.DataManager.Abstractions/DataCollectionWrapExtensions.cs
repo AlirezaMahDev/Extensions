@@ -91,7 +91,7 @@ public static class DataCollectionWrapExtensions
         }
     }
 
-    extension<TValue>(in DataLocationWrap<TValue, DataCollectionItemWrap<TValue>> wrap)
+    extension<TValue>(in DataWrap<TValue, DataCollectionItemWrap<TValue>> wrap)
         where TValue : unmanaged, IDataValue<TValue>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -110,7 +110,7 @@ public static class DataCollectionWrapExtensions
         }
     }
 
-    extension<TValue, TItem>(in DataLocationWrap<TValue, DataCollectionWrap<TValue, TItem>> wrap)
+    extension<TValue, TItem>(in DataWrap<TValue, DataCollectionWrap<TValue, TItem>> wrap)
         where TValue : unmanaged, IDataValue<TValue>
         where TItem : unmanaged, IDataValue<TItem>
     {
@@ -189,7 +189,7 @@ public static class DataCollectionWrapExtensions
         }
     }
 
-    extension<TValue, TItem>(DataLocationWrap<TValue, DataCollectionWrap<TValue, TItem>> wrap)
+    extension<TValue, TItem>(DataWrap<TValue, DataCollectionWrap<TValue, TItem>> wrap)
         where TValue : unmanaged, IDataValue<TValue>
         where TItem : unmanaged, IDataValue<TItem>
     {

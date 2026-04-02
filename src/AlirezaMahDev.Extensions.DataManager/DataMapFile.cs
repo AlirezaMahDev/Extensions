@@ -32,7 +32,7 @@ internal sealed class DataMapFile : IDisposable
     public DataMap Map { get; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataMapFilePart Part(ref DataOffset offset)
+    public DataMapFilePart Part(in DataOffset offset)
     {
         _cleanLock.EnterReadLock();
         try

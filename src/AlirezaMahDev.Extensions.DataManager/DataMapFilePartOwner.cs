@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
@@ -15,9 +16,15 @@ internal sealed class DataMapFilePartOwner : IDataMapFilePartOwner
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public ref byte GetRef(int offset)
+    public ref byte GetRef(scoped in DataOffset offset)
     {
-        return ref _dataMapFilePart.GetRef(offset);
+        return ref _dataMapFilePart.GetRef(offset.Offset);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public Span<byte> GetSpan(scoped in DataOffset offset)
+    {
+        return MemoryMarshal.CreateSpan(ref GetRef(offset), offset.Length);
     }
 
     ~DataMapFilePartOwner()

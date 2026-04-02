@@ -22,9 +22,8 @@ public interface INerve<TData, TLink>
 
     void Flush();
 
-    ref readonly Neuron Neuron { get; }
+    ref readonly Neuron RootNeuron { get; }
     ref readonly CellWrap<NeuronValue<TData>, TData, TLink> RootNeuronWrap { get; }
-    ref readonly Connection Connection { get; }
+    ref readonly Connection RootConnection { get; }
     ref readonly CellWrap<ConnectionValue<TLink>, TData, TLink> RootConnectionWrap { get; }
-    ref readonly DataLocation<NerveCounter> Counter { get; }
 }

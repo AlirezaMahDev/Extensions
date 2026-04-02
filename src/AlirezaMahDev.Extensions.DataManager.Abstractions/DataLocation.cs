@@ -12,19 +12,19 @@ public readonly struct DataLocation<TValue>(DataOffset offset, IDataMapFilePartO
     public static void Create(IDataAccess access, TValue @default, out DataLocation<TValue> result)
     {
         var offset = access.AllocateOffset(TValue.ValueSize);
-        result = new(offset, access.GetOwner(ref offset)) { UnsafeRefValue = @default };
+        result = new(offset, access.GetOwner(in offset)) { UnsafeRefValue = @default };
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void Read(IDataAccess access, DataOffset offset, out DataLocation<TValue> result)
     {
-        result = new(offset, access.GetOwner(ref offset));
+        result = new(offset, access.GetOwner(in offset));
     }
 
     public ref byte UnsafeRef
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => ref Owner.GetRef(Offset.Offset);
+        get => ref Owner.GetRef(in Offset);
     }
 
     public ref TValue UnsafeRefValue

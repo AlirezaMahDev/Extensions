@@ -1,6 +1,5 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-[StructLayout(LayoutKind.Sequential)]
 public class DataDictionaryWrap<TValue, TItem, TKey>(
     ScopedRefValueFunc<TValue, DataOffset> refChild,
     ScopedRefReadOnlyValueFunc<TValue, DataOffset> refReadOnlyChild,
@@ -187,7 +186,7 @@ public static class DataDictionaryWrapExtensions
         }
     }
 
-    extension<TValue, TItem, TKey>(in DataLocationWrap<TValue, DataDictionaryWrap<TValue, TItem, TKey>> wrap)
+    extension<TValue, TItem, TKey>(in DataWrap<TValue, DataDictionaryWrap<TValue, TItem, TKey>> wrap)
         where TValue : unmanaged, IDataDictionary<TValue, TItem, TKey>
         where TItem : unmanaged, IDataDictionaryItem<TItem, TKey>, IDataValueDefault<TItem>
         where TKey : unmanaged, IScopedRefReadOnlyEquatable<TKey>
@@ -211,7 +210,7 @@ public static class DataDictionaryWrapExtensions
         }
     }
 
-    extension<TValue, TItem, TKey>(in DataLocationWrap<TValue, DataDictionaryWrap<TValue, TItem, TKey>> wrap)
+    extension<TValue, TItem, TKey>(in DataWrap<TValue, DataDictionaryWrap<TValue, TItem, TKey>> wrap)
         where TValue : unmanaged, IDataDictionary<TValue, TItem, TKey>
         where TItem : unmanaged, IDataDictionaryItem<TItem, TKey>
         where TKey : unmanaged, IScopedRefReadOnlyEquatable<TKey>

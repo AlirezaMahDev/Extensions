@@ -38,7 +38,7 @@ public readonly struct DataOffset(int fileId, int partIndex, int offset, int len
     public bool Equals(scoped ref readonly DataOffset other)
     {
         return Vector128.LoadUnsafe(ref AsByteRef()) ==
-               Vector128.LoadUnsafe(ref Unsafe.As<DataOffset, byte>(ref Unsafe.AsRef(in other)));
+               Vector128.LoadUnsafe(ref other.AsByteRef());
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -69,15 +69,15 @@ public readonly struct DataOffset(int fileId, int partIndex, int offset, int len
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static bool operator ==(in DataOffset left, in DataOffset right)
+    public static bool operator ==(scoped in DataOffset left, scoped in DataOffset right)
     {
-        return left.Equals(right);
+        return left.Equals(in right);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static bool operator !=(in DataOffset left, in DataOffset right)
+    public static bool operator !=(scoped in DataOffset left, scoped in DataOffset right)
     {
-        return !left.Equals(right);
+        return !left.Equals(in right);
     }
 
     public override string ToString()
