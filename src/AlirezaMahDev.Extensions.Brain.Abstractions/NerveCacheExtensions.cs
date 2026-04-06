@@ -33,15 +33,15 @@ public static class NerveCacheExtensions
             return false;
         }
 
-        public bool TrySetNeuronCache(ref readonly TData data, ref readonly Neuron neuron)
+        public Neuron GetOrAddNeuronCache(ref readonly TData data, ref readonly Neuron neuron)
         {
             var cacheKey = INerve<TData, TLink>.CreateNeuronCacheKey(in data);
-            return nerve.TrySetNeuronCacheCore(in cacheKey, in neuron);
+            return nerve.GetOrAddNeuronCacheCore(in cacheKey, in neuron);
         }
 
-        public bool TrySetNeuronCacheCore(ref readonly NerveCacheKey cacheKey, ref readonly Neuron neuron)
+        public Neuron GetOrAddNeuronCacheCore(ref readonly NerveCacheKey cacheKey, ref readonly Neuron neuron)
         {
-            return nerve.NeuronSectionCache.TrySet(in cacheKey, in neuron.Offset);
+            return new(nerve.NeuronSectionCache.GetOrAdd(in cacheKey, in neuron.Offset));
         }
 
         public static NerveCacheKey CreateNeuronCacheKey(ref readonly TData data)
@@ -76,19 +76,19 @@ public static class NerveCacheExtensions
             return false;
         }
 
-        public bool TrySetConnectionCache(
+        public Connection GetOrAddConnectionCache(
             ref readonly Connection parent,
             ref readonly TLink link,
             ref readonly Neuron neuron,
             ref readonly Connection connection)
         {
             var cacheKey = INerve<TData, TLink>.CreateConnectionCacheKey(in parent, in link, in neuron);
-            return nerve.TrySetConnectionCacheCore(in cacheKey, in connection);
+            return nerve.GetOrAddConnectionCacheCore(in cacheKey, in connection);
         }
 
-        public bool TrySetConnectionCacheCore(ref readonly NerveCacheKey cacheKey, ref readonly Connection connection)
+        public Connection GetOrAddConnectionCacheCore(ref readonly NerveCacheKey cacheKey, ref readonly Connection connection)
         {
-            return nerve.ConnectionSectionCache.TrySet(in cacheKey, in connection.Offset);
+            return new(nerve.ConnectionSectionCache.GetOrAdd(in cacheKey, in connection.Offset));
         }
 
         public static NerveCacheKey CreateConnectionCacheKey(

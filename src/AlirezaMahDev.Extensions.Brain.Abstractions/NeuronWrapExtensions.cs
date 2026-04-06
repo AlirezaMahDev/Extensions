@@ -71,7 +71,7 @@ public static class NeuronWrapExtensions
                 neuronWrap.Location.ReadLock(
                     (scoped ref readonly value, scoped ref readonly neuron) =>
                     {
-                        wrap.Nerve.TrySetNeuronCache(in value.Data, in neuron);
+                        wrap.Nerve.GetOrAddNeuronCache(in value.Data, in neuron);
                         wrap.NextUnloadItem = value.Next.Offset;
                     },
                     new Neuron(neuronWrap.Location.Offset));

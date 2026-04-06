@@ -1,157 +1,143 @@
-using System.IO.Hashing;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
-
-using Microsoft.Win32.SafeHandles;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-internal unsafe class DataMapFilePart(DataMapFile file, SafeFileHandle safeFileHandle, int filePartOffset) : IDisposable
+internal class DataMapFilePart(DataMapFile file, int filePartOffset) : IDisposable
 {
-    private readonly ReaderWriterLockSlim _pointerLock = new();
-    private readonly ReaderWriterLockSlim _ownerLock = new();
-    private readonly DataMapFile _file = file;
-    private readonly SafeFileHandle _safeFileHandle = safeFileHandle;
-    private readonly int _filePartOffset = filePartOffset;
-    private DataMapFilePartOwner? _owner;
-    private ulong _lastHash;
-    private nint _pointer;
+    public DataMapFile File { get; } = file;
+    public int FilePartOffset { get; } = filePartOffset;
+
+    internal ulong AliveCount;
+
+    private readonly ReaderWriterLockSlim _flushLock = new(LockRecursionPolicy.SupportsRecursion);
+    private DataMapFilePartCache? _cache;
     private bool _disposed;
 
-    public long AccessCount;
-
-    public bool Cached
+    public bool HasCache
     {
+        [MemberNotNullWhen(true, nameof(_cache))]
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            return _pointer != 0;
+            return _cache is { IsInvalid: false };
         }
     }
 
-    public bool Changed
+    public bool HasChange
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-
-            return Cached && _lastHash != CurrentHash;
-        }
-    }
-
-    public ulong CurrentHash
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return GenerateHash(Span);
-        }
-    }
-
-    public Span<byte> Span
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return new((byte*)_pointer, DataDefaults.PartSize);
+            return HasCache && _cache.HasChange;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static ulong GenerateHash(Span<byte> span)
+    public DataMapFilePartCacheAccess GetCache(CancellationToken cancellationToken = default)
     {
-        return XxHash3.HashToUInt64(span);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private byte* GetPointer()
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        _pointerLock.EnterReadLock();
-        try
+        while (!cancellationToken.IsCancellationRequested)
         {
-            if (_pointer != 0)
+            if (_flushLock.TryEnterReadLock(0))
             {
-                return (byte*)_pointer;
-            }
-        }
-        finally
-        {
-            _pointerLock.ExitReadLock();
-        }
+                if (HasCache)
+                {
+                    return new(_cache, _flushLock);
+                }
 
-        _pointerLock.EnterUpgradeableReadLock();
-        try
-        {
-            if (_pointer != 0)
-            {
-                return (byte*)_pointer;
+                _flushLock.ExitReadLock();
             }
 
-            _pointerLock.EnterWriteLock();
+            _flushLock.EnterUpgradeableReadLock();
             try
             {
-                _file.Map.Alloc();
+                if (HasCache)
+                {
+                    continue;
+                }
 
+                _flushLock.EnterWriteLock();
                 try
                 {
-                    _pointer = (nint)NativeMemory.AlignedAlloc(DataDefaults.PartSize, 64);
-                    NativeMemory.Clear((void*)_pointer, DataDefaults.PartSize);
-                    try
-                    {
-                        GC.AddMemoryPressure(DataDefaults.PartSize);
-                        var cache = Span;
-                        RandomAccess.Read(_safeFileHandle, cache, _filePartOffset);
-                        _lastHash = GenerateHash(cache);
-                        return (byte*)_pointer;
-                    }
-                    catch
-                    {
-                        NativeMemory.AlignedFree((void*)_pointer);
-                        GC.RemoveMemoryPressure(DataDefaults.PartSize);
-                        _pointer = 0;
-                        throw;
-                    }
+                    _cache = new(this);
                 }
-                catch
+                finally
                 {
-                    _file.Map.Free();
-                    throw;
+                    _flushLock.ExitWriteLock();
                 }
             }
             finally
             {
-                _pointerLock.ExitWriteLock();
+                _flushLock.ExitUpgradeableReadLock();
+            }
+        }
+
+        throw new OperationCanceledException(cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public IDataAlive GetAlive()
+    {
+        return new DataAlive(this);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool Clean(bool force)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_flushLock.IsWriteLockHeld || _flushLock.IsUpgradeableReadLockHeld)
+        {
+            return false;
+        }
+
+        if (!force && Volatile.Read(ref AliveCount) != 0)
+        {
+            return false;
+        }
+
+        if (!_flushLock.TryEnterReadLock(0))
+        {
+            return false;
+        }
+
+        try
+        {
+            if (!HasCache)
+            {
+                return false;
             }
         }
         finally
         {
-            _pointerLock.ExitUpgradeableReadLock();
+            _flushLock.ExitReadLock();
         }
-    }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataMapFilePartOwner GetOwner()
-    {
-        _ownerLock.EnterReadLock();
+        _flushLock.EnterUpgradeableReadLock();
         try
         {
-            return _owner ??= new(this);
+            if (!HasCache)
+            {
+                return false;
+            }
+
+            _flushLock.EnterWriteLock();
+            try
+            {
+                FlushCore();
+                return true;
+            }
+            finally
+            {
+                _flushLock.ExitWriteLock();
+            }
         }
         finally
         {
-            _ownerLock.ExitReadLock();
+            _flushLock.ExitUpgradeableReadLock();
         }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public ref byte GetRef(int offset)
-    {
-        return ref Unsafe.AsRef<byte>(GetPointer() + offset);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -159,67 +145,49 @@ internal unsafe class DataMapFilePart(DataMapFile file, SafeFileHandle safeFileH
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (_pointerLock.IsWriteLockHeld)
-        {
-            return;
-        }
-
-        _ownerLock.EnterWriteLock();
+        _flushLock.EnterUpgradeableReadLock();
         try
         {
-            if (_owner != null)
+            if (!HasCache)
             {
-                var gen = GC.GetGeneration(_owner);
-                _owner = null;
-                GC.Collect(gen, GCCollectionMode.Forced, false);
-                GC.WaitForPendingFinalizers();
+                return;
             }
 
-            _pointerLock.EnterWriteLock();
+            _flushLock.EnterWriteLock();
             try
             {
-                if (_pointer == 0)
-                {
-                    return;
-                }
-
-                var cache = Span;
-                var currentHash = GenerateHash(cache);
-                if (_lastHash != currentHash)
-                {
-                    RandomAccess.Write(_safeFileHandle, cache, _filePartOffset);
-                    _lastHash = currentHash;
-                }
-
-                if (Volatile.Read(ref AccessCount) == 0)
-                {
-                    NativeMemory.AlignedFree((void*)_pointer);
-                    _file.Map.Free();
-                    GC.RemoveMemoryPressure(DataDefaults.PartSize);
-                    _pointer = 0;
-                }
+                FlushCore();
             }
             finally
             {
-                _pointerLock.ExitWriteLock();
+                _flushLock.ExitWriteLock();
             }
         }
         finally
         {
-            _ownerLock.ExitWriteLock();
+            _flushLock.ExitUpgradeableReadLock();
         }
+    }
+
+    private void FlushCore()
+    {
+        if (!HasCache)
+        {
+            return;
+        }
+
+        _cache.Dispose();
+        if (!_cache.IsInvalid)
+            throw new("exist some enter access without exit access");
+        _cache = null;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
-        Flush();
-        _pointerLock.Dispose();
+        ObjectDisposedException.ThrowIf(_disposed, this);
         _disposed = true;
+        _flushLock.Dispose();
+        FlushCore();
     }
 }

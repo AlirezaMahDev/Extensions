@@ -7,7 +7,7 @@ public readonly struct String256 : IScopedRefReadOnlyEquatable<String256>, IStri
     private const int Length = 256;
     private const int Size = Length * sizeof(char);
 
-    public static readonly String256 Empty = new();
+    public static readonly String256 Empty;
 
     public ReadOnlySpan<char> Span
     {

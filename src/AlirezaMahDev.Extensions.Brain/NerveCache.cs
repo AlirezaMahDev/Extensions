@@ -1,7 +1,3 @@
-using System.IO.Hashing;
-using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-
 using FASTER.core;
 
 namespace AlirezaMahDev.Extensions.Brain;
@@ -9,28 +5,6 @@ namespace AlirezaMahDev.Extensions.Brain;
 using Session = ClientSession<
     NerveCacheIdKey, DataOffset, DataOffset, DataOffset,
     Empty, SimpleFunctions<NerveCacheIdKey, DataOffset, Empty>>;
-
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = 32)]
-[method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-public readonly struct NerveCacheIdKey(UInt128 id, UInt128 key)
-{
-    public readonly UInt128 Id = id;
-    public readonly UInt128 Key = key;
-}
-
-public struct NerveCacheIdKeyComparer : IFasterEqualityComparer<NerveCacheIdKey>
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Equals(ref NerveCacheIdKey k1, ref NerveCacheIdKey k2)
-        => Vector256.LoadUnsafe(ref Unsafe.As<NerveCacheIdKey, byte>(ref k1)) ==
-           Vector256.LoadUnsafe(ref Unsafe.As<NerveCacheIdKey, byte>(ref k2));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public long GetHashCode64(ref NerveCacheIdKey key)
-    {
-        return (long)XxHash3.HashToUInt64(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref key, 1)));
-    }
-}
 
 internal sealed class NerveCache : INerveCache, IDisposable
 {
@@ -82,17 +56,15 @@ internal sealed class NerveCache : INerveCache, IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public async ValueTask CheckpointAsync(CancellationToken ct = default)
+    public void Flush()
     {
-        var (ok, _) = await Kv.TakeHybridLogCheckpointAsync(
-            CheckpointType.FoldOver,
-            cancellationToken: ct);
-        if (!ok) throw new InvalidOperationException("Checkpoint failed.");
-    }
+        foreach (var session in Session.Values)
+        {
+            session.CompletePending(true);
+        }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public async ValueTask RecoverAsync(CancellationToken ct = default)
-        => await Kv.RecoverAsync(cancellationToken: ct);
+        Kv.Log.FlushAndEvict(wait: true);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()

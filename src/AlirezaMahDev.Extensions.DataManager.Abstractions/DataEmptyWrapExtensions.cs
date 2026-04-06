@@ -15,9 +15,9 @@ public static class DataEmptyWrapExtensions
         where TValue : unmanaged, IDataValue<TValue>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataWrap<TValue, DataEmptyWrap> EmptyWrap(IDataAccess access)
+        public DataWrap<TValue, DataEmptyWrap> EmptyWrap()
         {
-            return location.Wrap(access, DataWrap.Empty);
+            return location.Wrap(DataWrap.Empty);
         }
     }
 
@@ -27,7 +27,7 @@ public static class DataEmptyWrapExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataWrap<TValue, DataEmptyWrap> EmptyWrap()
         {
-            return new(wrap.Access, wrap.Location, DataEmptyWrap.Default);
+            return new(wrap.Location, DataEmptyWrap.Default);
         }
     }
 }

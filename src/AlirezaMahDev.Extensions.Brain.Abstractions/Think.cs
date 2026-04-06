@@ -28,8 +28,8 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         ConnectionWrap = connectionWrap;
         Previous = null;
 
-        ScoreSum = connectionWrap.Location.CopyValue.Score;
-        WeightSum = connectionWrap.Location.CopyValue.Weight;
+        ScoreSum = connectionWrap.Location.ReadLock((scoped ref readonly x) => x).Score;
+        WeightSum = connectionWrap.Location.ReadLock((scoped ref readonly x) => x).Weight;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

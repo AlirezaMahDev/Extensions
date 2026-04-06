@@ -15,7 +15,7 @@ public readonly struct CellWrap<TValue, TData, TLink>(INerve<TData, TLink> nerve
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            return new(Nerve.Access, Location, DataEmptyWrap.Default);
+            return new(Location, DataEmptyWrap.Default);
         }
     }
 
@@ -47,7 +47,7 @@ public readonly struct CellWrap<TValue, TData, TLink>(INerve<TData, TLink> nerve
 
     public override string ToString()
     {
-        return $"{Location}=>{Location.UnsafeRefValue}";
+        return $"{Location}=>{Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value)}";
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

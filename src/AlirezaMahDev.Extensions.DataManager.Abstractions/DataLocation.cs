@@ -1,44 +1,39 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
-public readonly struct DataLocation<TValue>(DataOffset offset, IDataMapFilePartOwner owner)
+public readonly struct DataLocation<TValue>(DataOffset offset, IDataAccess access, IDataAlive alive)
     : IScopedRefReadOnlyEquatable<DataLocation<TValue>>
     where TValue : unmanaged, IDataValue<TValue>
 {
     public readonly DataOffset Offset = offset;
-    public readonly IDataMapFilePartOwner Owner = owner;
+
+    public IDataAccess Access
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    } = access;
+
+    public IDataAlive Alive
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get;
+    } = alive;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void Create(IDataAccess access, TValue @default, out DataLocation<TValue> result)
     {
-        var offset = access.AllocateOffset(TValue.ValueSize);
-        result = new(offset, access.GetOwner(in offset)) { UnsafeRefValue = @default };
+        var alive = access.AllocationWithAlive(TValue.ValueSize, out var offset);
+        result = new(offset, access, alive);
+        result.UnsafeAccessRef((scoped ref value) => value = @default);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static void Read(IDataAccess access, DataOffset offset, out DataLocation<TValue> result)
     {
-        result = new(offset, access.GetOwner(in offset));
+        if (offset.IsDefault)
+            Debugger.Break();
+        result = new(offset, access, access.GetAlive(offset));
     }
-
-    public ref byte UnsafeRef
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => ref Owner.GetRef(in Offset);
-    }
-
-    public ref TValue UnsafeRefValue
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => ref Unsafe.As<byte, TValue>(ref UnsafeRef);
-    }
-
-    public ref readonly TValue UnsafeRefReadOnlyValue
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => ref Unsafe.As<byte, TValue>(ref UnsafeRef);
-    }
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public override int GetHashCode()

@@ -2,6 +2,6 @@ namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 public interface IDataStatus
 {
-    (DataFileStatus fileStatus, (DataFilePartStatus filePartStatus, long count)[] parts)[] Files { get; }
+    (DataFileStatus fileStatus, DataFilePartStatus[] parts)[] Files { get; }
     void Refresh();
 }

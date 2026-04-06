@@ -18,7 +18,6 @@ public interface INerve<TData, TLink>
     ref readonly DataLocation<DataPath> Location { get; }
     ref readonly DataLocation<DataPath> ConnectionLocation { get; }
     ref readonly DataLocation<DataPath> NeuronLocation { get; }
-    ref readonly DataLocation<DataPath> CounterLocation { get; }
 
     void Flush();
 

@@ -7,7 +7,7 @@ public readonly struct String64 : IScopedRefReadOnlyEquatable<String64>, IString
     private const int Length = 64;
     private const int Size = Length * sizeof(char);
 
-    public static readonly String64 Empty = new();
+    public static readonly String64 Empty;
 
     public ReadOnlySpan<char> Span
     {

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class ConnectionWrapExtensions
@@ -76,6 +78,8 @@ public static class ConnectionWrapExtensions
         {
             if (wrap.Nerve.TryGetConnectionCacheCore(in cacheKey, out var connection))
             {
+                if (connection.Offset.IsDefault)
+                    Debugger.Break();
                 return Optional<Connection>.From(connection);
             }
 
@@ -83,12 +87,15 @@ public static class ConnectionWrapExtensions
             var localLink = link;
 
             var cellMemory = wrap.GetUnloadedConnectionsWrap();
-            Optional<CellWrap<ConnectionValue<TLink>, TData, TLink>> result = cellMemory
+            var result = cellMemory
                 .FirstOrDefault(x =>
                     x.Location.ReadLock((scoped ref readonly connectionValue, scoped ref readonly innerLocalLink) =>
                             connectionValue.Neuron == localNeuron && connectionValue.Link == innerLocalLink,
                         in localLink))
                 .NullWhenDefault();
+
+            if (result?.Location.Offset.IsDefault == true)
+                Debugger.Break();
 
             return result.HasValue
                 ? Optional<Connection>.From(new(result.Value.Location.Offset))
@@ -113,6 +120,8 @@ public static class ConnectionWrapExtensions
             using var parent = wrap.Location.WriteLock();
             if (wrap.FindCore(in cacheKey, in link, in neuron) is { HasValue: true } connection)
             {
+                if (connection.Value.Offset.IsDefault)
+                    Debugger.Break();
                 return connection.Value;
             }
 
@@ -128,7 +137,11 @@ public static class ConnectionWrapExtensions
             Connection newConnection = new(connectionValue.Offset);
             parent.RefValue.Child = newConnection;
             parent.RefValue.Count++;
-            wrap.Nerve.TrySetConnectionCacheCore(in cacheKey, in newConnection);
+            wrap.Nerve.GetOrAddConnectionCacheCore(in cacheKey, in newConnection);
+
+            if (newConnection.Offset.IsDefault)
+                Debugger.Break();
+
             return newConnection;
         }
     }
@@ -168,7 +181,7 @@ public static class ConnectionWrapExtensions
                 {
                     var parent = new Connection(wrap.Location.Offset);
                     var current = new Connection(connectionWrap.Location.Offset);
-                    wrap.Nerve.TrySetConnectionCache(in parent,
+                    wrap.Nerve.GetOrAddConnectionCache(in parent,
                         in value.Link,
                         in value.Neuron,
                         in current);

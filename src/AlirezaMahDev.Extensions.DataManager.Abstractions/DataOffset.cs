@@ -13,7 +13,7 @@ public readonly struct DataOffset(int fileId, int partIndex, int offset, int len
     public readonly int Length = length;
 
     public static readonly DataOffset Null = new(-1, -1, -1, -1);
-    public static readonly DataOffset Default = new();
+    public static readonly DataOffset Default;
     private static readonly Vector128<byte> NullVector = Vector128.Create((byte)0xFF);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

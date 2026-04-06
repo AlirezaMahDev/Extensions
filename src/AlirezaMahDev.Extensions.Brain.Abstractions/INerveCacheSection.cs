@@ -17,11 +17,6 @@ public interface INerveCacheSection
     void Set<TKey>(ref readonly TKey key, ref readonly DataOffset value)
         where TKey : unmanaged;
 
-    bool TrySet(ref readonly NerveCacheKey key, ref readonly DataOffset value);
-
-    bool TrySet<TKey>(ref readonly TKey key, ref readonly DataOffset value)
-        where TKey : unmanaged;
-
     DataOffset GetOrAdd(ref readonly NerveCacheKey key, ref readonly DataOffset value);
 
     DataOffset GetOrAdd<TKey>(ref readonly TKey key, ref readonly DataOffset value)

@@ -1,12 +1,14 @@
+using AlirezaMahDev.Extensions.Abstractions;
+
 using Microsoft.Extensions.Options;
 
 namespace AlirezaMahDev.Extensions.Brain;
 
 internal class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-TData,
+    TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-TLink> : INerve<TData, TLink>, IDisposable
+    TLink> : INerve<TData, TLink>, IDisposable
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
@@ -17,7 +19,6 @@ TLink> : INerve<TData, TLink>, IDisposable
     private readonly CellWrap<NeuronValue<TData>, TData, TLink> _rootNeuronWrap;
     private readonly Connection _connection;
     private readonly CellWrap<ConnectionValue<TLink>, TData, TLink> _rootConnectionWrap;
-    private readonly DataLocation<DataPath> _counterLocation;
     private readonly NerveCache _cache;
 
     public ConcurrentDictionary<DataOffset,
@@ -83,12 +84,6 @@ TLink> : INerve<TData, TLink>, IDisposable
         get => ref _rootConnectionWrap;
     }
 
-    public ref readonly DataLocation<DataPath> CounterLocation
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => ref _counterLocation;
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public Nerve(IDataManager dataManager, string name, IOptions<DataManagerOptions> options)
     {
@@ -98,17 +93,16 @@ TLink> : INerve<TData, TLink>, IDisposable
         Name = name;
         Access = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
         var root = Access.Root;
-        _location = root.Wrap(Access, x => x.Dictionary()).GetOrAdd(".nerve");
-        var rootDictionary = _location.Wrap(Access, x => x.Dictionary());
+        _location = root.Wrap(x => x.Dictionary()).GetOrAdd(".nerve");
+        var rootDictionary = _location.Wrap(x => x.Dictionary());
         _connectionLocation = rootDictionary.GetOrAdd(".connection");
         _neuronLocation = rootDictionary.GetOrAdd(".neuron");
-        _counterLocation = rootDictionary.GetOrAdd(".counter");
 
         var neuron = _neuronLocation
-            .Wrap(Access, x => x.Storage())
+            .Wrap(x => x.Storage())
             .GetOrCreateData(NeuronValue<TData>.Default);
         var connection = _connectionLocation
-            .Wrap(Access, x => x.Storage())
+            .Wrap(x => x.Storage())
             .GetOrCreateData(ConnectionValue<TLink>.Default with { Neuron = new(neuron.Offset) });
 
         _neuron = new(neuron.Offset);
@@ -120,13 +114,26 @@ TLink> : INerve<TData, TLink>, IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Flush()
     {
+        FlushCore();
         Access.Flush();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private void FlushCore()
+    {
+        SmartParallel.ForEach(MemoryCache.Where(x => x.Value.IsValueCreated),
+            CancellationToken.None,
+            (pair, _) => pair.Value.Value.Dispose());
+        MemoryCache.Clear();
+        _cache.Flush();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
+        FlushCore();
         _cache.Dispose();
-        this.CleanThink();
     }
 }

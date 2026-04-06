@@ -1,4 +1,4 @@
 namespace AlirezaMahDev.Extensions.Abstractions;
 
-public delegate void ScopedRefReadOnlyAction<T>(scoped ref readonly T arg)
+public delegate void ScopedRefAction<T>(scoped ref T arg)
     where T : allows ref struct;

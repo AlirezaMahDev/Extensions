@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 public static class NerveExtensions
@@ -20,6 +22,8 @@ public static class NerveExtensions
         {
             if (nerve.TryGetNeuronCacheCore(in cacheKey, out var neuron))
             {
+                if (neuron.Offset.IsDefault)
+                    Debugger.Break();
                 return Optional<Neuron>.From(neuron);
             }
 
@@ -28,6 +32,10 @@ public static class NerveExtensions
             var neuronWrap = cellMemory.FirstOrDefault(x =>
                     x.Location.ReadLock((scoped ref readonly value) => value.Data == localData))
                 .NullWhenDefault();
+
+            if (neuronWrap?.Location.Offset.IsDefault == true)
+                Debugger.Break();
+
             return neuronWrap.HasValue
                 ? Optional<Neuron>.From(new(neuronWrap.Value.Location.Offset))
                 : Optional<Neuron>.Null;
@@ -41,6 +49,8 @@ public static class NerveExtensions
             using var @lock = nerve.RootNeuronWrap.Location.WriteLock();
             if (nerve.FindNeuronCore(in cacheKey, in data) is { HasValue: true } neuron)
             {
+                if (neuron.Value.Offset.IsDefault)
+                    Debugger.Break();
                 return neuron.Value;
             }
 
@@ -52,7 +62,12 @@ public static class NerveExtensions
                 out var neuronValue);
             Neuron newNeuron = new(neuronValue.Offset);
             @lock.RefValue.Next = newNeuron;
-            nerve.TrySetNeuronCacheCore(in cacheKey, in newNeuron);
+            nerve.GetOrAddNeuronCacheCore(in cacheKey, in newNeuron);
+
+
+            if (newNeuron.Offset.IsDefault)
+                Debugger.Break();
+
             return newNeuron;
         }
     }

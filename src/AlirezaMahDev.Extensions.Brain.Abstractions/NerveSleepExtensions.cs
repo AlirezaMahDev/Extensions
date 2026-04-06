@@ -48,13 +48,13 @@ public static class NerveSleepExtensions
 
             SmartParallel.Invoke(cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            (_) => INerve<TData, TLink>.SelfSleep(progressLogger,
+                (_) => INerve<TData, TLink>.SelfSleep(progressLogger,
                     cellWrap,
                     comparisonChain,
                     cellMemory,
                     cancellationToken),
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            (_) => INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, cancellationToken));
+                (_) => INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, cancellationToken));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -65,14 +65,15 @@ public static class NerveSleepExtensions
             CancellationToken cancellationToken = default)
         {
             cellMemory.Memory.Span.Sort((scoped ref readonly wrap) => new(
-                    in wrap.NeuronWrap.Location.UnsafeRefValue.Data,
-                    in wrap.Location.UnsafeRefReadOnlyValue.Link,
-                    wrap.Location.UnsafeRefReadOnlyValue.Score,
-                    wrap.Location.UnsafeRefReadOnlyValue.Weight),
+                    wrap.NeuronWrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Data),
+                    wrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Link),
+                    wrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Score),
+                    wrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Weight)
+                ),
                 comparisonChain.Comparison);
             SmartParallel.Invoke(cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            (token) =>
+                (token) =>
                 {
                     progressLogger.IncrementLength();
                     if (cellWrap.Location.ReadLock((scoped ref readonly x) =>
@@ -88,7 +89,7 @@ public static class NerveSleepExtensions
                     }
                 },
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            (token) =>
+                (token) =>
                 {
                     CellWrap<ConnectionValue<TLink>, TData, TLink> second = default;
                     for (var index = 0; index < cellMemory.Count - 1; index++)
@@ -98,19 +99,22 @@ public static class NerveSleepExtensions
 
                         progressLogger.IncrementLength();
                         if (first.Location.ReadLock((scoped ref readonly x) =>
-                                    x.Next.Offset != second.Location.Offset, token))
+                                    x.Next.Offset != second.Location.Offset,
+                                token))
                         {
                             first.Location.WriteLock((scoped ref location) =>
-                            {
-                                location.Next = new(second.Location.Offset);
-                                progressLogger.IncrementCount();
-                            }, token);
+                                {
+                                    location.Next = new(second.Location.Offset);
+                                    progressLogger.IncrementCount();
+                                },
+                                token);
                         }
                     }
 
                     progressLogger.IncrementLength();
                     if (second.Location.ReadLock((scoped ref readonly x) =>
-                        x.Next.Offset != DataOffset.Null, token))
+                                x.Next.Offset != DataOffset.Null,
+                            token))
                     {
                         second.Location.WriteLock((scoped ref location) =>
                             {
@@ -133,7 +137,7 @@ public static class NerveSleepExtensions
                 cellMemory.Count,
                 cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            (index, token) =>
+                (index, token) =>
                     INerve<TData, TLink>.SleepCore(progressLogger,
                         cellMemory.Memory.Span[index],
                         comparisonChain,

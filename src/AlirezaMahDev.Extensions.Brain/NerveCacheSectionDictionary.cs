@@ -22,7 +22,7 @@ public sealed class NerveCacheSectionDictionary : IDisposable
         set => Set(in key, in value);
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    [MethodImpl(methodImplOptions: MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private ref (Dictionary<UInt128, DataOffset> cache, ReaderWriterLockSlim lockSlim) GetSharding(ref readonly UInt128 key)
     {
         return ref _sharding[(((ulong)key ^ (ulong)(key >> 64)) * 0x9E3779B97F4A7C15UL) >> 56];

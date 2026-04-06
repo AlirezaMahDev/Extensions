@@ -3,7 +3,7 @@ using AlirezaMahDev.Extensions.DataManager.Abstractions;
 namespace AlirezaMahDev.Extensions.DataManager;
 
 internal class TempDataAccess()
-    : DataAccess(System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.CreateVersion7().ToString())),
+    : DataAccess(System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.CreateVersion7().ToString()), null),
         ITempDataAccess
 {
     protected override void Dispose(bool disposing)

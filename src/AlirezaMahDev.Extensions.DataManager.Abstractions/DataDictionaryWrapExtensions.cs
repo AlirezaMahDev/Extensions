@@ -204,7 +204,7 @@ public static class DataDictionaryWrapExtensions
                 return firstOrDefault;
             }
 
-            wrap.Access.Create(TItem.Default with { Key = key }, out var location);
+            wrap.Location.Access.Create(TItem.Default with { Key = key }, out var location);
             locationWrapCollection.Add(in location);
             return location;
         }

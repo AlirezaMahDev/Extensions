@@ -1,93 +1,146 @@
 #pragma warning disable CA1068
 
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class SmartParallel
 {
-    private readonly struct Work(
+    private sealed class Work(
         CancellationToken cancellationToken,
-        MemoryValue<int> index,
         int length,
         bool async,
         Func<int, CancellationToken, ValueTask>? bodyAsync,
         Action<int, CancellationToken>? bodySync)
     {
         public readonly CancellationToken CancellationToken = cancellationToken;
-        public readonly MemoryValue<int> Index = index;
+
+        public int NextIndex;
+        public int ActiveWorkers;
+
         public readonly int Length = length;
         public readonly bool Async = async;
         public readonly Func<int, CancellationToken, ValueTask>? BodyAsync = bodyAsync;
         public readonly Action<int, CancellationToken>? BodySync = bodySync;
-        public TaskCompletionSource TaskCompletionSource { get; } = new();
+
+        public readonly CancellationTokenSource CancellationTokenSource =
+            CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        public readonly ConcurrentBag<Exception> Exceptions = [];
+        public readonly TaskCompletionSource TaskCompletionSource = new();
     }
 
     private static readonly AsyncLocal<bool> IsWorker = new();
-    private static readonly Channel<Work> Channel = System.Threading.Channels.Channel.CreateUnbounded<Work>();
-    private static readonly Task[] Tasks = [.. Enumerable.Repeat(Task.Run(Worker), Environment.ProcessorCount)];
+
+    private static readonly Channel<Work> WorkChannel =
+        Channel.CreateUnbounded<Work>();
+
+    private static readonly Task[] Tasks =
+    [
+        .. Enumerable.Range(0, Environment.ProcessorCount).Select(_ => Task.Run(Worker))
+    ];
 
     private static async Task Worker()
     {
         IsWorker.Value = true;
-        await foreach (var work in Channel.Reader.ReadAllAsync())
+        await foreach (var work in WorkChannel.Reader.ReadAllAsync())
         {
-            if (work.Async)
+            try
             {
-                while (!work.CancellationToken.IsCancellationRequested)
+                if (work.Async)
                 {
-                    var index = Interlocked.Increment(ref work.Index.Value) - 1;
-                    if (index >= work.Length)
+                    while (!work.CancellationTokenSource.Token.IsCancellationRequested)
                     {
-                        work.TaskCompletionSource.TrySetResult();
-                        break;
-                    }
+                        var index = Interlocked.Increment(ref work.NextIndex) - 1;
+                        if (index >= work.Length) break;
 
-                    try
-                    {
-                        await work.BodyAsync!(index, work.CancellationToken);
-                    }
-                    catch (Exception e)
-                    {
-                        work.TaskCompletionSource.TrySetException(e);
+                        try
+                        {
+                            await work.BodyAsync!(index, work.CancellationTokenSource.Token);
+                        }
+                        catch (OperationCanceledException operationCanceledException)
+                        {
+                            if (operationCanceledException.CancellationToken != work.CancellationTokenSource.Token &&
+                                operationCanceledException.CancellationToken != work.CancellationToken)
+                            {
+                                work.Exceptions.Add(operationCanceledException);
+                                work.CancellationTokenSource.Cancel();
+                            }
+
+                            break;
+                        }
+                        catch (Exception e)
+                        {
+                            work.Exceptions.Add(e);
+                            work.CancellationTokenSource.Cancel();
+                            break;
+                        }
                     }
                 }
-
-                if (work.CancellationToken.IsCancellationRequested)
+                else
                 {
-                    work.TaskCompletionSource.TrySetCanceled(work.CancellationToken);
+                    while (!work.CancellationTokenSource.Token.IsCancellationRequested)
+                    {
+                        var index = Interlocked.Increment(ref work.NextIndex) - 1;
+                        if (index >= work.Length) break;
+
+                        try
+                        {
+                            work.BodySync!(index, work.CancellationTokenSource.Token);
+                        }
+                        catch (OperationCanceledException operationCanceledException)
+                        {
+                            if (operationCanceledException.CancellationToken != work.CancellationTokenSource.Token &&
+                                operationCanceledException.CancellationToken != work.CancellationToken)
+                            {
+                                work.Exceptions.Add(operationCanceledException);
+                                work.CancellationTokenSource.Cancel();
+                            }
+
+                            break;
+                        }
+                        catch (Exception e)
+                        {
+                            work.Exceptions.Add(e);
+                            work.CancellationTokenSource.Cancel();
+                            break;
+                        }
+                    }
                 }
             }
-            else
+            finally
             {
-                while (!work.CancellationToken.IsCancellationRequested)
+                if (Interlocked.Decrement(ref work.ActiveWorkers) == 0)
                 {
-                    var index = Interlocked.Increment(ref work.Index.Value) - 1;
-                    if (index >= work.Length)
-                    {
-                        work.TaskCompletionSource.TrySetResult();
-                        break;
-                    }
-
                     try
                     {
-                        work.BodySync!(index, work.CancellationToken);
+                        if (!work.Exceptions.IsEmpty)
+                        {
+                            work.TaskCompletionSource.TrySetException(
+                                new AggregateException(work.Exceptions)
+                                    .Flatten());
+                        }
+                        else if (work.CancellationToken.IsCancellationRequested)
+                        {
+                            work.TaskCompletionSource.TrySetCanceled(work.CancellationToken);
+                        }
+                        else
+                        {
+                            work.TaskCompletionSource.TrySetResult();
+                        }
                     }
-                    catch (Exception e)
+                    finally
                     {
-                        work.TaskCompletionSource.TrySetException(e);
+                        work.CancellationTokenSource.Dispose();
                     }
-                }
-
-                if (work.CancellationToken.IsCancellationRequested)
-                {
-                    work.TaskCompletionSource.TrySetCanceled(work.CancellationToken);
                 }
             }
         }
 
         IsWorker.Value = false;
     }
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static async ValueTask ForEachAsync<T>(IAsyncEnumerable<T> values,
@@ -402,6 +455,8 @@ public static class SmartParallel
         Func<int, TState, CancellationToken, ValueTask> body,
         CancellationToken cancellationToken)
     {
+        if (count <= 0 || cancellationToken.IsCancellationRequested) return;
+
         if (IsWorker.Value)
         {
             for (var index = 0; index < count; index++)
@@ -412,23 +467,17 @@ public static class SmartParallel
             return;
         }
 
-        Work work = new(
-            cancellationToken,
-            0,
+        Work work = new(cancellationToken,
             count,
             true,
             (index, token) => body(index, state, token),
-            null
-        );
-        for (var i = 0; i < Tasks.Length; i++)
-        {
-            if (work.TaskCompletionSource.Task.IsCompleted)
-            {
-                break;
-            }
+            null);
 
-            await Channel.Writer.WriteAsync(work, cancellationToken);
-        }
+        var workerCount = Math.Min(count, Tasks.Length);
+
+        work.ActiveWorkers = workerCount;
+        for (var i = 0; i < workerCount; i++)
+            WorkChannel.Writer.TryWrite(work);
 
         await work.TaskCompletionSource.Task;
     }
@@ -439,36 +488,25 @@ public static class SmartParallel
         Action<int, TState, CancellationToken> body,
         CancellationToken cancellationToken)
     {
+        if (count <= 0 || cancellationToken.IsCancellationRequested) return;
+
         if (IsWorker.Value)
         {
             for (var index = 0; index < count; index++)
-            {
                 body(index, state, cancellationToken);
-            }
-
             return;
         }
 
-        Work work = new(
-            cancellationToken,
-            0,
+        Work work = new(cancellationToken,
             count,
             false,
             null,
-            (index, token) => body(index, state, token)
-        );
-        for (var i = 0; i < Tasks.Length; i++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (work.TaskCompletionSource.Task.IsCompleted)
-            {
-                break;
-            }
+            (index, token) => body(index, state, token));
 
-            while (!Channel.Writer.TryWrite(work))
-            {
-            }
-        }
+        var workerCount = Math.Min(count, Tasks.Length);
+        work.ActiveWorkers = workerCount;
+        for (var i = 0; i < workerCount; i++)
+            WorkChannel.Writer.TryWrite(work);
 
         work.TaskCompletionSource.Task.GetAwaiter().GetResult();
     }

@@ -9,21 +9,21 @@ public class DataStatus : IDataStatus
     internal DataStatus(DataMap dataMap)
     {
         _dataMap = dataMap;
-        Files = new (DataFileStatus fileStatus, (DataFilePartStatus filePartStatus, long count)[] parts)[DataDefaults.FileCount];
+        Files = new (DataFileStatus fileStatus, DataFilePartStatus[] parts)[DataDefaults.FileCount];
         for (var fileId = 0; fileId < DataDefaults.FileCount; fileId++)
         {
-            Files[fileId] = (DataFileStatus.NotInitialized, new (DataFilePartStatus filePartStatus, long count)[DataDefaults.PartCount]);
+            Files[fileId] = (DataFileStatus.NotInitialized, new DataFilePartStatus[DataDefaults.PartCount]);
         }
     }
 
-    public (DataFileStatus fileStatus, (DataFilePartStatus filePartStatus, long count)[] parts)[] Files { get; }
+    public (DataFileStatus fileStatus, DataFilePartStatus[] parts)[] Files { get; }
 
     public void Refresh()
     {
         for (var fileId = 0; fileId < DataDefaults.FileCount; fileId++)
         {
             ref var fileItem = ref Files[fileId];
-            var file = _dataMap.Files[fileId];
+            var file = _dataMap.Files.Span[fileId];
 
             if (!file.IsValueCreated)
             {
@@ -34,15 +34,14 @@ public class DataStatus : IDataStatus
                 fileItem.fileStatus = DataFileStatus.Initialized;
                 for (var partId = 0; partId < DataDefaults.PartCount; partId++)
                 {
-                    var part = file.Value.Parts[partId];
+                    var part = file.Value.Parts.Span[partId];
                     fileItem.parts[partId] = !part.IsValueCreated
-                        ? new(DataFilePartStatus.NotInitialized, 0)
-                        : part.Value.Cached
-                            ? new(DataFilePartStatus.Cached, part.Value.AccessCount)
-                            : new(DataFilePartStatus.Idle, 0);
+                        ? DataFilePartStatus.NotInitialized
+                        : part.Value.HasCache
+                            ? DataFilePartStatus.Cached
+                            : DataFilePartStatus.Idle;
                 }
             }
         }
-
     }
 }

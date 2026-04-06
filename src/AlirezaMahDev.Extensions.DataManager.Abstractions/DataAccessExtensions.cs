@@ -17,17 +17,5 @@ public static class DataAccessExtensions
         {
             DataLocation<TDataValue>.Create(access, @default, out result);
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ref byte GetRef(scoped in DataOffset offset)
-        {
-            return ref access.GetOwner(in offset).GetRef(in offset);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public Span<byte> GetSpan(scoped in DataOffset offset)
-        {
-            return access.GetOwner(in offset).GetSpan(in offset);
-        }
     }
 }

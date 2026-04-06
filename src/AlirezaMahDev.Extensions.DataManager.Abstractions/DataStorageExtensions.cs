@@ -46,7 +46,7 @@ public static class DataStorageExtensions
                     $"{typeof(TDataValue).Name} size must be {refVal.Data.Length}");
             }
 
-            DataLocation<TDataValue>.Read(wrap.Access, refVal.Data, out result);
+            DataLocation<TDataValue>.Read(wrap.Location.Access, refVal.Data, out result);
             return true;
         }
 
@@ -55,10 +55,10 @@ public static class DataStorageExtensions
         {
             if (wrap.GetData(out var dataLocation))
             {
-                wrap.Access.Trash.Add(wrap.Access, in dataLocation);
+                wrap.Location.Access.Trash.Add(in dataLocation);
             }
 
-            var result = wrap.Access.AllocateOffset(length);
+            var result = wrap.Location.Access.AllocateOffset(length);
             using var writeLock = wrap.Location.WriteLock();
             writeLock.RefValue.Data = result;
             return result;
@@ -69,10 +69,10 @@ public static class DataStorageExtensions
         {
             if (wrap.GetData(out var dataLocation))
             {
-                wrap.Access.Trash.Add(wrap.Access, in dataLocation);
+                wrap.Location.Access.Trash.Add(in dataLocation);
             }
 
-            wrap.Access.Create(out DataLocation<TDataValue> newDataLocation);
+            wrap.Location.Access.Create(out DataLocation<TDataValue> newDataLocation);
             using var @lock = wrap.Location.WriteLock();
             @lock.RefValue.Data = newDataLocation.Offset;
             return newDataLocation;
@@ -83,10 +83,10 @@ public static class DataStorageExtensions
         {
             if (wrap.GetData(out var dataLocation))
             {
-                wrap.Access.Trash.Add(wrap.Access, in dataLocation);
+                wrap.Location.Access.Trash.Add(in dataLocation);
             }
 
-            wrap.Access.Create(@default, out var newDataLocation);
+            wrap.Location.Access.Create(@default, out var newDataLocation);
             using var @lock = wrap.Location.WriteLock();
             @lock.RefValue.Data = newDataLocation.Offset;
             return newDataLocation;

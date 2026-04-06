@@ -11,14 +11,14 @@ public static class NerveLearnExtensions
             var connectionWrap = nerve.RootConnectionWrap;
             for (var i = 0; i < data.Length; i++)
             {
-                var neuron = nerve.FindOrAddNeuron(in data.ElementAt(i).Value);
                 var link = linkFunc(data[..i]);
-                var findOrAdd = connectionWrap.FindOrAdd(in link, in neuron);
-                connectionWrap = findOrAdd.NewWrap(nerve);
-                var neuronWrapLocationWrap = connectionWrap.NeuronWrap.Wrap;
-                Interlocked.Increment(ref neuronWrapLocationWrap.Location.UnsafeRefValue.Weight);
-                var connectionWrapLocationWrap = connectionWrap.Wrap;
-                Interlocked.Increment(ref connectionWrapLocationWrap.Location.UnsafeRefValue.Weight);
+                var neuron = nerve.FindOrAddNeuron(in data.ElementAt(i).Value);
+                var connection = connectionWrap.FindOrAdd(in link, in neuron);
+                connectionWrap = connection.NewWrap(nerve);
+                connectionWrap.NeuronWrap.Wrap.Location.UnsafeAccessRef((scoped ref value) =>
+                    Interlocked.Increment(ref value.Weight));
+                connectionWrap.Wrap.Location.UnsafeAccessRef((scoped ref value) =>
+                    Interlocked.Increment(ref value.Weight));
             }
         }
     }

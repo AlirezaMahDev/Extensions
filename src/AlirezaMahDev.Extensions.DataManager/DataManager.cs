@@ -2,13 +2,16 @@
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace AlirezaMahDev.Extensions.DataManager;
 
-internal sealed class DataManager(IOptions<DataManagerOptions> options) : IDisposable, IDataManager
+internal sealed class DataManager(IOptions<DataManagerOptions> options, IServiceProvider serviceProvider) : IDisposable, IDataManager
 {
     private readonly IOptions<DataManagerOptions> _options = options;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly ConcurrentDictionary<string, Lazy<DataAccess>> _cache = [];
     private bool _disposedValue;
 
@@ -20,7 +23,7 @@ internal sealed class DataManager(IOptions<DataManagerOptions> options) : IDispo
                     {
                         var optionsValue = arg._options.Value;
                         var path = Path.Combine(optionsValue.DirectoryPath, key);
-                        return new(path);
+                        return new(path, arg._serviceProvider.GetRequiredService<ILogger<DataAccess>>());
                     },
                     LazyThreadSafetyMode.ExecutionAndPublication),
                 this)

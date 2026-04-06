@@ -10,23 +10,23 @@ internal sealed class DataMapFile : IDisposable
 {
     private bool _disposed;
 
-    internal readonly Lazy<DataMapFilePart>[] Parts;
-    private readonly SafeFileHandle _safeFileHandle;
-    private readonly ReaderWriterLockSlim _cleanLock = new();
+    internal readonly Memory<Lazy<DataMapFilePart>> Parts;
+    public SafeFileHandle SafeFileHandle { get; }
+    private readonly ReaderWriterLockSlim _flushLock = new();
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public DataMapFile(DataMap map, SafeFileHandle safeFileHandle)
     {
         Map = map;
-        _safeFileHandle = safeFileHandle;
+        SafeFileHandle = safeFileHandle;
         Parts =
-        [
-            .. Enumerable.Range(0, DataDefaults.PartCount)
-                .Select(index => new Lazy<DataMapFilePart>(() =>
-                        new(this,safeFileHandle, index * DataDefaults.PartSize),
+            new([
+                .. Enumerable.Range(0, DataDefaults.PartCount)
+                    .Select(index => new Lazy<DataMapFilePart>(() =>
+                            new(this, index * DataDefaults.PartSize),
                         LazyThreadSafetyMode.ExecutionAndPublication))
-        ];
+            ]);
     }
 
     public DataMap Map { get; }
@@ -34,14 +34,42 @@ internal sealed class DataMapFile : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public DataMapFilePart Part(in DataOffset offset)
     {
-        _cleanLock.EnterReadLock();
+        _flushLock.EnterReadLock();
         try
         {
-            return Parts[offset.PartIndex].Value;
+            return Parts.Span[offset.PartIndex].Value;
         }
         finally
         {
-            _cleanLock.ExitReadLock();
+            _flushLock.ExitReadLock();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool Clean(Func<bool> force)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        _flushLock.EnterReadLock();
+        try
+        {
+            var result = false;
+            for (var partId = 0; partId < DataDefaults.PartCount; partId++)
+            {
+                var part = Parts.Span[partId];
+                if (!part.IsValueCreated)
+                {
+                    continue;
+                }
+
+                result |= part.Value.Clean(force());
+            }
+
+            return result;
+        }
+        finally
+        {
+            _flushLock.ExitReadLock();
         }
     }
 
@@ -49,12 +77,12 @@ internal sealed class DataMapFile : IDisposable
     public void Flush()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _cleanLock.EnterWriteLock();
+        _flushLock.EnterWriteLock();
         try
         {
             for (var partId = 0; partId < DataDefaults.PartCount; partId++)
             {
-                var part = Parts[partId];
+                var part = Parts.Span[partId];
                 if (!part.IsValueCreated)
                 {
                     continue;
@@ -67,35 +95,35 @@ internal sealed class DataMapFile : IDisposable
         }
         finally
         {
-            _cleanLock.ExitWriteLock();
+            _flushLock.ExitWriteLock();
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void FlushCore()
     {
-        RandomAccess.FlushToDisk(_safeFileHandle);
+        RandomAccess.FlushToDisk(SafeFileHandle);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
-        foreach (var dataPart in Parts.Where(x => x.IsValueCreated))
-        {
-            if (dataPart.Value is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-        }
-
-        RandomAccess.FlushToDisk(_safeFileHandle);
-
-        _safeFileHandle.Dispose();
+        ObjectDisposedException.ThrowIf(_disposed, this);
         _disposed = true;
+        _flushLock.Dispose();
+
+        for (int i = 0; i < Parts.Length; i++)
+        {
+            var part = Parts.Span[i];
+            if (!part.IsValueCreated)
+            {
+                continue;
+            }
+
+            part.Value.Dispose();
+        }
+
+        FlushCore();
+        SafeFileHandle.Dispose();
     }
 }

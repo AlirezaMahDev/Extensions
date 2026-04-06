@@ -6,14 +6,6 @@ public static class NerveThinkExtensions
         where TData : unmanaged, ICellData<TData>
         where TLink : unmanaged, ICellLink<TLink>
     {
-        public void CleanThink()
-        {
-            SmartParallel.ForEach(nerve.MemoryCache.Where(x => x.Value.IsValueCreated),
-                CancellationToken.None,
-                (pair, _) => pair.Value.Value.Dispose());
-            nerve.MemoryCache.Clear();
-        }
-
         public async ValueTask<Memory<Think<TData, TLink>>> ThinkAsync(
             int depth,
             Func<ReadOnlyMemory<TData>, TLink> linkFunc,
@@ -58,7 +50,7 @@ public static class NerveThinkExtensions
             ReadOnlyMemoryValue<TLink> linkValue = linkFunc(previousData);
             var dataValue = nextData.ElementAt(0);
 
-            ThinkValueRef<TData, TLink> pair = new(in dataValue.Value, in linkValue.Value);
+            ThinkValueRef<TData, TLink> pair = new(dataValue.Value, linkValue.Value);
             var cellMemory =
                 currentThink.ConnectionWrap.GetConnectionsWrapCache();
 

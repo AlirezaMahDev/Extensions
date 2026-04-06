@@ -2,6 +2,8 @@ using System.Runtime.CompilerServices;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
+using Microsoft.Extensions.Logging;
+
 namespace AlirezaMahDev.Extensions.DataManager;
 
 internal class DataAccess : IDisposable, IDataAccess
@@ -37,11 +39,11 @@ internal class DataAccess : IDisposable, IDataAccess
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataAccess(string path)
+    public DataAccess(string path, ILogger<DataAccess>? logger)
     {
         Path = path;
 
-        _map = new(System.IO.Path.Combine(Path, DataDefaults.FileFormat));
+        _map = new(System.IO.Path.Combine(Path, DataDefaults.FileFormat), logger);
         DataLocation<DataAccessValue>.Read(this, DataOffset.Create(0, Unsafe.SizeOf<DataAccessValue>()), out _value);
 
         if (_value.ReadLock((scoped ref readonly x) => x.LastOffset == 0))
@@ -56,9 +58,9 @@ internal class DataAccess : IDisposable, IDataAccess
             DataOffset.Create(_value.Offset.Length, Unsafe.SizeOf<DataPath>()),
             out _root);
 
-        _trash = Root.Wrap(this, x => x.Dictionary())
+        _trash = Root.Wrap(x => x.Dictionary())
             .GetOrAdd(".trash")
-            .Wrap(this, x => x.Storage())
+            .Wrap(x => x.Storage())
             .GetOrCreateData<DataPath, DataTrash>();
     }
 
@@ -70,40 +72,63 @@ internal class DataAccess : IDisposable, IDataAccess
             throw new($"length > {DataDefaults.PartSize}");
         }
 
-        long offset;
-        long lastOffset;
-        do
+        long offset = _value.WriteLock((scoped ref value) =>
         {
-            lastOffset = Volatile.Read(ref _value.UnsafeRefValue.LastOffset);
-            offset = lastOffset;
-
-            if (DataHelper.PartIndex(offset) != DataHelper.PartIndex(offset + length - 1))
+            long offset;
+            long lastOffset;
+            do
             {
-                offset += DataDefaults.PartSize - (offset % DataDefaults.PartSize);
-            }
+                lastOffset = Volatile.Read(ref value.LastOffset);
+                offset = lastOffset;
 
-            if (DataHelper.FileId(offset) != DataHelper.FileId(offset + length - 1))
-            {
-                offset += DataDefaults.FileSize - (offset % DataDefaults.FileSize);
-            }
-        } while (Interlocked.CompareExchange(
-            ref _value.UnsafeRefValue.LastOffset,
-            offset + length,
-            lastOffset) != lastOffset);
+                if (DataHelper.PartIndex(offset) != DataHelper.PartIndex(offset + length - 1))
+                {
+                    offset += DataDefaults.PartSize - (offset % DataDefaults.PartSize);
+                }
+
+                if (DataHelper.FileId(offset) != DataHelper.FileId(offset + length - 1))
+                {
+                    offset += DataDefaults.FileSize - (offset % DataDefaults.FileSize);
+                }
+            } while (Interlocked.CompareExchange(
+                         ref value.LastOffset,
+                         offset + length,
+                         lastOffset) !=
+                     lastOffset);
+
+            return offset;
+        });
 
         return DataOffset.Create(offset, length);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private DataMapFilePart AccessPart(in DataOffset offset)
+    public IDataAlive AllocationWithAlive(int length, out DataOffset offset)
     {
-        return _map.File(in offset).Part(in offset);
+        offset = AllocateOffset(length);
+        return GetAlive(offset);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public IDataMapFilePartOwner GetOwner(in DataOffset offset)
+    public DataMapFilePartCacheAccess GetCache(in DataOffset offset, CancellationToken cancellationToken = default)
     {
-        return AccessPart(in offset).GetOwner();
+        return _map.File(in offset).Part(in offset).GetCache(cancellationToken);
+    }
+
+    public IDataAlive GetCacheWithAlive(in DataOffset offset,
+        out DataMapFilePartCacheAccess cache,
+        CancellationToken cancellationToken = default)
+    {
+        var part = _map.File(in offset).Part(in offset);
+        var dataAlive = part.GetAlive();
+        cache = part.GetCache(cancellationToken);
+        return dataAlive;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public IDataAlive GetAlive(in DataOffset offset)
+    {
+        return _map.File(in offset).Part(in offset).GetAlive();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

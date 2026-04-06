@@ -9,7 +9,14 @@ public interface IDataAccess
     ref readonly DataLocation<DataTrash> Trash { get; }
 
     DataOffset AllocateOffset(int length);
-    IDataMapFilePartOwner GetOwner(in DataOffset offset);
+    IDataAlive AllocationWithAlive(int length, out DataOffset offset);
+    DataMapFilePartCacheAccess GetCache(in DataOffset offset, CancellationToken cancellationToken = default);
+
+    IDataAlive GetCacheWithAlive(in DataOffset offset,
+        out DataMapFilePartCacheAccess cache,
+        CancellationToken cancellationToken = default);
+
+    IDataAlive GetAlive(in DataOffset offset);
 
     void Flush();
 }

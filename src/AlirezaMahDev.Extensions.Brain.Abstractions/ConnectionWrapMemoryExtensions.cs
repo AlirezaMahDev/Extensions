@@ -14,10 +14,12 @@ public static class ConnectionWrapMemoryExtensions
         {
             return memory.Near(ref pair,
                 static (scoped ref readonly x) =>
-                    new(in x.NeuronWrap.Location.UnsafeRefReadOnlyValue.Data,
-                        in x.Location.UnsafeRefReadOnlyValue.Link,
-                        x.Location.UnsafeRefReadOnlyValue.Score,
-                        x.Location.UnsafeRefReadOnlyValue.Weight),
+                    new(
+                        x.NeuronWrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Data),
+                        x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Link),
+                        x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Score),
+                        x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Weight)
+                    ),
                 NerveHelper<TData, TLink>.SleepComparisons,
                 depth);
         }
@@ -30,12 +32,20 @@ public static class ConnectionWrapMemoryExtensions
         {
             using MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>> memoryList = memory;
             memoryList.Memory.Span.Sort((scoped ref readonly x) =>
-                    new PredictValueRef<TLink>(in x.Location.UnsafeRefReadOnlyValue.Link, x.Location.UnsafeRefReadOnlyValue.Score, x.Location.UnsafeRefReadOnlyValue.Weight),
+                    new PredictValueRef<TLink>(
+                        x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Link),
+                        x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Score),
+                        x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Weight)
+                    ),
                 NerveHelper<TData, TLink>.NearNextComparisons);
             return memoryList.Memory
                 .Near(ref link,
                     (scoped ref readonly x) =>
-                        new(in x.Location.UnsafeRefReadOnlyValue.Link, x.Location.UnsafeRefReadOnlyValue.Score, x.Location.UnsafeRefReadOnlyValue.Weight),
+                        new(
+                            x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Link),
+                            x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Score),
+                            x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Weight)
+                        ),
                     NerveHelper<TData, TLink>.NearNextComparisons,
                     depth);
         }

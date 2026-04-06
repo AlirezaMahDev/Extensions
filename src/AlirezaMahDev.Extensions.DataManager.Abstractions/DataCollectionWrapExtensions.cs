@@ -105,7 +105,7 @@ public static class DataCollectionWrapExtensions
                 return false;
             }
 
-            DataLocation<TValue>.Read(wrap.Access, next, out result);
+            DataLocation<TValue>.Read(wrap.Location.Access,next, out result);
             return true;
         }
     }
@@ -125,7 +125,7 @@ public static class DataCollectionWrapExtensions
                 return false;
             }
 
-            DataLocation<TItem>.Read(wrap.Access, child, out result);
+            DataLocation<TItem>.Read(wrap.Location.Access,child, out result);
             return true;
         }
 
@@ -161,7 +161,7 @@ public static class DataCollectionWrapExtensions
                             wrap.Wrap.ItemWrap.RefReadOnlyNext(in childLock.RefReadOnlyValue);
                     }
 
-                    wrap.Access.Trash.Add(wrap.Access, child.Offset);
+                    wrap.Location.Access.Trash.Add(child.Offset);
                     return child;
                 }
 
@@ -204,7 +204,7 @@ public static class DataCollectionWrapExtensions
             do
             {
                 yield return current;
-            } while (current.Wrap(wrap.Access, wrap.Wrap.ItemWrap) is var dataWrap && dataWrap.GetNext(out current));
+            } while (current.Wrap(wrap.Wrap.ItemWrap) is var dataWrap && dataWrap.GetNext(out current));
         }
     }
 }

@@ -15,10 +15,46 @@ public static class DataLocationExtensions
     extension<TValue>(in DataLocation<TValue> location)
         where TValue : unmanaged, IDataValue<TValue>
     {
-        public TValue CopyValue
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public void UnsafeAccessRef(ScopedRefAction<TValue> action, CancellationToken cancellationToken = default)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            get => location.ReadLock((scoped ref readonly x) => x);
+            using var cacheAccess = location.Access.GetCache(in location.Offset, cancellationToken);
+            cacheAccess.Cache.AccessRefByte(location.Offset.Offset,
+                (scoped ref b) =>
+                    action(ref Unsafe.As<byte, TValue>(ref b)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public TResult UnsafeAccessRef<TResult>(ScopedRefFunc<TValue, TResult> func,
+            CancellationToken cancellationToken = default)
+        {
+            using var cacheAccess = location.Access.GetCache(in location.Offset, cancellationToken);
+            return cacheAccess.Cache
+                .AccessRefByte(location.Offset.Offset,
+                    (scoped ref b) =>
+                        func(ref Unsafe.As<byte, TValue>(ref b)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public void UnsafeAccessRefReadOnly(ScopedRefReadOnlyAction<TValue> action,
+            CancellationToken cancellationToken = default)
+        {
+            using var cacheAccess = location.Access.GetCache(in location.Offset, cancellationToken);
+            cacheAccess.Cache
+                .AccessRefReadOnlyByte(location.Offset.Offset,
+                    (scoped ref readonly b) =>
+                        action(ref Unsafe.As<byte, TValue>(ref Unsafe.AsRef(in b))));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public TResult UnsafeAccessRefReadOnly<TResult>(ScopedRefReadOnlyFunc<TValue, TResult> func,
+            CancellationToken cancellationToken = default)
+        {
+            using var cacheAccess = location.Access.GetCache(in location.Offset, cancellationToken);
+            return cacheAccess.Cache
+                .AccessRefReadOnlyByte(location.Offset.Offset,
+                    (scoped ref readonly b) =>
+                        func(ref Unsafe.As<byte, TValue>(ref Unsafe.AsRef(in b))));
         }
 
         public bool IsDefault
@@ -46,7 +82,5 @@ public static class DataLocationExtensions
         }
 
         //get prime number from index 
-
-
     }
 }

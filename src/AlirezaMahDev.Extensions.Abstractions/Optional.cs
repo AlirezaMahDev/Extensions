@@ -33,6 +33,11 @@ public struct Optional<TValue>
     {
         return value is null ? Null : From(value.Value);
     }
+    
+    public static implicit operator TValue?(Optional<TValue> value)
+    {
+        return value.HasValue ? value.Value : null;
+    }
 
     public bool HasValue
     {

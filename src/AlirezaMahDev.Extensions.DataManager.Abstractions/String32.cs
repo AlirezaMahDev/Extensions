@@ -7,7 +7,7 @@ public readonly struct String32 : IScopedRefReadOnlyEquatable<String32>, IString
     private const int Length = 32;
     private const int Size = Length * sizeof(char);
 
-    public static readonly String32 Empty = new();
+    public static readonly String32 Empty;
 
     public ReadOnlySpan<char> Span
     {

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Hashing;
 using System.Text;
 
@@ -51,7 +52,7 @@ internal sealed class NerveCacheSection(string name, NerveCache cache) : INerveC
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private bool TryGetCore(ref readonly UInt128 keyHash, [NotNullWhen(true)] out DataOffset? value)
     {
-        value = ReadCore(in keyHash);
+        value = GetCoreRuntime(in keyHash);
         return value is not null;
     }
 
@@ -62,12 +63,12 @@ internal sealed class NerveCacheSection(string name, NerveCache cache) : INerveC
         where TKey : unmanaged
     {
         var hash = GenerateHash(in key);
-        return ReadCore(in hash);
+        return GetCoreRuntime(in hash);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public DataOffset? GetOrNull(ref readonly NerveCacheKey key)
-        => ReadCore(in key.Hash);
+        => GetCoreRuntime(in key.Hash);
 
     // ── Set ──────────────────────────────────────────────────────────────────
 
@@ -76,36 +77,12 @@ internal sealed class NerveCacheSection(string name, NerveCache cache) : INerveC
         where TKey : unmanaged
     {
         var hash = GenerateHash(in key);
-        UpsertCore(in hash, in value);
+        SetCoreRuntime(in hash, in value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Set(ref readonly NerveCacheKey key, ref readonly DataOffset value)
-        => UpsertCore(in key.Hash, in value);
-
-    // ── TrySet (فقط اگه وجود نداره set کن) ──────────────────────────────────
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TrySet<TKey>(ref readonly TKey key, ref readonly DataOffset value)
-        where TKey : unmanaged
-    {
-        var hash = GenerateHash(in key);
-        return TrySetCore(in hash, in value);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TrySet(ref readonly NerveCacheKey key, ref readonly DataOffset value)
-        => TrySetCore(in key.Hash, in value);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private bool TrySetCore(ref readonly UInt128 keyHash, ref readonly DataOffset value)
-    {
-        // اگه موجوده → false برگردون
-        if (ReadCore(in keyHash) is not null) return false;
-        UpsertCore(in keyHash, in value);
-        return true;
-        // ⚠️ non-atomic: اگه atomicity لازم داری → RMW بزن (ببین پایین)
-    }
+        => SetCoreRuntime(in key.Hash, in value);
 
     // ── GetOrAdd ─────────────────────────────────────────────────────────────
 
@@ -136,35 +113,38 @@ internal sealed class NerveCacheSection(string name, NerveCache cache) : INerveC
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private DataOffset GetOrAddCore(ref readonly UInt128 keyHash, Func<UInt128, DataOffset> factory)
     {
-        var existing = ReadCore(in keyHash);
-        if (existing is not null) return existing.Value;
+        var existing = GetCoreRuntime(in keyHash);
+        if (existing.HasValue)
+            return existing.Value;
 
         var newVal = factory(keyHash);
-        UpsertCore(in keyHash, in newVal);
-        return newVal;
+        return GetOrAddCore(in keyHash, in newVal);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private DataOffset GetOrAddCore(ref readonly UInt128 keyHash, ref readonly DataOffset value)
     {
-        var existing = ReadCore(in keyHash);
-        if (existing is not null) return existing.Value;
-
-        UpsertCore(in keyHash, in value);
-        return value;
+        return GetOrAddCoreRuntime(in keyHash, in value);
     }
 
     // ── Core Operations ──────────────────────────────────────────────────────
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private DataOffset? ReadCore(ref readonly UInt128 keyHash)
+    private DataOffset? GetCoreRuntime(ref readonly UInt128 keyHash)
     {
-        var ck = MakeKey(in keyHash);
-        DataOffset output = default;
-        var status = Session.Read(ref ck, ref output);
+        var copyKey = MakeKey(in keyHash);
+        DataOffset result = default;
+        var status = Session.Read(ref copyKey, ref result);
 
-        if (status.IsCompletedSuccessfully && status.Found)
-            return output;
+        if (status.Found)
+        {
+            return result;
+        }
+
+        if (status.NotFound)
+        {
+            return null;
+        }
 
         if (status.IsPending)
         {
@@ -172,7 +152,24 @@ internal sealed class NerveCacheSection(string name, NerveCache cache) : INerveC
             using (outputs)
             {
                 while (outputs.Next())
-                    return outputs.Current.Output;
+                {
+                    if (outputs.Current.Output.IsDefault)
+                        Debugger.Break();
+
+                    status = outputs.Current.Status;
+                    result = outputs.Current.Output;
+                    if (status.Found)
+                    {
+                        return result;
+                    }
+
+                    if (status.NotFound)
+                    {
+                        return null;
+                    }
+
+                    throw new("Unexpected status");
+                }
             }
         }
 
@@ -180,13 +177,48 @@ internal sealed class NerveCacheSection(string name, NerveCache cache) : INerveC
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void UpsertCore(ref readonly UInt128 keyHash, ref readonly DataOffset value)
+    private void SetCoreRuntime(ref readonly UInt128 keyHash, ref readonly DataOffset value)
     {
-        var ck = MakeKey(in keyHash);
-        var val = value; // ref readonly → local copy برای ref
-        var status = Session.Upsert(ref ck, ref val);
+        var copyKey = MakeKey(in keyHash);
+        var copyValue = value;
+        if (copyValue.IsDefault)
+            Debugger.Break();
+        var status = Session.Upsert(ref copyKey, ref copyValue);
 
         if (status.IsPending)
+        {
             Session.CompletePending(wait: false);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private DataOffset GetOrAddCoreRuntime(ref readonly UInt128 keyHash, ref readonly DataOffset value)
+    {
+        var copyKey = MakeKey(in keyHash);
+        var copyValue = value;
+        if (copyValue.IsDefault)
+            Debugger.Break();
+        DataOffset result = default;
+        var status = Session.RMW(ref copyKey, ref copyValue, ref result);
+
+        if (status.IsPending)
+        {
+            Session.CompletePendingWithOutputs(out var completedOutputs, wait: true);
+            using (completedOutputs)
+            {
+                while (completedOutputs.Next())
+                {
+                    if (completedOutputs.Current.Output.IsDefault)
+                        Debugger.Break();
+
+                    result = completedOutputs.Current.Output;
+                    break;
+                }
+            }
+        }
+
+        if (result.IsDefault)
+            Debugger.Break();
+        return result;
     }
 }

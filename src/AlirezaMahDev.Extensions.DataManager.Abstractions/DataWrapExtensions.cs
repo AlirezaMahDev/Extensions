@@ -6,15 +6,15 @@ public static class DataWrapExtensions
         where TValue : unmanaged, IDataValue<TValue>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataWrap<TValue, TWrap> Wrap(IDataAccess access, TWrap wrap)
+        public DataWrap<TValue, TWrap> Wrap(TWrap wrap)
         {
-            return new(access, location, wrap);
+            return new(location, wrap);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public DataWrap<TValue, TWrap> Wrap(IDataAccess access, Func<TValue, TWrap> wrap)
+        public DataWrap<TValue, TWrap> Wrap(Func<TValue, TWrap> wrap)
         {
-            return new(access, location, wrap(default));
+            return new(location, wrap(default));
         }
     }
 
@@ -24,13 +24,13 @@ public static class DataWrapExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataWrap<TValue, TWrap> Wrap(TWrap innerWrap)
         {
-            return wrap.Location.Wrap(wrap.Access, innerWrap);
+            return wrap.Location.Wrap(innerWrap);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataWrap<TValue, TWrap> Wrap(Func<TValue, TWrap> innerWrap)
         {
-            return wrap.Location.Wrap(wrap.Access, innerWrap);
+            return wrap.Location.Wrap(innerWrap);
         }
     }
 
@@ -40,13 +40,13 @@ public static class DataWrapExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataWrap<TValue, TInnerWrap> Wrap<TInnerWrap>(TInnerWrap innerWrap)
         {
-            return wrap.Location.Wrap(wrap.Access, innerWrap);
+            return wrap.Location.Wrap(innerWrap);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public DataWrap<TValue, TInnerWrap> Wrap<TInnerWrap>(Func<TValue, TInnerWrap> innerWrap)
         {
-            return wrap.Location.Wrap(wrap.Access, innerWrap);
+            return wrap.Location.Wrap(innerWrap);
         }
     }
 }

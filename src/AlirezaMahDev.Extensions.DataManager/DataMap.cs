@@ -2,22 +2,52 @@ using System.Runtime.CompilerServices;
 
 using AlirezaMahDev.Extensions.DataManager.Abstractions;
 
+using Microsoft.Extensions.Logging;
+
 namespace AlirezaMahDev.Extensions.DataManager;
 
 internal sealed class DataMap : IDisposable, IDataMap
 {
     private bool _disposed;
 
-    internal readonly Lazy<DataMapFile>[] Files;
+    internal readonly Memory<Lazy<DataMapFile>> Files;
 
     private long _allocSum;
-    private readonly ReaderWriterLockSlim _cleanLock = new();
+    private readonly ReaderWriterLockSlim _flushLock = new();
+    private readonly CancellationTokenSource _cleanTokenSource = new();
+    private readonly Thread _thread;
+    private readonly ILogger? _logger;
 
     public IDataStatus Status { get; }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public DataMap(string path)
+    public bool CanAlloc
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => Volatile.Read(ref _allocSum) + DataDefaults.PartSize <= DataDefaults.AllocMax;
+    }
+
+    public bool MoreThanHighAlloc
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => Volatile.Read(ref _allocSum) > DataDefaults.AllocHigh;
+    }
+
+    public bool MoreThanNormalAlloc
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => Volatile.Read(ref _allocSum) > DataDefaults.AllocNormal;
+    }
+
+    public bool LessThanNormalAlloc
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        get => Volatile.Read(ref _allocSum) < DataDefaults.AllocNormal;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public DataMap(string path, ILogger? logger)
+    {
+        _logger = logger;
         Status = new DataStatus(this);
 
         var directoryPath = Path.GetDirectoryName(path)!;
@@ -27,25 +57,81 @@ internal sealed class DataMap : IDisposable, IDataMap
         }
 
         Files =
-        [
-            .. Enumerable.Range(0, DataDefaults.FileCount)
-                .Select(id =>
-                    new Lazy<DataMapFile>(() =>
-                            new(this,
-                                System.IO.File.OpenHandle(string.Format(path, id),
-                                    FileMode.OpenOrCreate,
-                                    FileAccess.ReadWrite,
-                                    FileShare.None,
-                                    FileOptions.RandomAccess)),
-                        LazyThreadSafetyMode.ExecutionAndPublication)
-                )
-        ];
+            new([
+                .. Enumerable.Range(0, DataDefaults.FileCount)
+                    .Select(id =>
+                        new Lazy<DataMapFile>(() =>
+                                new(this,
+                                    System.IO.File.OpenHandle(string.Format(path, id),
+                                        FileMode.OpenOrCreate,
+                                        FileAccess.ReadWrite,
+                                        FileShare.None,
+                                        FileOptions.RandomAccess)),
+                            LazyThreadSafetyMode.ExecutionAndPublication)
+                    )
+            ]);
+
+        _thread = new Thread(CleanWorker);
+        _thread.Start(this);
     }
 
+    private static void CleanWorker(object? parameter)
+    {
+        var dataMap = (DataMap?)parameter ?? throw new ArgumentNullException(nameof(parameter));
+        SpinWait spinWait = default;
+        while (!dataMap._cleanTokenSource.IsCancellationRequested)
+        {
+            spinWait.SpinOnce();
+
+            if (!dataMap.MoreThanNormalAlloc)
+            {
+                continue;
+            }
+
+            dataMap._flushLock.EnterReadLock();
+            try
+            {
+                if (!dataMap.MoreThanNormalAlloc)
+                {
+                    continue;
+                }
+
+                for (var fileId = 0; fileId < DataDefaults.FileCount; fileId++)
+                {
+                    var file = dataMap.Files.Span[fileId];
+                    if (!file.IsValueCreated)
+                    {
+                        continue;
+                    }
+
+                    if (file.Value.Clean(() => dataMap.MoreThanHighAlloc) && dataMap.LessThanNormalAlloc)
+                    {
+                        break;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                if (dataMap._logger is not null)
+                {
+                    dataMap._logger.LogError(e, "CleanWorker failed");
+                }
+                else
+                {
+                    Console.Error.WriteLine(e);
+                }
+            }
+            finally
+            {
+                dataMap._flushLock.ExitReadLock();
+            }
+        }
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Alloc()
     {
+        SpinWait spinWait = default;
         while (!_disposed)
         {
             var allocSum = Volatile.Read(ref _allocSum);
@@ -55,47 +141,11 @@ internal sealed class DataMap : IDisposable, IDataMap
             {
                 return;
             }
-            else
-            {
-                Clean();
-            }
+
+            spinWait.SpinOnce();
         }
 
         throw new ObjectDisposedException(nameof(DataMap));
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public void Clean()
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
-
-        _cleanLock.EnterReadLock();
-        try
-        {
-            if (Volatile.Read(ref _allocSum) + DataDefaults.PartSize <= DataDefaults.AllocMax)
-            {
-                return;
-            }
-        }
-        finally
-        {
-            _cleanLock.ExitReadLock();
-        }
-
-        _cleanLock.EnterUpgradeableReadLock();
-        try
-        {
-            if (Volatile.Read(ref _allocSum) + DataDefaults.PartSize <= DataDefaults.AllocMax)
-            {
-                return;
-            }
-
-            Flush();
-        }
-        finally
-        {
-            _cleanLock.ExitUpgradeableReadLock();
-        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -107,27 +157,28 @@ internal sealed class DataMap : IDisposable, IDataMap
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public DataMapFile File(in DataOffset offset)
     {
-        _cleanLock.EnterReadLock();
+        _flushLock.EnterReadLock();
         try
         {
-            return Files[offset.FileId].Value;
+            return Files.Span[offset.FileId].Value;
         }
         finally
         {
-            _cleanLock.ExitReadLock();
+            _flushLock.ExitReadLock();
         }
     }
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Flush()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        _cleanLock.EnterWriteLock();
+        _flushLock.EnterWriteLock();
         try
         {
             for (var fileId = 0; fileId < DataDefaults.FileCount; fileId++)
             {
-                var file = Files[fileId];
+                var file = Files.Span[fileId];
                 if (!file.IsValueCreated)
                 {
                     continue;
@@ -138,23 +189,28 @@ internal sealed class DataMap : IDisposable, IDataMap
         }
         finally
         {
-            _cleanLock.ExitWriteLock();
+            _flushLock.ExitWriteLock();
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
-        foreach (var dataFile in Files.Where(x => x.IsValueCreated))
-        {
-            dataFile.Value.Dispose();
-        }
-
+        ObjectDisposedException.ThrowIf(_disposed, this);
         _disposed = true;
+        _cleanTokenSource.Dispose();
+        _thread.Join();
+        _flushLock.Dispose();
+
+        for (int i = 0; i < Files.Length; i++)
+        {
+            var file = Files.Span[i];
+            if (!file.IsValueCreated)
+            {
+                continue;
+            }
+
+            file.Value.Dispose();
+        }
     }
 }
