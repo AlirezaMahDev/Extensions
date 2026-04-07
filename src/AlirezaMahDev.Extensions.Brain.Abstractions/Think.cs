@@ -4,7 +4,6 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    public readonly Guid Id;
     public readonly int Count;
 
     public readonly ReadOnlyMemoryValue<TData> Data;
@@ -22,7 +21,6 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     private Think(
         CellWrap<ConnectionValue<TLink>, TData, TLink> connectionWrap)
     {
-        Id = Guid.CreateVersion7();
         Count = 1;
 
         ConnectionWrap = connectionWrap;
@@ -39,7 +37,6 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
         CellWrap<ConnectionValue<TLink>, TData, TLink> connectionWrap,
         Think<TData, TLink> previous)
     {
-        Id = Guid.CreateVersion7();
         Count = previous.Count + 1;
 
         Data = data;
@@ -103,18 +100,6 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public override int GetHashCode()
-    {
-        return Id.GetHashCode();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Equals(Think<TData, TLink>? other)
-    {
-        return Id == other?.Id;
     }
 
     public override string ToString()

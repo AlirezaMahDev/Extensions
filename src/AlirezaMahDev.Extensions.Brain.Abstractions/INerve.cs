@@ -20,6 +20,7 @@ public interface INerve<TData, TLink>
     ref readonly DataLocation<DataPath> NeuronLocation { get; }
 
     void Flush();
+    void ClearMemoryCache();
 
     ref readonly Neuron RootNeuron { get; }
     ref readonly CellWrap<NeuronValue<TData>, TData, TLink> RootNeuronWrap { get; }

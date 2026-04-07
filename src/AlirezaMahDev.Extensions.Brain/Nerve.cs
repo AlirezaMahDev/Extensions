@@ -6,9 +6,9 @@ namespace AlirezaMahDev.Extensions.Brain;
 
 internal class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TData,
+TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-    TLink> : INerve<TData, TLink>, IDisposable
+TLink> : INerve<TData, TLink>, IDisposable
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
@@ -119,12 +119,18 @@ internal class Nerve<
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void FlushCore()
+    public void ClearMemoryCache()
     {
         SmartParallel.ForEach(MemoryCache.Where(x => x.Value.IsValueCreated),
             CancellationToken.None,
             (pair, _) => pair.Value.Value.Dispose());
         MemoryCache.Clear();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private void FlushCore()
+    {
+        ClearMemoryCache();
         _cache.Flush();
         GC.Collect();
         GC.WaitForPendingFinalizers();

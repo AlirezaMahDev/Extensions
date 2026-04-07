@@ -12,6 +12,14 @@ public static class NerveThinkExtensions
             ReadOnlyMemory<TData> data,
             CancellationToken cancellationToken = default)
         {
+            if (nerve.MemoryCache.Count >= 1 << 17)
+            {
+                nerve.ClearMemoryCache();
+            }
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             using ThinkResult<TData, TLink> result = new(depth);
 
             await INerve<TData, TLink>.ThinkCoreAsync(depth,
