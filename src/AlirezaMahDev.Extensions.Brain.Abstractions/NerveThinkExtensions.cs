@@ -12,7 +12,7 @@ public static class NerveThinkExtensions
             ReadOnlyMemory<TData> data,
             CancellationToken cancellationToken = default)
         {
-            if (nerve.MemoryCache.Count >= 1 << 17)
+            if (nerve.MemoryCache.Count >= 1 << 14)
             {
                 nerve.ClearMemoryCache();
             }

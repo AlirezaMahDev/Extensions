@@ -1,5 +1,7 @@
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.IO.Hashing;
+using System.Runtime.ConstrainedExecution;
 
 namespace AlirezaMahDev.Extensions.Abstractions;
 

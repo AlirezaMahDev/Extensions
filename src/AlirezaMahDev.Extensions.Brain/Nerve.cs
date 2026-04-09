@@ -21,13 +21,6 @@ TLink> : INerve<TData, TLink>, IDisposable
     private readonly CellWrap<ConnectionValue<TLink>, TData, TLink> _rootConnectionWrap;
     private readonly NerveCache _cache;
 
-    public ConcurrentDictionary<DataOffset,
-        Lazy<CellMemory<CellWrap<ConnectionValue<TLink>, TData, TLink>>>> MemoryCache
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get;
-    }
-
     public IDataAccess Access
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -89,7 +82,6 @@ TLink> : INerve<TData, TLink>, IDisposable
     {
         _cache = new(options.Value.DirectoryPath);
 
-        MemoryCache = new();
         Name = name;
         Access = Name.StartsWith("temp:") ? dataManager.OpenTemp() : dataManager.Open(name);
         var root = Access.Root;
@@ -114,32 +106,14 @@ TLink> : INerve<TData, TLink>, IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Flush()
     {
-        FlushCore();
         Access.Flush();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public void ClearMemoryCache()
-    {
-        SmartParallel.ForEach(MemoryCache.Where(x => x.Value.IsValueCreated),
-            CancellationToken.None,
-            (pair, _) => pair.Value.Value.Dispose());
-        MemoryCache.Clear();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private void FlushCore()
-    {
-        ClearMemoryCache();
         _cache.Flush();
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        FlushCore();
+        Flush();
         _cache.Dispose();
     }
 }

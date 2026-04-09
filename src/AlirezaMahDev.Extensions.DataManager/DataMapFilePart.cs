@@ -93,7 +93,7 @@ internal class DataMapFilePart(DataMapFile file, int filePartOffset) : IDisposab
             return false;
         }
 
-        if (!force && Volatile.Read(ref AliveCount) != 0)
+        if (!force && Interlocked.Read(ref AliveCount) != 0)
         {
             return false;
         }

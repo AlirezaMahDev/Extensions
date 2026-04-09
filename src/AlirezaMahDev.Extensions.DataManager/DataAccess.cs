@@ -78,7 +78,7 @@ internal class DataAccess : IDisposable, IDataAccess
             long lastOffset;
             do
             {
-                lastOffset = Volatile.Read(ref value.LastOffset);
+                lastOffset = Interlocked.Read(ref value.LastOffset);
                 offset = lastOffset;
 
                 if (DataHelper.PartIndex(offset) != DataHelper.PartIndex(offset + length - 1))

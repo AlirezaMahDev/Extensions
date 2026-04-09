@@ -6,12 +6,6 @@ public interface INerve<TData, TLink>
 {
     INerveCache Cache { get; }
 
-    ConcurrentDictionary<DataOffset, Lazy<CellMemory<CellWrap<ConnectionValue<TLink>, TData, TLink>>>>
-        MemoryCache
-    {
-        get;
-    }
-
     IDataAccess Access { get; }
     string Name { get; }
 
@@ -20,7 +14,6 @@ public interface INerve<TData, TLink>
     ref readonly DataLocation<DataPath> NeuronLocation { get; }
 
     void Flush();
-    void ClearMemoryCache();
 
     ref readonly Neuron RootNeuron { get; }
     ref readonly CellWrap<NeuronValue<TData>, TData, TLink> RootNeuronWrap { get; }

@@ -27,7 +27,7 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
             SpinWait spinner = default;
             while (!cancellationToken.IsCancellationRequested)
             {
-                var lastUlongLock = Volatile.Read(ref ulongLock);
+                var lastUlongLock = Interlocked.Read(ref ulongLock);
                 ref var lastLock = ref Unsafe.As<ulong, DataLock>(ref lastUlongLock);
                 var newUlongLock = lastUlongLock;
                 ref var newLock = ref Unsafe.As<ulong, DataLock>(ref newUlongLock);
@@ -64,7 +64,7 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
                     continue;
                 }
 
-                while (Volatile.Read(ref @lock.State) != -1)
+                while (Interlocked.Read(ref @lock.State) != -1)
                     spinner.SpinOnce();
 
                 break;
@@ -85,7 +85,7 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            if (Volatile.Read(ref _pointer.Lock.State) != -1)
+            if (Interlocked.Read(ref _pointer.Lock.State) != -1)
             {
                 throw new ObjectDisposedException(nameof(DataLockWriteDisposable<>));
             }
@@ -109,7 +109,7 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
             SpinWait spinner = default;
             while (!_cancellationToken.IsCancellationRequested)
             {
-                var lastUlongLock = Volatile.Read(ref ulongLock);
+                var lastUlongLock = Interlocked.Read(ref ulongLock);
                 ref var lastLock = ref Unsafe.As<ulong, DataLock>(ref lastUlongLock);
                 var newUlongLock = lastUlongLock;
                 ref var newLock = ref Unsafe.As<ulong, DataLock>(ref newUlongLock);

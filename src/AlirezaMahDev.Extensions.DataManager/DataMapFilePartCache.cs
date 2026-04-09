@@ -20,7 +20,7 @@ internal sealed unsafe class DataMapFilePartCache : SafeHandle, IDataMapFilePart
     public ulong AccessCount
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => Volatile.Read(ref _accessCount);
+        get => Interlocked.Read(ref _accessCount);
     }
 
     public bool Accessed
@@ -189,7 +189,7 @@ internal sealed unsafe class DataMapFilePartCache : SafeHandle, IDataMapFilePart
     {
         AccessRefByte(offset,
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            (
+        (
                 scoped ref refByte) =>
             {
                 var span = MemoryMarshal.CreateSpan(ref refByte, DataDefaults.PartSize);
@@ -202,7 +202,7 @@ internal sealed unsafe class DataMapFilePartCache : SafeHandle, IDataMapFilePart
     {
         AccessRefByteCore(offset,
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            (
+        (
                 scoped ref refByte) =>
             {
                 var span = MemoryMarshal.CreateSpan(ref refByte, DataDefaults.PartSize);
@@ -215,7 +215,7 @@ internal sealed unsafe class DataMapFilePartCache : SafeHandle, IDataMapFilePart
     {
         return AccessRefByte(offset,
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            (scoped ref refByte) =>
+        (scoped ref refByte) =>
             {
                 var span = MemoryMarshal.CreateSpan(ref refByte, DataDefaults.PartSize);
                 return func(ref span);
@@ -227,7 +227,7 @@ internal sealed unsafe class DataMapFilePartCache : SafeHandle, IDataMapFilePart
     {
         return AccessRefByteCore(offset,
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            (scoped ref refByte) =>
+        (scoped ref refByte) =>
             {
                 var span = MemoryMarshal.CreateSpan(ref refByte, DataDefaults.PartSize);
                 return func(ref span);
@@ -273,7 +273,7 @@ internal sealed unsafe class DataMapFilePartCache : SafeHandle, IDataMapFilePart
     {
         AccessRefReadOnlyByte(offset,
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            (
+        (
                 scoped ref readonly refByte) =>
             {
                 var span = MemoryMarshal.CreateReadOnlySpan(in refByte, DataDefaults.PartSize);
@@ -286,7 +286,7 @@ internal sealed unsafe class DataMapFilePartCache : SafeHandle, IDataMapFilePart
     {
         return AccessRefReadOnlyByte(offset,
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-            (scoped ref readonly refByte) =>
+        (scoped ref readonly refByte) =>
             {
                 var span = MemoryMarshal.CreateReadOnlySpan(in refByte, DataDefaults.PartSize);
                 return func(ref span);

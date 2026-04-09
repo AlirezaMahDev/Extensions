@@ -23,25 +23,25 @@ internal sealed class DataMap : IDisposable, IDataMap
     public bool CanAlloc
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => Volatile.Read(ref _allocSum) + DataDefaults.PartSize <= DataDefaults.AllocMax;
+        get => Interlocked.Read(ref _allocSum) + DataDefaults.PartSize <= DataDefaults.AllocMax;
     }
 
     public bool MoreThanHighAlloc
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => Volatile.Read(ref _allocSum) > DataDefaults.AllocHigh;
+        get => Interlocked.Read(ref _allocSum) > DataDefaults.AllocHigh;
     }
 
     public bool MoreThanNormalAlloc
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => Volatile.Read(ref _allocSum) > DataDefaults.AllocNormal;
+        get => Interlocked.Read(ref _allocSum) > DataDefaults.AllocNormal;
     }
 
     public bool LessThanNormalAlloc
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => Volatile.Read(ref _allocSum) < DataDefaults.AllocNormal;
+        get => Interlocked.Read(ref _allocSum) < DataDefaults.AllocNormal;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -134,7 +134,7 @@ internal sealed class DataMap : IDisposable, IDataMap
         SpinWait spinWait = default;
         while (!_disposed)
         {
-            var allocSum = Volatile.Read(ref _allocSum);
+            var allocSum = Interlocked.Read(ref _allocSum);
             var newAllocSum = allocSum + DataDefaults.PartSize;
             if (newAllocSum <= DataDefaults.AllocMax &&
                 Interlocked.CompareExchange(ref _allocSum, newAllocSum, allocSum) == allocSum)

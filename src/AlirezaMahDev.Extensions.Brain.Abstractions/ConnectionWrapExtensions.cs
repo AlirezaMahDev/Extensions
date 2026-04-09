@@ -37,25 +37,14 @@ public static class ConnectionWrapExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public CellEnumerable<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrap()
+        public CellRefReadOnlyBlock<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrap()
         {
             using var @lock = wrap.Location.ReadLock();
             var count = @lock.RefReadOnlyValue.Count;
             return count > 0 && wrap.ChildWrap is { HasValue: true } childWrap
                 ? new(count,
                     CellWrap<ConnectionValue<TLink>, TData, TLink>.GetConnectionsWrapCore(childWrap.Value))
-                : CellEnumerable<CellWrap<ConnectionValue<TLink>, TData, TLink>>.Empty;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public CellMemory<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCache()
-        {
-            return wrap.Nerve.MemoryCache.GetOrAdd(wrap.Location.Offset,
-                    static (_, wrap) => new(() =>
-                            wrap.GetConnectionsWrap().ToCellMemory(),
-                        LazyThreadSafetyMode.ExecutionAndPublication),
-                    wrap)
-                .Value;
+                : CellRefReadOnlyBlock<CellWrap<ConnectionValue<TLink>, TData, TLink>>.Empty;
         }
 
         public DataOffset? NextUnloadItem
@@ -127,11 +116,11 @@ public static class ConnectionWrapExtensions
 
             wrap.Nerve.Access
                 .Create(ConnectionValue<TLink>.Default with
-                    {
-                        Link = link,
-                        Neuron = neuron,
-                        Next = parent.RefValue.Child
-                    },
+                {
+                    Link = link,
+                    Neuron = neuron,
+                    Next = parent.RefValue.Child
+                },
                     out var connectionValue);
 
             Connection newConnection = new(connectionValue.Offset);
