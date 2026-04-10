@@ -2,10 +2,7 @@ namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 // ReSharper disable once RedundantExtendsListEntry
 public readonly struct ConnectionWrapRefReadOnlyBlock<TData, TLink>(CellWrap<ConnectionValue<TLink>, TData, TLink> cellWrap)
-    : IRefReadOnlyBlock<
-        ConnectionWrapRefReadOnlyBlock<TData, TLink>,
-        CellWrap<ConnectionValue<TLink>, TData, TLink>,
-        ConnectionWrapRefReadOnlyBlockRefReadOnlyEnumerator<TData, TLink>>
+    : IRefReadOnlyIndexable<ConnectionWrapRefReadOnlyBlock<TData, TLink>, CellWrap<ConnectionValue<TLink>, TData, TLink>>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {

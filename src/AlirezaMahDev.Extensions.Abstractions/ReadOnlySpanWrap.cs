@@ -2,7 +2,7 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 public readonly ref struct ReadOnlySpanWrap<T>(ReadOnlySpan<T> readOnlySpan)
-    : IRefReadOnlyBlock<ReadOnlySpanWrap<T>, T, RefReadOnlyEnumerator<ReadOnlySpanWrap<T>, T>>
+    : IRefReadOnlyBlock<ReadOnlySpanWrap<T>, T>
 {
     private readonly ReadOnlySpan<T> _readOnlySpan = readOnlySpan;
 
@@ -29,5 +29,5 @@ public readonly ref struct ReadOnlySpanWrap<T>(ReadOnlySpan<T> readOnlySpan)
         new(_readOnlySpan.Slice(start, length));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public RefReadOnlyEnumerator<ReadOnlySpanWrap<T>, T> GetEnumerator() => new(this);
+    public RefReadOnlyIndexableEnumerator<ReadOnlySpanWrap<T>, T> GetEnumerator() => new(this);
 }

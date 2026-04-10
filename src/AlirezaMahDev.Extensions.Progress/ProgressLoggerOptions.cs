@@ -6,14 +6,14 @@ internal class ProgressLoggerOptions
 {
     public string Name
     {
-        get => Interlocked.Read(ref field);
-        set => Interlocked.Exchange(ref field, value);
+        get => Volatile.Read(ref field);
+        set => Volatile.Write(ref field, value);
     } = string.Empty;
 
     public string Message
     {
-        get => Interlocked.Read(ref field);
-        set => Interlocked.Exchange(ref field, value);
+        get => Volatile.Read(ref field);
+        set => Volatile.Write(ref field, value);
     } = string.Empty;
 
     private int _count;
@@ -21,8 +21,8 @@ internal class ProgressLoggerOptions
 
     public int Count
     {
-        get => Interlocked.Read(ref _count);
-        set => Interlocked.Exchange(ref _count, value);
+        get => Volatile.Read(ref _count);
+        set => Volatile.Write(ref _count, value);
     }
 
     private int _length;
@@ -30,8 +30,8 @@ internal class ProgressLoggerOptions
 
     public int Length
     {
-        get => Interlocked.Read(ref _length);
-        set => Interlocked.Exchange(ref _length, value);
+        get => Volatile.Read(ref _length);
+        set => Volatile.Write(ref _length, value);
     }
 
     public Progress<ProgressLoggerState> Progress { get; } = new();
@@ -40,8 +40,8 @@ internal class ProgressLoggerOptions
 
     public ProgressLoggerState? LastState
     {
-        get => Interlocked.Read(ref field);
-        set => Interlocked.Exchange(ref field, value);
+        get => Volatile.Read(ref field);
+        set => Volatile.Write(ref field, value);
     }
 
     public ProgressLoggerState GenerateState()

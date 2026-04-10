@@ -64,7 +64,7 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
                     continue;
                 }
 
-                while (Interlocked.Read(ref @lock.State) != -1)
+                while (Volatile.Read(ref @lock.State) != -1)
                     spinner.SpinOnce();
 
                 break;
@@ -85,7 +85,7 @@ public readonly ref struct DataLockWriteDisposable<TValue> : IDisposable
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            if (Interlocked.Read(ref _pointer.Lock.State) != -1)
+            if (Volatile.Read(ref _pointer.Lock.State) != -1)
             {
                 throw new ObjectDisposedException(nameof(DataLockWriteDisposable<>));
             }

@@ -80,7 +80,7 @@ public readonly ref struct DataLockReadDisposable<TValue> : IDisposable
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            if (!_isChild && Interlocked.Read(ref _pointer.Lock.State) is -1 or 0)
+            if (!_isChild && Volatile.Read(ref _pointer.Lock.State) is -1 or 0)
             {
                 throw new ObjectDisposedException(nameof(DataLockReadDisposable<>));
             }

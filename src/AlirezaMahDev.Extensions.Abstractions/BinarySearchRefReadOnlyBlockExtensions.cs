@@ -1,9 +1,9 @@
 namespace AlirezaMahDev.Extensions.Abstractions;
 
-public static class BinarySearchSpanExtensions
+public static class BinarySearchRefReadOnlyBlockExtensions
 {
     extension<TSelf, T>(TSelf refReadOnlyArray)
-        where TSelf : IRefReadOnlyBlock<TSelf, T, RefReadOnlyEnumerator<TSelf, T>>, allows ref struct
+        where TSelf : IRefReadOnlyBlock<TSelf, T>, allows ref struct
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public int BinarySearchLowerBound<TComparable>(scoped ref readonly TComparable value)
@@ -109,8 +109,8 @@ public static class BinarySearchSpanExtensions
         public int BinarySearchUpperBound<TBridge, TComparer>(ref TBridge value,
             ScopedRefReadOnlyFunc<T, TBridge> func,
             ref TComparer comparison)
-            where TComparer : IScopedRefReadOnlyComparer<TBridge>
             where TBridge : allows ref struct
+            where TComparer : IScopedRefReadOnlyComparer<TBridge>
         {
             ScopedReadOnlyComparableComparerBridge<T, TBridge, TComparer> scopedReadOnlyComparableComparerBridge =
                 new(value, func, comparison);
