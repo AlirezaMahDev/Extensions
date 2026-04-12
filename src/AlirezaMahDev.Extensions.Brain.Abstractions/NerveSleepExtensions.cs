@@ -29,16 +29,12 @@ public static class NerveSleepExtensions
                 return;
             }
 
-            var cellEnumerable =
-                cellWrap.GetConnectionsWrap();
+            using var cellMemory = cellWrap.GetConnectionsWrapMemory();
 
-            if (cellEnumerable.Count == 0)
+            if (cellMemory is null)
             {
                 return;
             }
-
-            using var cellMemory =
-                cellEnumerable.ToCellMemory();
 
             if (cellMemory.Count == 1)
             {
@@ -48,20 +44,20 @@ public static class NerveSleepExtensions
 
             SmartParallel.Invoke(cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (_) => INerve<TData, TLink>.SelfSleep(progressLogger,
+            (_) => INerve<TData, TLink>.SelfSleep(progressLogger,
                     cellWrap,
                     comparisonChain,
                     cellMemory,
                     cancellationToken),
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (_) => INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, cancellationToken));
+            (_) => INerve<TData, TLink>.SubSleep(progressLogger, comparisonChain, cellMemory, cancellationToken));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
         private static void SelfSleep(IProgressLogger progressLogger,
             CellWrap<ConnectionValue<TLink>, TData, TLink> cellWrap,
             ScopedComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
-            CellMemory<CellWrap<ConnectionValue<TLink>, TData, TLink>> cellMemory,
+            MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>> cellMemory,
             CancellationToken cancellationToken = default)
         {
             cellMemory.Memory.Span.Sort((scoped ref readonly wrap) => new(
@@ -73,7 +69,7 @@ public static class NerveSleepExtensions
                 comparisonChain.Comparison);
             SmartParallel.Invoke(cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (token) =>
+            (token) =>
                 {
                     progressLogger.IncrementLength();
                     if (cellWrap.Location.ReadLock((scoped ref readonly x) =>
@@ -89,7 +85,7 @@ public static class NerveSleepExtensions
                     }
                 },
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (token) =>
+            (token) =>
                 {
                     CellWrap<ConnectionValue<TLink>, TData, TLink> second = default;
                     for (var index = 0; index < cellMemory.Count - 1; index++)
@@ -130,14 +126,14 @@ public static class NerveSleepExtensions
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
         private static void SubSleep(IProgressLogger progressLogger,
             ScopedComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
-            CellMemory<CellWrap<ConnectionValue<TLink>, TData, TLink>> cellMemory,
+            MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>> cellMemory,
             CancellationToken cancellationToken)
         {
             SmartParallel.For(0,
                 cellMemory.Count,
                 cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-                (index, token) =>
+            (index, token) =>
                     INerve<TData, TLink>.SleepCore(progressLogger,
                         cellMemory.Memory.Span[index],
                         comparisonChain,

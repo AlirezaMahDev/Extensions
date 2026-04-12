@@ -13,7 +13,7 @@ public sealed class ScoreSortComparer<T> : IDisposable, IComparer<T>
     public ScoreSortComparer(Memory<T> memory)
     {
         Memory = memory;
-        _memoryOwner = MemoryPool<ScoreSortItem<T>>.Shared.Rent(memory.Length);
+        _memoryOwner = SmartMemoryPool<ScoreSortItem<T>>.Shared.Rent(memory.Length);
         WrapMemory = _memoryOwner.Memory[..memory.Length];
 
         var srcSpan = Memory.Span;

@@ -75,11 +75,12 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
 
     [MustDisposeResource]
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public MemoryList<Memory<CellWrap<ConnectionValue<TLink>, TData, TLink>>> GetNextConnectionWrap(
+    public MemoryList<Memory<CellWrap<ConnectionValue<TLink>, TData, TLink>>>? GetNextConnectionWrap(
         PredictValueRef<TLink> link,
         int depth)
     {
-        return ConnectionWrap.GetConnectionsWrapCache().Memory.NearConnection(ref link, depth);
+        using var connectionsWrapRefReadOnlyIndexable = ConnectionWrap.GetConnectionsWrapMemory();
+        return connectionsWrapRefReadOnlyIndexable?.NearConnection(ref link, depth);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

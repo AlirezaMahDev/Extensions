@@ -12,11 +12,6 @@ public static class NerveThinkExtensions
             ReadOnlyMemory<TData> data,
             CancellationToken cancellationToken = default)
         {
-            if (nerve.MemoryCache.Count >= 1 << 14)
-            {
-                nerve.ClearMemoryCache();
-            }
-
             GC.Collect();
             GC.WaitForPendingFinalizers();
 
@@ -59,16 +54,14 @@ public static class NerveThinkExtensions
             var dataValue = nextData.ElementAt(0);
 
             ThinkValueRef<TData, TLink> pair = new(dataValue.Value, linkValue.Value);
-            var cellMemory =
-                currentThink.ConnectionWrap.GetConnectionsWrapCache();
 
-            if (cellMemory.Count == 0)
+            using var cellMemory = currentThink.ConnectionWrap.GetConnectionsWrapMemory();
+            if (cellMemory is null)
             {
                 return;
             }
 
-            using var memoryList =
-                cellMemory.Memory.NearConnection(ref pair, depth);
+            using var memoryList = cellMemory.NearConnection(ref pair, depth);
             if (memoryList.Count == 0)
             {
                 return;

@@ -53,15 +53,16 @@ internal sealed class SmartMemoryPoolAllocation<T> : CriticalFinalizerObject, ID
 
     private T[] _array;
     private volatile SmartMemoryPoolAllocation<T>? _next;
-    public ConcurrencyNativeRefList<SmartMemoryPoolAllocationPart<T>> Parts;
+    public NativeConcurrencyRefPool<SmartMemoryPoolAllocationPart<T>> Parts;
+    private readonly ConcurrencyIndex _childIndex;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public SmartMemoryPoolAllocation(int size)
     {
         _array = GC.AllocateUninitializedArray<T>((int)BitOperations.RoundUpToPowerOf2((uint)size), true);
         Memory = new(_array);
-        Parts = new(size);
-        Parts.Add(new SmartMemoryPoolAllocationPart<T>(0, Memory.Length));
+        Parts = NativeConcurrencyRefPool<SmartMemoryPoolAllocationPart<T>>.Create();
+        _childIndex = Parts.Rent(new SmartMemoryPoolAllocationPart<T>(0, Memory.Length));
     }
 
     public Memory<T> Memory
@@ -70,12 +71,6 @@ internal sealed class SmartMemoryPoolAllocation<T> : CriticalFinalizerObject, ID
         get;
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         private set;
-    }
-
-    private ref SmartMemoryPoolAllocationPart<T> Child
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => ref Parts[0];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -103,10 +98,11 @@ internal sealed class SmartMemoryPoolAllocation<T> : CriticalFinalizerObject, ID
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private bool TryRentFromChild(int size, [NotNullWhen(true)] out SmartMemoryOwner<T>? owner)
     {
-        int index = 0;
-        while (index != -1)
+        ConcurrencyIndex index = _childIndex;
+        do
         {
-            ref var current = ref Parts[index];
+            using LockRefItem<SmartMemoryPoolAllocationPart<T>> @lock = Parts[index];
+            ref var current = ref @lock.Value;
             if (current.TryRent(this, size))
             {
                 owner = new(this, index);
@@ -114,7 +110,7 @@ internal sealed class SmartMemoryPoolAllocation<T> : CriticalFinalizerObject, ID
             }
 
             index = current.Next;
-        }
+        } while (index != ConcurrencyIndex.Null);
 
         owner = null;
         return false;
@@ -175,16 +171,16 @@ internal struct SmartMemoryPoolAllocationPartRange(int start, int end)
 
 internal struct SmartMemoryPoolAllocationPart<T>
 {
-    public volatile int Next;
+    public ConcurrencyIndex Next;
     public long RangeLong;
     public volatile bool Used;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public SmartMemoryPoolAllocationPart(int start, int end, int next = -1)
+    public SmartMemoryPoolAllocationPart(int start, int end, ConcurrencyIndex? next = null)
     {
         var range = new SmartMemoryPoolAllocationPartRange(start, end);
         RangeLong = SmartMemoryPoolAllocationPartRange.ToLong(ref range);
-        Next = next;
+        Next = next ?? ConcurrencyIndex.Null;
     }
 }
 
@@ -216,14 +212,6 @@ internal static class SmartMemoryPoolAllocationPartExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private ref SmartMemoryPoolAllocationPart<T> GetNext(SmartMemoryPoolAllocation<T> allocation)
-        {
-            return ref part.Next is var next && next != -1
-                ? ref allocation.Parts[next]
-                : ref Unsafe.NullRef<SmartMemoryPoolAllocationPart<T>>();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public Memory<T> GetMemory(SmartMemoryPoolAllocation<T> allocation)
         {
             var range = part.RangeCopy;
@@ -233,7 +221,7 @@ internal static class SmartMemoryPoolAllocationPartExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public bool TryRent(SmartMemoryPoolAllocation<T> allocation, int size)
         {
-            if (!part.TryCheckMerge(allocation, size))
+            if (!part.TryRentWithMerge(allocation, size))
             {
                 return false;
             }
@@ -243,14 +231,14 @@ internal static class SmartMemoryPoolAllocationPartExtensions
             {
                 var next = new SmartMemoryPoolAllocationPart<T>(endUsed, part.Range.End, part.Next);
                 part.Range.End = endUsed;
-                part.Next = allocation.Parts.Add(next);
+                part.Next = allocation.Parts.Rent(next);
             }
 
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private bool TryCheckMerge(SmartMemoryPoolAllocation<T> allocation, int size)
+        private bool TryRentWithMerge(SmartMemoryPoolAllocation<T> allocation, int size)
         {
             if (!part.TryUsed())
             {
@@ -262,12 +250,17 @@ internal static class SmartMemoryPoolAllocationPartExtensions
                 return true;
             }
 
-            ref var next = ref part.GetNext(allocation);
-            if (!Unsafe.IsNullRef(ref next) && next.TryCheckMerge(allocation, size - part.Size))
+            if (part.Next != ConcurrencyIndex.Null)
             {
-                part.Range.End = next.Range.End;
-                part.Next = next.Next;
-                return true;
+                using var next = allocation.Parts[part.Next];
+                if (next.Value.TryRentWithMerge(allocation, size - part.Size))
+                {
+                    part.Range.End = next.Value.Range.End;
+                    var lastNext = part.Next;
+                    part.Next = next.Value.Next;
+                    allocation.Parts.Return(lastNext);
+                    return true;
+                }
             }
 
             part.UnUsed();
@@ -293,14 +286,15 @@ internal sealed class SmartMemoryOwner<T> : CriticalFinalizerObject, IMemoryOwne
 {
     private bool _disposed;
     private readonly SmartMemoryPoolAllocation<T> _allocation;
-    private readonly int _part;
+    private readonly ConcurrencyIndex _part;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    internal SmartMemoryOwner(SmartMemoryPoolAllocation<T> allocation, int part)
+    internal SmartMemoryOwner(SmartMemoryPoolAllocation<T> allocation, ConcurrencyIndex part)
     {
         _allocation = allocation;
         _part = part;
-        Memory = _allocation.Parts[part].GetMemory(_allocation);
+        using var concurrencyRefItem = _allocation.Parts[part];
+        Memory = concurrencyRefItem.Value.GetMemory(_allocation);
     }
 
     public Memory<T> Memory
@@ -333,6 +327,7 @@ internal sealed class SmartMemoryOwner<T> : CriticalFinalizerObject, IMemoryOwne
     private void DisposeCore()
     {
         Memory.Span.Clear();
-        _allocation.Parts[_part].UnUsed();
+        using var concurrencyRefItem = _allocation.Parts[_part];
+        concurrencyRefItem.Value.UnUsed();
     }
 }

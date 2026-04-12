@@ -7,6 +7,7 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 [MustDisposeResource]
 [DebuggerDisplay("Count = {Count}")]
 [CollectionBuilder(typeof(MemoryListBuilder), nameof(MemoryListBuilder.Create))]
+[method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
 {
     [MustDisposeResource]
@@ -80,7 +81,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
         get;
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         set;
-    } = MemoryPool<T>.Shared.Rent(capacity);
+    } = SmartMemoryPool<T>.Shared.Rent(capacity);
 
     private Memory<T> OriginalMemory
     {
@@ -126,7 +127,7 @@ public sealed class MemoryList<T>(int capacity = -1) : IMemoryList<T>
         if (OriginalCount < Count)
         {
             using var lastMemoryOwner = MemoryOwner;
-            MemoryOwner = MemoryPool<T>.Shared.Rent(Count);
+            MemoryOwner = SmartMemoryPool<T>.Shared.Rent(Count);
             lastMemoryOwner.Memory.CopyTo(OriginalMemory);
         }
     }

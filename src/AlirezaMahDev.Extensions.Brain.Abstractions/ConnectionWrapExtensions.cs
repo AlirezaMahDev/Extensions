@@ -36,17 +36,6 @@ public static class ConnectionWrapExtensions
                 wrap.Nerve);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public CellRefReadOnlyBlock<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrap()
-        {
-            using var @lock = wrap.Location.ReadLock();
-            var count = @lock.RefReadOnlyValue.Count;
-            return count > 0 && wrap.ChildWrap is { HasValue: true } childWrap
-                ? new(count,
-                    CellWrap<ConnectionValue<TLink>, TData, TLink>.GetConnectionsWrapCore(childWrap.Value))
-                : CellRefReadOnlyBlock<CellWrap<ConnectionValue<TLink>, TData, TLink>>.Empty;
-        }
-
         public DataOffset? NextUnloadItem
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -140,10 +129,26 @@ public static class ConnectionWrapExtensions
         where TLink : unmanaged, ICellLink<TLink>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private static IEnumerable<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapCore(
-            CellWrap<ConnectionValue<TLink>, TData, TLink> cellWrap)
+        public MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>>? GetConnectionsWrapMemory()
         {
-            Optional<CellWrap<ConnectionValue<TLink>, TData, TLink>> current = cellWrap;
+            int length = wrap.Location.ReadLock((scoped ref readonly x) => x.Count);
+            if (length == 0)
+            {
+                return null;
+            }
+            var result = MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>>.Create(length);
+            int index = 0;
+            foreach (var item in wrap.GetConnectionsWrap())
+            {
+                result[index++] = item;
+            }
+            return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public IEnumerable<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrap()
+        {
+            Optional<CellWrap<ConnectionValue<TLink>, TData, TLink>> current = wrap.ChildWrap;
             while (current.HasValue)
             {
                 yield return current.Value;
