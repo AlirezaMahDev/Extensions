@@ -74,11 +74,11 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool EnterReadLock(int timeout = -1, CancellationToken cancellationToken = default)
+    public bool TryEnterReadLock(int timeout = -1, CancellationToken cancellationToken = default)
     {
         SpinWait spinWait = default;
         var start = Environment.TickCount64;
-        while (!cancellationToken.IsCancellationRequested && (timeout < 0 || Environment.TickCount64 - start < timeout))
+        do
         {
             var lastStateLong = Interlocked.Read(ref _state);
             ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
@@ -99,14 +99,13 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
             }
 
             return true;
-        }
-
+        } while (!cancellationToken.IsCancellationRequested && (timeout < 0 || Environment.TickCount64 - start < timeout));
         cancellationToken.ThrowIfCancellationRequested();
         return false;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public void ExitReadLock(CancellationToken cancellationToken = default)
+    public void TryExitReadLock(CancellationToken cancellationToken = default)
     {
         SpinWait spinWait = default;
         while (!cancellationToken.IsCancellationRequested)
@@ -136,14 +135,14 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool EnterWriteLock(int timeout = -1, CancellationToken cancellationToken = default)
+    public bool TryEnterWriteLock(int timeout = -1, CancellationToken cancellationToken = default)
     {
         SpinWait spinWait = default;
         var start = Environment.TickCount64;
         int currentManagedThreadId = Environment.CurrentManagedThreadId;
         try
         {
-            while (!cancellationToken.IsCancellationRequested && (timeout < 0 || Environment.TickCount64 - start < timeout))
+            do
             {
                 var lastStateLong = Interlocked.Read(ref _state);
                 ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
@@ -165,11 +164,15 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
                 }
 
                 break;
-            }
+            } while (!cancellationToken.IsCancellationRequested && (timeout < 0 || Environment.TickCount64 - start < timeout));
 
             cancellationToken.ThrowIfCancellationRequested();
+            if (Environment.TickCount64 - start > timeout)
+            {
+                return false;
+            }
 
-            while (!cancellationToken.IsCancellationRequested && (timeout < 0 || Environment.TickCount64 - start < timeout))
+            do
             {
 
                 var lastStateLong = Interlocked.Read(ref _state);
@@ -183,7 +186,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
                 }
 
                 spinWait.SpinOnce();
-            }
+            } while (!cancellationToken.IsCancellationRequested && (timeout < 0 || Environment.TickCount64 - start < timeout));
 
             cancellationToken.ThrowIfCancellationRequested();
             return false;
@@ -216,7 +219,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public void ExitWriteLock(CancellationToken cancellationToken = default)
+    public void TryExitWriteLock(CancellationToken cancellationToken = default)
     {
         SpinWait spinWait = default;
         while (!cancellationToken.IsCancellationRequested)
@@ -263,15 +266,17 @@ public static class ReaderWriterLockerExtensions
     extension(ref ReaderWriterLocker locker)
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ReaderWriterLockerReaderDispose EnterReadLockScope(int timeout = -1, CancellationToken cancellationToken = default)
+        public ReaderWriterLockerReaderDispose TryEnterReadLockScope(CancellationToken cancellationToken = default)
         {
-            return new(ref locker, timeout, cancellationToken);
+            locker.TryEnterReadLock(cancellationToken: cancellationToken);
+            return new(ref locker, cancellationToken);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ReaderWriterLockerWriterDispose EnterWriteLockScope(int timeout = -1, CancellationToken cancellationToken = default)
+        public ReaderWriterLockerWriterDispose TryEnterWriteLockScope(CancellationToken cancellationToken = default)
         {
-            return new(ref locker, timeout, cancellationToken);
+            locker.TryEnterWriteLock(cancellationToken: cancellationToken);
+            return new(ref locker, cancellationToken);
         }
     }
 }
@@ -282,17 +287,16 @@ public readonly ref struct ReaderWriterLockerWriterDispose : IDisposable
     private readonly CancellationToken _cancellationToken;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public ReaderWriterLockerWriterDispose(ref ReaderWriterLocker readerWriterLocker, int timeout = -1, CancellationToken cancellationToken = default)
+    public ReaderWriterLockerWriterDispose(ref ReaderWriterLocker readerWriterLocker, CancellationToken cancellationToken = default)
     {
         _readerWriterLocker = ref readerWriterLocker;
         _cancellationToken = cancellationToken;
-        _readerWriterLocker.EnterWriteLock(timeout, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        _readerWriterLocker.ExitWriteLock(_cancellationToken);
+        _readerWriterLocker.TryExitWriteLock(_cancellationToken);
     }
 }
 
@@ -302,16 +306,15 @@ public readonly ref struct ReaderWriterLockerReaderDispose : IDisposable
     private readonly CancellationToken _cancellationToken;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public ReaderWriterLockerReaderDispose(ref ReaderWriterLocker readerWriterLocker, int timeout = -1, CancellationToken cancellationToken = default)
+    public ReaderWriterLockerReaderDispose(ref ReaderWriterLocker readerWriterLocker, CancellationToken cancellationToken = default)
     {
         _readerWriterLocker = ref readerWriterLocker;
         _cancellationToken = cancellationToken;
-        _readerWriterLocker.EnterReadLock(timeout, cancellationToken);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        _readerWriterLocker.ExitReadLock(_cancellationToken);
+        _readerWriterLocker.TryExitReadLock(_cancellationToken);
     }
 }
