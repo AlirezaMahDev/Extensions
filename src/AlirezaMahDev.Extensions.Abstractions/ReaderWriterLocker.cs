@@ -34,10 +34,8 @@ public static class LockerStatusExtensions
 }
 
 [StructLayout(LayoutKind.Sequential, Size = 8, Pack = 1)]
-[method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-public struct ReaderWriterLocker(bool recursion) : ILockerStatus
+public struct ReaderWriterLocker : ILockerStatus
 {
-    private readonly bool _recursion = recursion;
     private long _state;
 
     public bool IsFree
@@ -45,7 +43,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            var lastStateLong = Interlocked.Read(ref _state);
+            var lastStateLong = Volatile.Read(ref _state);
             ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
             return lastState.WriterId == 0 && lastState.ReaderCount == 0;
         }
@@ -56,7 +54,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            var lastStateLong = Interlocked.Read(ref _state);
+            var lastStateLong = Volatile.Read(ref _state);
             ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
             return lastState.WriterId;
         }
@@ -67,7 +65,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            var lastStateLong = Interlocked.Read(ref _state);
+            var lastStateLong = Volatile.Read(ref _state);
             ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
             return lastState.ReaderCount;
         }
@@ -76,17 +74,30 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool TryEnterReadLock(int timeout = -1, CancellationToken cancellationToken = default)
     {
+        int maxRetry;
+        if (timeout == 0)
+        {
+            maxRetry = 1;
+            timeout = -1;
+        }
+        else
+        {
+            maxRetry = int.MaxValue;
+        }
+
+        int retry = 0;
         SpinWait spinWait = default;
         var start = Environment.TickCount64;
         do
         {
-            var lastStateLong = Interlocked.Read(ref _state);
+            var lastStateLong = Volatile.Read(ref _state);
             ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
             var newStateLong = lastStateLong;
             ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
             if (lastState.WriterId != 0)
             {
                 spinWait.SpinOnce();
+                retry++;
                 continue;
             }
 
@@ -95,11 +106,12 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
             if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
             {
                 spinWait.SpinOnce();
+                retry++;
                 continue;
             }
 
             return true;
-        } while (!cancellationToken.IsCancellationRequested && (timeout < 0 || Environment.TickCount64 - start < timeout));
+        } while (!cancellationToken.IsCancellationRequested && retry < maxRetry && (timeout < 0 || Environment.TickCount64 - start < timeout));
         cancellationToken.ThrowIfCancellationRequested();
         return false;
     }
@@ -110,7 +122,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
         SpinWait spinWait = default;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var lastStateLong = Interlocked.Read(ref _state);
+            var lastStateLong = Volatile.Read(ref _state);
             ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
             var newStateLong = lastStateLong;
             ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
@@ -137,6 +149,18 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool TryEnterWriteLock(int timeout = -1, CancellationToken cancellationToken = default)
     {
+        int maxRetry;
+        if (timeout == 0)
+        {
+            maxRetry = 1;
+            timeout = -1;
+        }
+        else
+        {
+            maxRetry = int.MaxValue;
+        }
+
+        int retry = 0;
         SpinWait spinWait = default;
         var start = Environment.TickCount64;
         int currentManagedThreadId = Environment.CurrentManagedThreadId;
@@ -144,7 +168,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
         {
             do
             {
-                var lastStateLong = Interlocked.Read(ref _state);
+                var lastStateLong = Volatile.Read(ref _state);
                 ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
                 var newStateLong = lastStateLong;
                 ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
@@ -152,6 +176,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
                 if (lastState.WriterId != 0)
                 {
                     spinWait.SpinOnce();
+                    retry++;
                     continue;
                 }
 
@@ -160,22 +185,44 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
                 if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
                 {
                     spinWait.SpinOnce();
+                    retry++;
                     continue;
                 }
 
                 break;
-            } while (!cancellationToken.IsCancellationRequested && (timeout < 0 || Environment.TickCount64 - start < timeout));
+            } while (!cancellationToken.IsCancellationRequested && retry < maxRetry && (timeout < 0 || Environment.TickCount64 - start < timeout));
 
             cancellationToken.ThrowIfCancellationRequested();
-            if (Environment.TickCount64 - start > timeout)
+            if (timeout >= 0 && Environment.TickCount64 - start > timeout)
             {
+                while (true)
+                {
+                    var lastStateLong = Volatile.Read(ref _state);
+                    ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
+                    var newStateLong = lastStateLong;
+                    ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
+
+                    if (lastState.WriterId != currentManagedThreadId)
+                    {
+                        return false;
+                    }
+
+                    newState.WriterId = 0;
+
+                    if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
+                    {
+                        spinWait.SpinOnce();
+                        continue;
+                    }
+                    break;
+                }
                 return false;
             }
 
             do
             {
 
-                var lastStateLong = Interlocked.Read(ref _state);
+                var lastStateLong = Volatile.Read(ref _state);
                 ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
                 var newStateLong = lastStateLong;
                 ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
@@ -186,7 +233,8 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
                 }
 
                 spinWait.SpinOnce();
-            } while (!cancellationToken.IsCancellationRequested && (timeout < 0 || Environment.TickCount64 - start < timeout));
+                retry++;
+            } while (!cancellationToken.IsCancellationRequested && retry < maxRetry && (timeout < 0 || Environment.TickCount64 - start < timeout));
 
             cancellationToken.ThrowIfCancellationRequested();
             return false;
@@ -195,7 +243,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
         {
             while (true)
             {
-                var lastStateLong = Interlocked.Read(ref _state);
+                var lastStateLong = Volatile.Read(ref _state);
                 ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
                 var newStateLong = lastStateLong;
                 ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
@@ -224,7 +272,7 @@ public struct ReaderWriterLocker(bool recursion) : ILockerStatus
         SpinWait spinWait = default;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var lastStateLong = Interlocked.Read(ref _state);
+            var lastStateLong = Volatile.Read(ref _state);
             ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
             var newStateLong = lastStateLong;
             ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
@@ -266,14 +314,14 @@ public static class ReaderWriterLockerExtensions
     extension(ref ReaderWriterLocker locker)
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ReaderWriterLockerReaderDispose TryEnterReadLockScope(CancellationToken cancellationToken = default)
+        public ReaderWriterLockerReaderDispose EnterReadLockScope(CancellationToken cancellationToken = default)
         {
             locker.TryEnterReadLock(cancellationToken: cancellationToken);
             return new(ref locker, cancellationToken);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public ReaderWriterLockerWriterDispose TryEnterWriteLockScope(CancellationToken cancellationToken = default)
+        public ReaderWriterLockerWriterDispose EnterWriteLockScope(CancellationToken cancellationToken = default)
         {
             locker.TryEnterWriteLock(cancellationToken: cancellationToken);
             return new(ref locker, cancellationToken);

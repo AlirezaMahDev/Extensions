@@ -20,7 +20,7 @@ internal sealed unsafe class DataMapFilePartCache : SafeHandle, IDataMapFilePart
     public ulong AccessCount
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => Interlocked.Read(ref _accessCount);
+        get => Volatile.Read(ref _accessCount);
     }
 
     public bool Accessed

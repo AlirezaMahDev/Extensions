@@ -12,19 +12,20 @@ public readonly struct ConcurrencyIndex(int shardingIndex, int shardingItemIndex
     public readonly int ShardingIndex = shardingIndex;
     public readonly int ShardingItemIndex = shardingItemIndex;
 
-    private ref long Long
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static ref ConcurrencyIndex FromRefLong(ref long value) =>
+        ref Unsafe.As<long, ConcurrencyIndex>(ref value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public readonly ref long ToRefLong()
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return ref Unsafe.As<ConcurrencyIndex, long>(ref Unsafe.AsRef(in this));
-        }
+        return ref Unsafe.As<ConcurrencyIndex, long>(ref Unsafe.AsRef(in this));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool Equals(scoped ref readonly ConcurrencyIndex other)
     {
-        return Long == other.Long;
+        return ToRefLong() == other.ToRefLong();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -220,10 +221,12 @@ where TConcurrencyRefEnumerator : ILockRefEnumerator<TConcurrencyRefEnumerator, 
 public interface IConcurrencyRefBag<TSelf, T> : IConcurrencyRefIndexable<TSelf, T>
     where TSelf : IConcurrencyRefBag<TSelf, T>, allows ref struct
 {
-    ConcurrencyIndex Add(in T value);
+    ConcurrencyIndex TryAdd(in T value);
     bool TryGet(in ConcurrencyIndex index, [NotNullWhen(true)] out LockRefItem<T> result);
-    bool Add(Span<ConcurrencyIndex> indices, params ReadOnlySpan<T> values);
-    bool Remove(in ConcurrencyIndex index, [NotNullWhen(true)] out T? result);
+    bool TryGet([NotNullWhen(true)] out LockRefItem<T> result);
+    bool TryAdd(Span<ConcurrencyIndex> indices, params ReadOnlySpan<T> values);
+    bool TryRemove(in ConcurrencyIndex index, [NotNullWhen(true)] out T? result);
+    bool TryRemove([NotNullWhen(true)] out T? result);
     void Clean();
 }
 
@@ -298,13 +301,15 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
     private NativeRefList<NativeLockRefList<T>> _sharding;
 
     private volatile int _length;
-    private static readonly int ShardingCount = Environment.ProcessorCount * 4;
+    private static readonly int ShardingCount = Environment.ProcessorCount;
+    private static readonly int SharingGap = 4;
+    private static readonly int SharingLength = ShardingCount * SharingGap;
     private static int SharingId
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            return Environment.CurrentManagedThreadId & ShardingCount;
+            return Environment.CurrentManagedThreadId % ShardingCount * SharingGap;
         }
     }
 
@@ -312,24 +317,29 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
     public NativeConcurrencyRefBag(int capacity, bool init)
     {
         _locker = new();
-        _sharding = NativeRefList<NativeLockRefList<T>>.Create(ShardingCount, true);
+        _sharding = NativeRefList<NativeLockRefList<T>>.Create(SharingLength, true);
         for (var index = 0; index < _sharding.Length; index++)
         {
             _sharding[index] = NativeLockRefList<T>.Create(capacity, init);
         }
     }
 
-    private ref NativeLockRefList<T> GetFreeSharding()
+    private ref NativeLockRefList<T> GetFreeSharding(out int shardingIndex, int gepIndex = 0)
     {
-        var index = SharingId;
+        SpinWait spin = default;
+        var sharingId = SharingId;
+        int sharingGapIndex = gepIndex;
         while (true)
         {
-            ref var sharding = ref _sharding[index];
-            if (sharding.IsFree)
+            shardingIndex = (sharingId + sharingGapIndex) % SharingLength;
+            ref var shading = ref _sharding[shardingIndex];
+            if (shading.IsFree)
             {
-                return ref sharding;
+                return ref shading;
             }
-            index = (index + 1) & ShardingCount;
+            sharingGapIndex++;
+            if (sharingGapIndex % SharingLength == 0)
+                spin.SpinOnce();
         }
     }
 
@@ -338,7 +348,7 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _sharding[index.ShardingIndex][index.ShardingItemIndex];
         }
     }
@@ -346,8 +356,16 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool TryGet(in ConcurrencyIndex index, [NotNullWhen(true)] out LockRefItem<T> result)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return _sharding[index.ShardingIndex].TryGet(index.ShardingItemIndex, out result);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool TryGet([NotNullWhen(true)] out LockRefItem<T> result)
+    {
+        using var @lock = _locker.EnterReadLockScope();
+        ref var sharing = ref GetFreeSharding(out var sharingId);
+        return sharing.TryGet(sharing.Length - 1, out result);
     }
 
     public int Length
@@ -355,7 +373,7 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _length;
         }
     }
@@ -363,23 +381,23 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int GetShardingLength()
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return _sharding.Length;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int GetShardingItemsLength(int shardingIndex)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return _sharding[shardingIndex].Length;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public ConcurrencyIndex Add(in T value)
+    public ConcurrencyIndex TryAdd(in T value)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
-        int sharingId = SharingId;
-        var shardingIndex = _sharding[sharingId].TryAdd(in value);
+        using var @lock = _locker.EnterReadLockScope();
+        ref var sharing = ref GetFreeSharding(out var sharingId);
+        var shardingIndex = sharing.TryAdd(in value);
         if (shardingIndex == -1)
         {
             return new(-1, -1);
@@ -389,29 +407,29 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Add(Span<ConcurrencyIndex> indices, params ReadOnlySpan<T> values)
+    public bool TryAdd(Span<ConcurrencyIndex> indices, params ReadOnlySpan<T> values)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
-        int sharingId = SharingId;
-        var shardingIndex = _sharding[sharingId].TryAdd(values);
+        using var @lock = _locker.EnterReadLockScope();
+        ref var sharing = ref GetFreeSharding(out var sharingId);
+        var shardingIndex = sharing.TryAdd(values);
         if (shardingIndex == -1)
         {
             return false;
         }
         Interlocked.Add(ref _length, indices.Length);
-        Span<ConcurrencyIndex> concurrencyIndices = stackalloc ConcurrencyIndex[indices.Length];
         for (var i = 0; i < indices.Length; i++)
         {
-            concurrencyIndices[i] = new ConcurrencyIndex(sharingId, shardingIndex + i);
+            indices[i] = new ConcurrencyIndex(sharingId, shardingIndex + i);
         }
         return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Insert(in int index, in T value)
+    public bool Insert(int index, in T value)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
-        if (_sharding[SharingId].TryInsert(in index, in value))
+        using var @lock = _locker.EnterReadLockScope();
+        ref var sharing = ref GetFreeSharding(out _);
+        if (sharing.TryInsert(index, in value))
         {
             Interlocked.Increment(ref _length);
             return true;
@@ -420,10 +438,11 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Insert(in int index, params ReadOnlySpan<T> values)
+    public bool Insert(int index, params ReadOnlySpan<T> values)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
-        if (_sharding[SharingId].TryInsert(in index, values))
+        using var @lock = _locker.EnterReadLockScope();
+        ref var sharing = ref GetFreeSharding(out _);
+        if (sharing.TryInsert(index, values))
         {
             Interlocked.Add(ref _length, values.Length);
             return true;
@@ -432,10 +451,10 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Remove(in ConcurrencyIndex index, [NotNullWhen(true)] out T result)
+    public bool TryRemove(in ConcurrencyIndex index, [NotNullWhen(true)] out T result)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
-        if (_sharding[index.ShardingIndex].TryRemove(in index.ShardingItemIndex, out result))
+        using var @lock = _locker.EnterReadLockScope();
+        if (_sharding[index.ShardingIndex].TryRemove(index.ShardingItemIndex, out result))
         {
             Interlocked.Decrement(ref _length);
             return true;
@@ -444,16 +463,39 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool TryRemove([NotNullWhen(true)] out T result)
+    {
+        int sharingGapIndex = 1;
+        SpinWait spinWait = default;
+        while (Length > 0)
+        {
+            using var @lock = _locker.EnterReadLockScope();
+            ref var sharing = ref GetFreeSharding(out var sharingId, sharingGapIndex);
+            if (sharing.TryRemove(sharing.Length - 1, out result))
+            {
+                Interlocked.Decrement(ref _length);
+                return true;
+            }
+
+            sharingGapIndex++;
+            if (sharingGapIndex % SharingLength == 0)
+                spinWait.SpinOnce();
+        }
+        result = default;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public ConcurrencyRefIndexableEnumerator<NativeConcurrencyRefBag<T>, T> GetEnumerator()
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return new(this);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Clean()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         for (var index = 0; index < _sharding.Length; index++)
         {
             _sharding[index].Clean();
@@ -464,7 +506,7 @@ public struct NativeConcurrencyRefBag<T> : IConcurrencyRefBag<NativeConcurrencyR
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         for (var index = 0; index < _sharding.Length; index++)
         {
             _sharding[index].Dispose();
@@ -489,7 +531,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _stack.Length;
         }
     }
@@ -499,7 +541,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _bag[index];
         }
     }
@@ -507,7 +549,7 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _stack.Dispose();
         _bag.Dispose();
     }
@@ -515,20 +557,20 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool TryPop([NotNullWhen(true)] out T result)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         if (!_stack.TryPop(out var index))
         {
             result = default;
             return false;
         }
 
-        return _bag.Remove(index, out result);
+        return _bag.TryRemove(index, out result);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool TryPeek([NotNullWhen(true)] out ConcurrencyRefIndexableItem<NativeConcurrencyRefStack<T>, T> result)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         if (!_stack.TryPeek(out var index))
         {
             result = default;
@@ -542,14 +584,14 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool TryPush(in T value)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _stack.TryPush(_bag.Add(in value));
+        using var @lock = _locker.EnterWriteLockScope();
+        return _stack.TryPush(_bag.TryAdd(in value));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Clean()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _stack.Clean();
         _bag.Clean();
     }
@@ -557,21 +599,21 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public ConcurrencyRefIndexableEnumerator<NativeConcurrencyRefStack<T>, T> GetEnumerator()
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return new(this);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int GetShardingLength()
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return _bag.GetShardingLength();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int GetShardingItemsLength(int shardingIndex)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return _bag.GetShardingItemsLength(shardingIndex);
     }
 }
@@ -592,7 +634,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _bag.Length;
         }
     }
@@ -602,7 +644,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _bag[index];
         }
     }
@@ -610,7 +652,7 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool TryPeek([NotNullWhen(true)] out ConcurrencyRefIndexableItem<NativeConcurrencyRefQueue<T>, T> result)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         if (!_queue.TryPeek(out var index))
         {
             result = default;
@@ -624,27 +666,27 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool TryDequeue([NotNullWhen(true)] out T result)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         if (!_queue.TryDequeue(out var index))
         {
             result = default;
             return false;
         }
 
-        return _bag.Remove(index, out result);
+        return _bag.TryRemove(index, out result);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public bool TryEnqueue(in T value)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _queue.TryEnqueue(_bag.Add(in value));
+        using var @lock = _locker.EnterWriteLockScope();
+        return _queue.TryEnqueue(_bag.TryAdd(in value));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _queue.Dispose();
         _bag.Clean();
     }
@@ -652,7 +694,7 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Clean()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _queue.Clean();
         _bag.Clean();
     }
@@ -660,21 +702,21 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public ConcurrencyRefIndexableEnumerator<NativeConcurrencyRefQueue<T>, T> GetEnumerator()
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return new(this);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int GetShardingLength()
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return _bag.GetShardingLength();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int GetShardingItemsLength(int shardingIndex)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return _bag.GetShardingItemsLength(shardingIndex);
     }
 }
@@ -687,7 +729,7 @@ where T : unmanaged
     public static NativeConcurrencyRefPool<T> Create(int capacity = 1, bool init = false) => new(capacity, init);
 
     private ReaderWriterLocker _locker = new();
-    private readonly NativeConcurrencyRefStack<ConcurrencyIndex> _free = new(capacity, init);
+    private readonly NativeConcurrencyRefBag<ConcurrencyIndex> _free = new(capacity, init);
     private readonly NativeConcurrencyRefBag<T> _used = new(capacity, init);
 
     public LockRefItem<T> this[ConcurrencyIndex index]
@@ -695,7 +737,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _used[index];
         }
     }
@@ -705,7 +747,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _used.Length;
         }
     }
@@ -713,42 +755,42 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public readonly ConcurrencyRefIndexableItem<NativeConcurrencyRefPool<T>, T> Rent()
     {
-        return _free.TryPop(out var item)
+        return _free.TryRemove(out var item)
             ? new(this, item)
-            : new(this, _used.Add(default(T)));
+            : new(this, _used.TryAdd(default(T)));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public readonly void Return(ConcurrencyIndex index)
     {
-        _free.TryPush(index);
+        _free.TryAdd(index);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public ConcurrencyRefIndexableEnumerator<NativeConcurrencyRefPool<T>, T> GetEnumerator()
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return new(this);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int GetShardingLength()
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return _used.GetShardingLength();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public int GetShardingItemsLength(int shardingIndex)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return _used.GetShardingItemsLength(shardingIndex);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Clean()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _free.Clean();
         _used.Clean();
     }
@@ -756,7 +798,7 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _free.Dispose();
         _used.Dispose();
     }

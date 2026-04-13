@@ -221,10 +221,10 @@ public interface IRefList<TSelf, T> : IRefIndexable<TSelf, T>
 {
     int Add(in T value);
     int Add(params ReadOnlySpan<T> values);
-    bool Insert(in int index, in T value);
-    bool Insert(in int index, params ReadOnlySpan<T> values);
-    bool Remove(in int index, [NotNullWhen(true)] out T? result);
-    bool Remove(in int index, Span<T> result);
+    bool Insert(int index, in T value);
+    bool Insert(int index, params ReadOnlySpan<T> values);
+    bool Remove(int index, [NotNullWhen(true)] out T? result);
+    bool Remove(int index, Span<T> result);
     void Clean();
 }
 
@@ -390,7 +390,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Insert(in int index, in T value)
+    public bool Insert(int index, in T value)
     {
         if (index < 0 || index > Length)
             return false;
@@ -404,7 +404,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Insert(in int index, params ReadOnlySpan<T> values)
+    public bool Insert(int index, params ReadOnlySpan<T> values)
     {
         if (index < 0 || index > Length || values.Length == 0)
             return false;
@@ -418,7 +418,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Remove(in int index, [NotNullWhen(true)] out T result)
+    public bool Remove(int index, [NotNullWhen(true)] out T result)
     {
         if (index < 0 || index >= Length)
         {
@@ -434,7 +434,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Remove(in int index, Span<T> result)
+    public bool Remove(int index, Span<T> result)
     {
         if (index < 0 || index + result.Length > Length)
         {

@@ -58,12 +58,12 @@
 //         throw new NotImplementedException();
 //     }
 //
-//     public bool Insert(in int index, in CacheItem value)
+//     public bool Insert(int index, in CacheItem value)
 //     {
 //         throw new NotImplementedException();
 //     }
 //
-//     public bool Remove(in int index)
+//     public bool Remove(int index)
 //     {
 //         throw new NotImplementedException();
 //     }

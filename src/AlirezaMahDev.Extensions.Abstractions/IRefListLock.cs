@@ -293,13 +293,13 @@ where TLockRefEnumerator : ILockRefEnumerator<TLockRefEnumerator, T>, allows ref
 public interface ILockRefList<TSelf, T> : ILockRefIndexable<TSelf, T>
     where TSelf : ILockRefList<TSelf, T>, allows ref struct
 {
-    bool TryGet(in int index, [NotNullWhen(true)] out LockRefItem<T> result, int timeout = -1);
+    bool TryGet(int index, [NotNullWhen(true)] out LockRefItem<T> result, int timeout = -1);
     int TryAdd(in T value, int timeout = -1);
     int TryAdd(ReadOnlySpan<T> values, int timeout = -1);
-    bool TryInsert(in int index, in T value, int timeout = -1);
-    bool TryInsert(in int index, ReadOnlySpan<T> values, int timeout = -1);
-    bool TryRemove(in int index, [NotNullWhen(true)] out T? result, int timeout = -1);
-    bool TryRemove(in int index, Span<T> result, int timeout = -1);
+    bool TryInsert(int index, in T value, int timeout = -1);
+    bool TryInsert(int index, ReadOnlySpan<T> values, int timeout = -1);
+    bool TryRemove(int index, [NotNullWhen(true)] out T? result, int timeout = -1);
+    bool TryRemove(int index, Span<T> result, int timeout = -1);
     void Clean();
 }
 
@@ -337,8 +337,8 @@ public interface ILockRefQueue<TSelf, T> : ILockRefIndexable<TSelf, T>
 public interface ILockRefPool<TSelf, T> : ILockRefIndexable<TSelf, T>
     where TSelf : ILockRefPool<TSelf, T>, allows ref struct
 {
-    LockRefIndexableItem<TSelf, T> Rent();
-    void Return(int index);
+    bool TryRent(out LockRefIndexableItem<TSelf, T> item, int timeout = -1);
+    bool TryReturn(int index, int timeout = -1);
     void Clean();
 }
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -411,7 +411,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _list.Length;
         }
     }
@@ -421,70 +421,133 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            var @lock = Unsafe.AsRef(in this)._locker.TryEnterReadLockScope();
+            var @lock = Unsafe.AsRef(in this)._locker.EnterReadLockScope();
             return new(ref _list[index], @lock);
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryGet(in int index, [NotNullWhen(true)] out LockRefItem<T> result, int timeout = -1)
+    public bool TryGet(int index, [NotNullWhen(true)] out LockRefItem<T> result, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
-        if (index > 0 && index < Length)
+        if (!_locker.TryEnterReadLock(timeout))
         {
-            result = this[index];
-            return true;
+            result = default;
+            return false;
         }
-        result = default;
-        return false;
+        try
+        {
+            if (index >= 0 && index < _list.Length)
+            {
+                result = this[index];
+                return true;
+            }
+
+            result = default;
+            return false;
+        }
+        finally
+        {
+            _locker.TryExitReadLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public int TryAdd(in T value)
+    public int TryAdd(in T value, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _list.Add(in value);
+        if (!_locker.TryEnterWriteLock(timeout))
+            return -1;
+        try
+        {
+            return _list.Add(in value);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public int TryAdd(scoped ReadOnlySpan<T> values)
+    public int TryAdd(scoped ReadOnlySpan<T> values, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _list.Add(values);
+        if (!_locker.TryEnterWriteLock(timeout))
+            return -1;
+        try
+        {
+            return _list.Add(values);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryInsert(in int index, in T value)
+    public bool TryInsert(int index, in T value, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _list.Insert(in index, in value);
+        if (!_locker.TryEnterWriteLock(timeout))
+            return false;
+        try
+        {
+            return _list.Insert(index, in value);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryInsert(in int index, scoped ReadOnlySpan<T> values)
+    public bool TryInsert(int index, scoped ReadOnlySpan<T> values, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _list.Insert(in index, values);
+        if (!_locker.TryEnterWriteLock(timeout))
+            return false;
+        try
+        {
+            return _list.Insert(index, values);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryRemove(in int index, [NotNullWhen(true)] out T result)
+    public bool TryRemove(int index, [NotNullWhen(true)] out T result, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _list.Remove(in index, out result);
+        if (!_locker.TryEnterWriteLock(timeout))
+        {
+            result = default;
+            return false;
+        }
+        try
+        {
+            return _list.Remove(index, out result);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryRemove(in int index, Span<T> result)
+    public bool TryRemove(int index, Span<T> result, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _list.Remove(in index, result);
+        if (!_locker.TryEnterWriteLock(timeout))
+            return false;
+        try
+        {
+            return _list.Remove(index, result);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Clean()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _list.Clean();
     }
 
@@ -497,6 +560,7 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
+        using var @lock = _locker.EnterWriteLockScope();
         _list.Dispose();
     }
 }
@@ -542,7 +606,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _stack.Length;
         }
     }
@@ -552,7 +616,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            var @lock = Unsafe.AsRef(in this)._locker.TryEnterReadLockScope();
+            var @lock = Unsafe.AsRef(in this)._locker.EnterReadLockScope();
             return new(ref _stack[index], @lock);
         }
     }
@@ -560,48 +624,78 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _stack.Dispose();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryPop([NotNullWhen(true)] out T result)
+    public bool TryPop([NotNullWhen(true)] out T result, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _stack.TryPop(out result);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryPeek([NotNullWhen(true)] out LockRefIndexableItem<NativeLockRefStack<T>, T> result)
-    {
-        using var @lock = _locker.TryEnterReadLockScope();
-        if (_stack.TryPeek(out var refIndexableItem))
+        if (!_locker.TryEnterWriteLock(timeout))
         {
-            result = new(this, refIndexableItem.Index);
-            return true;
+            result = default;
+            return false;
         }
-        result = default;
-        return false;
+        try
+        {
+            return _stack.TryPop(out result);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryPush(in T value)
+    public bool TryPeek([NotNullWhen(true)] out LockRefIndexableItem<NativeLockRefStack<T>, T> result, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _stack.TryPush(value);
+        if (!_locker.TryEnterReadLock(timeout))
+        {
+            result = default;
+            return false;
+        }
+        try
+        {
+            if (_stack.TryPeek(out var refIndexableItem))
+            {
+                result = new(this, refIndexableItem.Index);
+                return true;
+            }
+            result = default;
+            return false;
+        }
+        finally
+        {
+            _locker.TryExitReadLock();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public bool TryPush(in T value, int timeout = -1)
+    {
+        if (!_locker.TryEnterWriteLock(timeout))
+            return false;
+        try
+        {
+            return _stack.TryPush(value);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Clean()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _stack.Clean();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public LockRefIndexableEnumerator<NativeLockRefStack<T>, T> GetEnumerator()
     {
-        using var @lock = _locker.TryEnterReadLockScope();
+        using var @lock = _locker.EnterReadLockScope();
         return new(this);
     }
 }
@@ -617,8 +711,9 @@ where T : unmanaged
     private readonly NativeRefQueue<T> _queue = new(capacity, init);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public readonly void Dispose()
+    public void Dispose()
     {
+        using var @lock = _locker.EnterWriteLockScope();
         _queue.Dispose();
     }
     public readonly bool IsFree
@@ -652,70 +747,102 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            using var @lock = _locker.TryEnterReadLockScope();
+            using var @lock = _locker.EnterReadLockScope();
             return _queue.Length;
         }
     }
 
-    public readonly LockRefItem<T> this[int index]
+    public LockRefItem<T> this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            var @lock = Unsafe.AsRef(in this)._locker.TryEnterReadLockScope();
+            var @lock = Unsafe.AsRef(in this)._locker.EnterReadLockScope();
             return new(ref _queue[index], @lock);
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryPeek([NotNullWhen(true)] out LockRefIndexableItem<NativeLockRefQueue<T>, T> result)
+    public bool TryPeek([NotNullWhen(true)] out LockRefIndexableItem<NativeLockRefQueue<T>, T> result, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterReadLockScope();
-        if (_queue.TryPeek(out var item))
+        if (!_locker.TryEnterReadLock(timeout))
         {
-            result = new(this, item.Index);
-            return true;
+            result = default;
+            return false;
         }
+        try
+        {
+            if (_queue.TryPeek(out var item))
+            {
+                result = new(this, item.Index);
+                return true;
+            }
 
-        result = default;
-        return false;
+            result = default;
+            return false;
+        }
+        finally
+        {
+            _locker.TryExitReadLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryDequeue([NotNullWhen(true)] out T result)
+    public bool TryDequeue([NotNullWhen(true)] out T result, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _queue.TryDequeue(out result);
+        if (!_locker.TryEnterWriteLock(timeout))
+        {
+            result = default;
+            return false;
+        }
+        try
+        {
+            return _queue.TryDequeue(out result);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryEnqueue(in T value)
+    public bool TryEnqueue(in T value, int timeout = -1)
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
-        return _queue.TryEnqueue(value);
+        if (!_locker.TryEnterWriteLock(timeout))
+            return false;
+        try
+        {
+            return _queue.TryEnqueue(value);
+        }
+        finally
+        {
+            _locker.TryExitWriteLock();
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Clean()
     {
-        using var @lock = _locker.TryEnterWriteLockScope();
+        using var @lock = _locker.EnterWriteLockScope();
         _queue.Clean();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public readonly LockRefIndexableEnumerator<NativeLockRefQueue<T>, T> GetEnumerator()
+    public LockRefIndexableEnumerator<NativeLockRefQueue<T>, T> GetEnumerator()
     {
+        using var @lock = _locker.EnterReadLockScope();
         return new(this);
     }
 }
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-public readonly struct NativeLockRefPool<T>(int capacity, bool init) : ILockRefPool<NativeLockRefPool<T>, T>, IDisposable
+public struct NativeLockRefPool<T>(int capacity, bool init) : ILockRefPool<NativeLockRefPool<T>, T>, IDisposable
 where T : unmanaged
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static NativeLockRefPool<T> Create(int capacity = 1, bool init = false) => new(capacity, init);
 
+    private ReaderWriterLocker _locker = new();
     private readonly NativeLockRefStack<int> _free = new(capacity, init);
     private readonly NativeLockRefList<T> _used = new(capacity, init);
 
@@ -724,6 +851,7 @@ where T : unmanaged
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
+            using var @lock = _locker.EnterReadLockScope();
             return _used[index];
         }
     }
@@ -753,11 +881,12 @@ where T : unmanaged
         }
     }
 
-    public readonly int Length
+    public int Length
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
+            using var @lock = _locker.EnterReadLockScope();
             return _used.Length;
         }
     }
@@ -765,33 +894,50 @@ where T : unmanaged
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Clean()
     {
+        using var @lock = _locker.EnterWriteLockScope();
         _free.Clean();
+        _used.Clean();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
+        using var @lock = _locker.EnterWriteLockScope();
         _free.Dispose();
         _used.Dispose();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public LockRefIndexableItem<NativeLockRefPool<T>, T> Rent()
+    public bool TryRent(out LockRefIndexableItem<NativeLockRefPool<T>, T> item, int timeout = -1)
     {
-        return _free.TryPop(out var index)
-            ? new(this, index)
-            : new(this, _used.TryAdd(default));
+        using var @lock = _locker.EnterReadLockScope();
+        if (_free.TryPop(out var index, timeout))
+        {
+            item = new(this, index);
+            return true;
+        }
+
+        var newIndex = _used.TryAdd(default, timeout);
+        if (newIndex == -1)
+        {
+            item = default;
+            return false;
+        }
+        item = new(this, newIndex);
+        return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public void Return(int index)
+    public bool TryReturn(int index, int timeout = -1)
     {
-        _free.TryPush(index);
+        using var @lock = _locker.EnterReadLockScope();
+        return _free.TryPush(index, timeout);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public LockRefIndexableEnumerator<NativeLockRefPool<T>, T> GetEnumerator()
     {
+        using var @lock = _locker.EnterReadLockScope();
         return new(this);
     }
 }

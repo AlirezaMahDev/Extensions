@@ -69,7 +69,7 @@
 //     }
 //
 //     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-//     public bool Insert(in int index, in CacheItem value)
+//     public bool Insert(int index, in CacheItem value)
 //     {
 //         using var @lock = _wrap.Location.WriteLock();
 //         if (@lock.RefValue.Capacity == @lock.RefValue.Count)
@@ -82,7 +82,7 @@
 //     }
 //
 //     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-//     public bool Remove(in int index)
+//     public bool Remove(int index)
 //     {
 //         using var @lock = _wrap.Location.WriteLock();
 //         var main = GetSpan(in @lock.RefValue);

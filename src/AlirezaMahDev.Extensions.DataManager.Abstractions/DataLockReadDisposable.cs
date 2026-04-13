@@ -27,7 +27,7 @@ public readonly ref struct DataLockReadDisposable<TValue> : IDisposable
             SpinWait spinner = default;
             while (!cancellationToken.IsCancellationRequested)
             {
-                var lastUlongLock = Interlocked.Read(ref ulongState);
+                var lastUlongLock = Volatile.Read(ref ulongState);
                 ref var lastLock = ref Unsafe.As<ulong, DataLock>(ref lastUlongLock);
                 var newUlongLock = lastUlongLock;
                 ref var newLock = ref Unsafe.As<ulong, DataLock>(ref newUlongLock);
@@ -104,7 +104,7 @@ public readonly ref struct DataLockReadDisposable<TValue> : IDisposable
             SpinWait spinner = default;
             while (!_cancellationToken.IsCancellationRequested)
             {
-                var lastUlongLock = Interlocked.Read(ref ulongLock);
+                var lastUlongLock = Volatile.Read(ref ulongLock);
                 ref var lastLock = ref Unsafe.As<ulong, DataLock>(ref lastUlongLock);
                 var newUlongLock = lastUlongLock;
                 ref var newLock = ref Unsafe.As<ulong, DataLock>(ref newUlongLock);
