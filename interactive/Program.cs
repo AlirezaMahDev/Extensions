@@ -7,6 +7,7 @@ using AlirezaMahDev.Extensions.Abstractions;
 
 for (int i = 0; i < 1000; i++)
 {
-    using var rent = SmartMemoryPool<int>.Shared.Rent(Random.Shared.Next(0, 1000000));
-    Console.WriteLine(rent.Memory.Length);
+    int size = Random.Shared.Next(0, 1000000);
+    using var rent = SmartMemoryPool<int>.Shared.Rent(size);
+    Console.WriteLine($"{rent.Memory.Length}=={size}");
 }

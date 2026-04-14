@@ -379,7 +379,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     public int Add(params ReadOnlySpan<T> values)
     {
         if (values.Length == 0)
-            return -1;
+            throw new Exception("Input count is 0");
         if (Length + values.Length > _capacity)
             Grow(values.Length);
         var span = new Span<T>(_pointer, _capacity);
@@ -393,7 +393,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     public bool Insert(int index, in T value)
     {
         if (index < 0 || index > Length)
-            return false;
+            throw new Exception("Invalid index");
         if (Length + 1 > _capacity)
             Grow(1);
         var span = new Span<T>(_pointer, _capacity);
@@ -407,7 +407,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     public bool Insert(int index, params ReadOnlySpan<T> values)
     {
         if (index < 0 || index > Length || values.Length == 0)
-            return false;
+            throw new Exception("Invalid index");
         if (Length + values.Length > _capacity)
             Grow(values.Length);
         var span = new Span<T>(_pointer, _capacity);
@@ -423,7 +423,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
         if (index < 0 || index >= Length)
         {
             result = default;
-            return false;
+            throw new Exception("Invalid index");
         }
 
         var span = new Span<T>(_pointer, _capacity);
@@ -438,7 +438,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     {
         if (index < 0 || index + result.Length > Length)
         {
-            return false;
+            throw new Exception("Invalid index");
         }
 
         var span = new Span<T>(_pointer, _capacity);

@@ -36,7 +36,7 @@ public class MemoryPoolBenchmark
     private const int Iterations = 10;
     private static readonly int[] Sizes = [256, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304];
 
-    private readonly MemoryPool<int> _smartPool = SmartMemoryPool<int>.Shared;
+    private readonly MemoryPool<int> _smartPool = SmartMemoryPool<int>.SharedNoClear;
     private readonly MemoryPool<int> _defaultPool = MemoryPool<int>.Shared;
 
     [Benchmark]
