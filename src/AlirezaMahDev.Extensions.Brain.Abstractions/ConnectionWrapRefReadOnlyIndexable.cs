@@ -1,24 +1,35 @@
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
-[method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-public sealed class ConnectionWrapRefReadOnlyIndexable<TData, TLink>(CellWrap<ConnectionValue<TLink>, TData, TLink> cellWrap) : IRefReadOnlyIndexable<
+public sealed class ConnectionWrapRefReadOnlyIndexable<TData, TLink> : IRefReadOnlyIndexable<
         ConnectionWrapRefReadOnlyIndexable<TData, TLink>, CellWrap<ConnectionValue<TLink>, TData, TLink>>,
     IDisposable
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    private readonly MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>> _memoryList = cellWrap.GetConnectionsWrapMemory();
+    private readonly INerve<TData, TLink> _nerve;
+    private readonly NativeRefList<DataOffset> _list;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public ConnectionWrapRefReadOnlyIndexable(CellWrap<ConnectionValue<TLink>, TData, TLink> cellWrap)
+    {
+        _nerve = cellWrap.Nerve;
+        int count = cellWrap.Location.ReadLock((scoped ref readonly x) => x.Count);
+        if (count == 0)
+        {
+            return;
+        }
+
+        _list = NativeRefList<DataOffset>.Create(count);
+        foreach (var item in cellWrap.GetConnectionsWrap())
+        {
+            _list.Add(item.Location.Offset);
+        }
+    }
 
     public int Length
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => _memoryList.Count;
-    }
-
-    public Memory<CellWrap<ConnectionValue<TLink>, TData, TLink>> Memory
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => _memoryList.Memory;
+        get => _list.Length;
     }
 
     public ref readonly CellWrap<ConnectionValue<TLink>, TData, TLink> this[int index]
@@ -26,7 +37,9 @@ public sealed class ConnectionWrapRefReadOnlyIndexable<TData, TLink>(CellWrap<Co
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            return ref _memoryList.Memory.Span[index];
+            DataLocation<ConnectionValue<TLink>>.Read(_nerve.Access, _list[index], out var location);
+            CellWrap<ConnectionValue<TLink>, TData, TLink> value = new(_nerve, location);
+            return ref new ReadOnlyMemoryValue<CellWrap<ConnectionValue<TLink>, TData, TLink>>(value).Value;
         }
     }
 
@@ -40,6 +53,6 @@ public sealed class ConnectionWrapRefReadOnlyIndexable<TData, TLink>(CellWrap<Co
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
-        _memoryList.Dispose();
+        _list.Dispose();
     }
 }

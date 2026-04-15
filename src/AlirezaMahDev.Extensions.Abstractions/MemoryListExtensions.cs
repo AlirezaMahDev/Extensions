@@ -71,4 +71,19 @@ public static class MemoryListExtensions
             return values;
         }
     }
+
+    extension<TSelf, T, TRefEnumerator>(TSelf self)
+        where TSelf : IRefEnumerable<TSelf, T, TRefEnumerator>, allows ref struct
+        where TRefEnumerator : IRefEnumerator<TRefEnumerator, T>, allows ref struct
+    {
+
+    }
+
+
+    extension<TSelf, T, TRefReadOnlyEnumerator>(TSelf self)
+        where TSelf : IRefReadOnlyEnumerable<TSelf, T, TRefReadOnlyEnumerator>, allows ref struct
+        where TRefReadOnlyEnumerator : IRefReadOnlyEnumerator<TRefReadOnlyEnumerator, T>, allows ref struct
+    {
+
+    }
 }

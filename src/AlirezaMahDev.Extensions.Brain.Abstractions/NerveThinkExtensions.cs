@@ -70,16 +70,19 @@ public static class NerveThinkExtensions
             await SmartParallel.ForAsync(0,
                 list.Length,
                 cancellationToken,
-                (memoryIndex, token) => INerve<TData, TLink>.ThinkCoreAsyncCore(depth,
-                    linkFunc,
-                    input,
-                    inputIndex,
-                    currentThink,
-                    resultThink,
-                    readOnlyIndexable.Memory[list[memoryIndex]],
-                    dataValue,
-                    linkValue,
-                    token));
+                (memoryIndex, token) =>
+                    INerve<TData, TLink>.ThinkCoreAsyncCore(depth,
+                        linkFunc,
+                        input,
+                        inputIndex,
+                        currentThink,
+                        resultThink,
+                        readOnlyIndexable,
+                        list[memoryIndex],
+                        dataValue,
+                        linkValue,
+                        token)
+                );
         }
 
         private static async ValueTask ThinkCoreAsyncCore(int depth,
@@ -88,17 +91,18 @@ public static class NerveThinkExtensions
             int inputIndex,
             Think<TData, TLink> currentThink,
             ThinkResult<TData, TLink> resultThink,
-            ReadOnlyMemory<CellWrap<ConnectionValue<TLink>, TData, TLink>> readOnlyMemory,
+            ConnectionWrapRefReadOnlyIndexable<TData, TLink> refReadOnlyIndexable,
+            Range range,
             ReadOnlyMemoryValue<TData> dataValue,
             ReadOnlyMemoryValue<TLink> linkValue,
             CancellationToken token)
         {
-            for (var readOnlyMemoryIndex = 0;
-                 readOnlyMemoryIndex < readOnlyMemory.Length;
-                 readOnlyMemoryIndex++)
+            int length = range.End.Value - range.Start.Value;
+            for (var readOnlyMemoryIndex = 0; readOnlyMemoryIndex < length; readOnlyMemoryIndex++)
             {
-                var nextConnection =
-                    readOnlyMemory.Span[readOnlyMemoryIndex];
+                var nextConnection = refReadOnlyIndexable
+                    .AsRefReadOnlyBlock<ConnectionWrapRefReadOnlyIndexable<TData, TLink>, CellWrap<ConnectionValue<TLink>, TData, TLink>>()
+                        [range][readOnlyMemoryIndex];
                 var nextThink = currentThink.Append(dataValue, linkValue, nextConnection);
                 if (resultThink.CanAdd(nextThink))
                 {

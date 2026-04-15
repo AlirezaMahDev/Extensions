@@ -60,12 +60,17 @@ public static class NerveSleepExtensions
             MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>> cellMemory,
             CancellationToken cancellationToken = default)
         {
-            cellMemory.Memory.Span.Sort((scoped ref readonly wrap) => new(
-                    wrap.NeuronWrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Data),
-                    wrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Link),
-                    wrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Score),
-                    wrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Weight)
-                ),
+            cellMemory.Memory.Span.Sort((scoped ref readonly x) =>
+                x.Location.UnsafeAccessRefReadOnly((scoped ref readonly connectionValue) =>
+                                new ThinkValue<TData, TLink>(
+                                    default,
+                                    connectionValue.Link,
+                                    connectionValue.Score,
+                                    connectionValue.Weight
+                                )) with
+                {
+                    Data = x.NeuronWrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Data)
+                },
                 comparisonChain.Comparison);
             SmartParallel.Invoke(cancellationToken,
                 [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]

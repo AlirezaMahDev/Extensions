@@ -11,5 +11,6 @@ public interface IRefList<TSelf, T> : IRefIndexable<TSelf, T>
     bool Insert(int index, params ReadOnlySpan<T> values);
     bool Remove(int index, [NotNullWhen(true)] out T? result);
     bool Remove(int index, Span<T> result);
-    void Clean();
+    void Clean();  
+    
 }
