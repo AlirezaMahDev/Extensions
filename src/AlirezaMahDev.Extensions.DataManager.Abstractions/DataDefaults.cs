@@ -8,6 +8,6 @@ public static class DataDefaults
     public const int PartSize = 1 << 16;
     public const int PartCount = FileSize / PartSize;
     public const long AllocMax = 1L << 30;
-    public const long AllocHigh = AllocMax - (AllocMax / 8);
-    public const long AllocNormal = AllocMax - (AllocMax / 4);
+    public const long AllocHigh = AllocMax - (AllocMax / 16);
+    public const long AllocNormal = AllocMax - (AllocMax / 8);
 }

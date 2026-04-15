@@ -198,6 +198,7 @@ internal sealed class DataMap : IDisposable, IDataMap
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         _disposed = true;
+        _cleanTokenSource.Cancel();
         _cleanTokenSource.Dispose();
         _thread.Join();
         _flushLock.Dispose();
