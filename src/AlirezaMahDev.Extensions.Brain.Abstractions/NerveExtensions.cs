@@ -9,6 +9,20 @@ public static class NerveExtensions
         where TLink : unmanaged, ICellLink<TLink>
     {
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+        public void ClearRefReadOnlyBlockCache()
+        {
+            foreach (var keyValuePair in nerve.RefReadOnlyBlockCache)
+            {
+                if (keyValuePair.Value.IsValueCreated)
+                {
+                    keyValuePair.Value.Value.Dispose();
+                }
+            }
+
+            nerve.RefReadOnlyBlockCache.Clear();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
         public Neuron FindOrAddNeuron(ref readonly TData data)
         {
             var cacheKey = INerve<TData, TLink>.CreateNeuronCacheKey(in data);

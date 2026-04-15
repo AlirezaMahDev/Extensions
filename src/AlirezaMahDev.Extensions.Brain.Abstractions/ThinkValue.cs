@@ -1,7 +1,7 @@
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public readonly ref struct ThinkValueRef<TData, TLink>(
+public readonly struct ThinkValue<TData, TLink>(
     TData data,
     TLink link,
     float score = float.MaxValue,

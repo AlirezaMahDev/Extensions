@@ -40,7 +40,7 @@ public static class DataLockWrapExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public void WriteLock<TState>(DataLockScopedRefAction<TValue, TState> action, scoped in TState state)
         {
-            using var lockScope = location.WriteLock(CancellationToken.None);
+            using var lockScope = location.WriteLock();
             action(ref lockScope.RefValue, in state);
         }
 
@@ -65,7 +65,7 @@ public static class DataLockWrapExtensions
         public TResult WriteLock<TState, TResult>(DataLockScopedRefFunc<TValue, TState, TResult> func,
             scoped in TState state)
         {
-            using var lockScope = location.WriteLock(CancellationToken.None);
+            using var lockScope = location.WriteLock();
             return func(ref lockScope.RefValue, in state);
         }
 
@@ -89,7 +89,7 @@ public static class DataLockWrapExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         public void ReadLock<TState>(ScopedRefReadOnlyAction<TValue, TState> action, scoped in TState state)
         {
-            using var lockScope = location.ReadLock(cancellationToken: CancellationToken.None);
+            using var lockScope = location.ReadLock();
             action(in lockScope.RefReadOnlyValue, in state);
         }
 
@@ -114,7 +114,7 @@ public static class DataLockWrapExtensions
         public TResult ReadLock<TState, TResult>(ScopedRefReadOnlyFunc<TValue, TState, TResult> func,
             scoped in TState state)
         {
-            using var lockScope = location.ReadLock(cancellationToken: CancellationToken.None);
+            using var lockScope = location.ReadLock();
             return func(in lockScope.RefReadOnlyValue, in state);
         }
 

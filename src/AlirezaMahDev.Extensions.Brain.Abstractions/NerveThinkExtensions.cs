@@ -53,22 +53,22 @@ public static class NerveThinkExtensions
             ReadOnlyMemoryValue<TLink> linkValue = linkFunc(previousData);
             var dataValue = nextData.ElementAt(0);
 
-            ThinkValueRef<TData, TLink> pair = new(dataValue.Value, linkValue.Value);
+            ThinkValue<TData, TLink> pair = new(dataValue.Value, linkValue.Value);
 
-            using var cellMemory = currentThink.ConnectionWrap.GetConnectionsWrapMemory();
-            if (cellMemory is null)
+            var readOnlyIndexable = currentThink.ConnectionWrap.GetConnectionWrapRefReadOnlyIndexable();
+            if (readOnlyIndexable.IsEmpty)
             {
                 return;
             }
 
-            using var memoryList = cellMemory.NearConnection(ref pair, depth);
-            if (memoryList.Count == 0)
+            using var list = readOnlyIndexable.NearConnection(ref pair, depth);
+            if (list.IsEmpty)
             {
                 return;
             }
 
             await SmartParallel.ForAsync(0,
-                memoryList.Count,
+                list.Length,
                 cancellationToken,
                 (memoryIndex, token) => INerve<TData, TLink>.ThinkCoreAsyncCore(depth,
                     linkFunc,
@@ -76,7 +76,7 @@ public static class NerveThinkExtensions
                     inputIndex,
                     currentThink,
                     resultThink,
-                    memoryList[memoryIndex],
+                    readOnlyIndexable.Memory[list[memoryIndex]],
                     dataValue,
                     linkValue,
                     token));

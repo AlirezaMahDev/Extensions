@@ -21,7 +21,7 @@ public static class NerveSleepExtensions
         private static void SleepCore(
             IProgressLogger progressLogger,
             CellWrap<ConnectionValue<TLink>, TData, TLink> cellWrap,
-            ScopedComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
+            ScopedComparisonChain<ThinkValue<TData, TLink>> comparisonChain,
             CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -31,7 +31,7 @@ public static class NerveSleepExtensions
 
             using var cellMemory = cellWrap.GetConnectionsWrapMemory();
 
-            if (cellMemory is null)
+            if (cellMemory.Count == 0)
             {
                 return;
             }
@@ -56,7 +56,7 @@ public static class NerveSleepExtensions
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
         private static void SelfSleep(IProgressLogger progressLogger,
             CellWrap<ConnectionValue<TLink>, TData, TLink> cellWrap,
-            ScopedComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
+            ScopedComparisonChain<ThinkValue<TData, TLink>> comparisonChain,
             MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>> cellMemory,
             CancellationToken cancellationToken = default)
         {
@@ -125,7 +125,7 @@ public static class NerveSleepExtensions
 
         [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
         private static void SubSleep(IProgressLogger progressLogger,
-            ScopedComparisonChain<ThinkValueRef<TData, TLink>> comparisonChain,
+            ScopedComparisonChain<ThinkValue<TData, TLink>> comparisonChain,
             MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>> cellMemory,
             CancellationToken cancellationToken)
         {

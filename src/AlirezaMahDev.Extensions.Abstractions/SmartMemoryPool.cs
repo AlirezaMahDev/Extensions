@@ -64,7 +64,9 @@ public sealed class SmartMemoryPool<T> : MemoryPool<T>
         {
             size = SmartMemoryPool.MinSize;
         }
-        return _allocations[BitOperations.Log2(BitOperations.RoundUpToPowerOf2((uint)size))].Value.Rent(size);
+        return size == 0
+            ? new SmartMemoryOwner<T>(-1)
+            : _allocations[BitOperations.Log2(BitOperations.RoundUpToPowerOf2((uint)size))].Value.Rent(size);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -211,7 +213,7 @@ internal sealed class SmartMemoryOwner<T>(int id) : IMemoryOwner<T>
     } = id;
 
     private bool _disposed;
-    private SmartMemoryPoolAllocation<T> _allocation = null!;
+    private SmartMemoryPoolAllocation<T>? _allocation;
     private ConcurrencyIndex _index;
 
     public Memory<T> Memory
@@ -220,7 +222,7 @@ internal sealed class SmartMemoryOwner<T>(int id) : IMemoryOwner<T>
         get;
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         internal set;
-    }
+    } = new([]);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     internal void Initializer(SmartMemoryPoolAllocation<T> allocation, ConcurrencyIndex index, int size)
@@ -239,6 +241,7 @@ internal sealed class SmartMemoryOwner<T>(int id) : IMemoryOwner<T>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void Dispose()
     {
+        if (_allocation is null) { return; }
         if (!Interlocked.CompareExchange(ref _disposed, true, false))
         {
             _allocation.UnUsed.TryAdd(_index);

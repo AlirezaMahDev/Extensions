@@ -16,7 +16,6 @@ public interface IRefEnumerator<TRefEnumerator, T>
     bool MoveNext();
 }
 
-
 public interface IRefReadOnlyEnumerator<TRefReadOnlyEnumerator, T>
     where TRefReadOnlyEnumerator : IRefReadOnlyEnumerator<TRefReadOnlyEnumerator, T>, allows ref struct
 {
@@ -40,7 +39,6 @@ public interface IRefEnumerable<TSelf, T, TRefEnumerator> : IRefEnumerableCore<T
     where TSelf : IRefEnumerable<TSelf, T, TRefEnumerator>, allows ref struct
     where TRefEnumerator : IRefEnumerator<TRefEnumerator, T>, allows ref struct;
 
-
 public interface IRefReadOnlyEnumerable<TSelf, T, TRefReadOnlyEnumerator> : IRefEnumerableCore<TRefReadOnlyEnumerator>
     where TSelf : IRefReadOnlyEnumerable<TSelf, T, TRefReadOnlyEnumerator>, allows ref struct
     where TRefReadOnlyEnumerator : IRefReadOnlyEnumerator<TRefReadOnlyEnumerator, T>, allows ref struct;
@@ -49,11 +47,11 @@ public interface IRefCountable<TSelf, T, TRefEnumerator> : IRefEnumerable<TSelf,
     where TSelf : IRefCountable<TSelf, T, TRefEnumerator>, allows ref struct
     where TRefEnumerator : IRefEnumerator<TRefEnumerator, T>, allows ref struct;
 
-
-public interface IRefReadOnlyCountable<TSelf, T, TRefReadOnlyEnumerator> : IRefReadOnlyEnumerable<TSelf, T, TRefReadOnlyEnumerator>, IRefLength
+public interface
+    IRefReadOnlyCountable<TSelf, T, TRefReadOnlyEnumerator> : IRefReadOnlyEnumerable<TSelf, T, TRefReadOnlyEnumerator>,
+    IRefLength
     where TSelf : IRefReadOnlyCountable<TSelf, T, TRefReadOnlyEnumerator>, allows ref struct
     where TRefReadOnlyEnumerator : IRefReadOnlyEnumerator<TRefReadOnlyEnumerator, T>, allows ref struct;
-
 
 public interface IRefIndexable<TSelf, T> : IRefCountable<TSelf, T, RefIndexableEnumerator<TSelf, T>>
     where TSelf : IRefIndexable<TSelf, T>, allows ref struct
@@ -65,7 +63,8 @@ public interface IRefIndexable<TSelf, T> : IRefCountable<TSelf, T, RefIndexableE
     }
 }
 
-public interface IRefReadOnlyIndexable<TSelf, T> : IRefReadOnlyCountable<TSelf, T, RefReadOnlyIndexableEnumerator<TSelf, T>>
+public interface
+    IRefReadOnlyIndexable<TSelf, T> : IRefReadOnlyCountable<TSelf, T, RefReadOnlyIndexableEnumerator<TSelf, T>>
     where TSelf : IRefReadOnlyIndexable<TSelf, T>, allows ref struct
 {
     ref readonly T this[int index]
@@ -77,7 +76,7 @@ public interface IRefReadOnlyIndexable<TSelf, T> : IRefReadOnlyCountable<TSelf, 
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 public ref struct RefIndexableEnumerator<TSelf, T>(TSelf self) : IRefEnumerator<RefIndexableEnumerator<TSelf, T>, T>
-where TSelf : IRefIndexable<TSelf, T>, allows ref struct
+    where TSelf : IRefIndexable<TSelf, T>, allows ref struct
 {
     private int _index = -1;
     private readonly TSelf _self = self;
@@ -97,8 +96,9 @@ where TSelf : IRefIndexable<TSelf, T>, allows ref struct
 }
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-public ref struct RefReadOnlyIndexableEnumerator<TSelf, T>(TSelf self) : IRefReadOnlyEnumerator<RefReadOnlyIndexableEnumerator<TSelf, T>, T>
-where TSelf : IRefReadOnlyIndexable<TSelf, T>, allows ref struct
+public ref struct RefReadOnlyIndexableEnumerator<TSelf, T>(TSelf self)
+    : IRefReadOnlyEnumerator<RefReadOnlyIndexableEnumerator<TSelf, T>, T>
+    where TSelf : IRefReadOnlyIndexable<TSelf, T>, allows ref struct
 {
     private int _index = -1;
     private readonly TSelf _self = self;
@@ -131,31 +131,29 @@ public interface IRefReadOnlyBlock<TSelf, T> : IRefReadOnlyIndexable<TSelf, T>
     TSelf Slice(int start, int length);
 }
 
-
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 public ref struct RefBlock<TSelf, T>(TSelf self) : IRefBlock<RefBlock<TSelf, T>, T>
-where TSelf : IRefIndexable<TSelf, T>, allows ref struct
+    where TSelf : IRefIndexable<TSelf, T>, allows ref struct
 {
     private readonly TSelf _self = self;
     private int _start;
-    private int _length;
 
     public readonly ref T this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            if (index >= _length)
-                throw new IndexOutOfRangeException($"${index} >= {_length}");
+            if (index >= Length)
+                throw new IndexOutOfRangeException($"${index} >= {Length}");
             return ref _self[_start + index];
         }
     }
 
-    public readonly int Length
+    public int Length
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get => _length;
-    }
+        get; private set;
+    } = self.Length;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public readonly RefIndexableEnumerator<RefBlock<TSelf, T>, T> GetEnumerator()
@@ -166,40 +164,39 @@ where TSelf : IRefIndexable<TSelf, T>, allows ref struct
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public RefBlock<TSelf, T> Slice(int start, int length)
     {
-        if (start + length > _length)
-            throw new IndexOutOfRangeException($"{start + length} > {_length}");
-        return this with { _start = _start + start, _length = length };
+        return start + length > Length
+            ? throw new IndexOutOfRangeException($"{start + length} > {Length}")
+            : (this with
+            {
+                _start = _start + start,
+                Length = length
+            });
     }
 }
 
-
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 public ref struct RefReadOnlyBlock<TSelf, T>(TSelf self) : IRefReadOnlyBlock<RefReadOnlyBlock<TSelf, T>, T>
-where TSelf : IRefReadOnlyIndexable<TSelf, T>, allows ref struct
+    where TSelf : IRefReadOnlyIndexable<TSelf, T>, allows ref struct
 {
     private readonly TSelf _self = self;
     private int _start;
-    private int _length;
 
     public readonly ref readonly T this[int index]
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
-            if (index >= _length)
-                throw new IndexOutOfRangeException($"{index} >= {_length}");
+            if (index >= Length)
+                throw new IndexOutOfRangeException($"{index} >= {Length}");
             return ref _self[_start + index];
         }
     }
 
-    public readonly int Length
+    public int Length
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            return _length;
-        }
-    }
+        get; private set;
+    } = self.Length;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public readonly RefReadOnlyIndexableEnumerator<RefReadOnlyBlock<TSelf, T>, T> GetEnumerator()
@@ -210,9 +207,13 @@ where TSelf : IRefReadOnlyIndexable<TSelf, T>, allows ref struct
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public RefReadOnlyBlock<TSelf, T> Slice(int start, int length)
     {
-        if (start + length > _length)
-            throw new IndexOutOfRangeException($"{start + length} > {_length}");
-        return this with { _start = _start + start, _length = length };
+        return start + length > Length
+            ? throw new IndexOutOfRangeException($"{start + length} > {Length}")
+            : (this with
+            {
+                _start = _start + start,
+                Length = length
+            });
     }
 }
 
@@ -249,11 +250,21 @@ public interface IRefLength
     }
 }
 
+public static class RefLengthExtensions
+{
+    extension<TSelf>(TSelf self)
+        where TSelf : IRefLength, allows ref struct
+    {
+        public bool IsEmpty => self.Length == 0;
+    }
+}
+
 public readonly ref struct RefEnumeratorToRefReadOnlyEnumerator<TRefEnumerator, T>(TRefEnumerator refEnumerator)
     : IRefReadOnlyEnumerator<RefEnumeratorToRefReadOnlyEnumerator<TRefEnumerator, T>, T>
     where TRefEnumerator : IRefEnumerator<TRefEnumerator, T>, allows ref struct
 {
     private readonly TRefEnumerator _refEnumerator = refEnumerator;
+
     public ref readonly T Current
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -271,11 +282,13 @@ public readonly ref struct RefIndexableItem<TSelf, T>(TSelf self, int index)
     where TSelf : IRefIndexable<TSelf, T>, allows ref struct
 {
     private readonly TSelf _self = self;
+
     public int Index
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get;
     } = index;
+
     public ref T Value
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -290,7 +303,7 @@ public interface IRefStack<TSelf, T> : IRefIndexable<TSelf, T>
     where TSelf : IRefStack<TSelf, T>, allows ref struct
 {
     bool TryPop([NotNullWhen(true)] out T? result);
-    bool TryPeek([NotNullWhen(true)] out RefIndexableItem<TSelf, T> result);
+    bool TryPeek(out RefIndexableItem<TSelf, T> result);
     bool TryPush(in T value);
     void Clean();
 }
@@ -298,12 +311,20 @@ public interface IRefStack<TSelf, T> : IRefIndexable<TSelf, T>
 public interface IRefQueue<TSelf, T> : IRefIndexable<TSelf, T>
     where TSelf : IRefQueue<TSelf, T>, allows ref struct
 {
-    bool TryPeek([NotNullWhen(true)] out RefIndexableItem<TSelf, T> result);
+    bool TryPeek(out RefIndexableItem<TSelf, T> result);
     bool TryDequeue([NotNullWhen(true)] out T? result);
     bool TryEnqueue(in T value);
     void Clean();
 }
 
+public static class NativeRefListCollectionBuilder
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static NativeRefList<T> Create<T>(ReadOnlySpan<T> readOnlySpan)
+        where T : unmanaged => NativeRefList<T>.Create(readOnlySpan);
+}
+
+[CollectionBuilder(typeof(NativeRefListCollectionBuilder), nameof(NativeRefListCollectionBuilder.Create))]
 public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposable
     where T : unmanaged
 {
@@ -312,6 +333,14 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static NativeRefList<T> Create(int capacity = 1, bool init = false) => new(capacity, init);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static NativeRefList<T> Create(params ReadOnlySpan<T> values)
+    {
+        var list = NativeRefList<T>.Create(values.Length, true);
+        values.CopyTo(list.Span);
+        return list;
+    }
 
     public readonly Span<T> Span
     {
@@ -333,6 +362,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
         NativeMemory.Clear(_pointer, byteCount);
         Length = init ? _capacity : 0;
     }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void Grow(int size)
     {
@@ -346,6 +376,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
             _capacity = lastCapacity;
             throw new OutOfMemoryException();
         }
+
         NativeMemory.Clear(_pointer + lastCapacity, newByteCount - oldByteCount);
     }
 
@@ -379,7 +410,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     public int Add(params ReadOnlySpan<T> values)
     {
         if (values.Length == 0)
-            throw new Exception("Input count is 0");
+            return -1;
         if (Length + values.Length > _capacity)
             Grow(values.Length);
         var span = new Span<T>(_pointer, _capacity);
@@ -393,7 +424,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     public bool Insert(int index, in T value)
     {
         if (index < 0 || index > Length)
-            throw new Exception("Invalid index");
+            return false;
         if (Length + 1 > _capacity)
             Grow(1);
         var span = new Span<T>(_pointer, _capacity);
@@ -407,7 +438,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     public bool Insert(int index, params ReadOnlySpan<T> values)
     {
         if (index < 0 || index > Length || values.Length == 0)
-            throw new Exception("Invalid index");
+            return false;
         if (Length + values.Length > _capacity)
             Grow(values.Length);
         var span = new Span<T>(_pointer, _capacity);
@@ -418,12 +449,12 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool Remove(int index, [NotNullWhen(true)] out T result)
+    public bool Remove(int index, out T result)
     {
         if (index < 0 || index >= Length)
         {
             result = default;
-            throw new Exception("Invalid index");
+            return false;
         }
 
         var span = new Span<T>(_pointer, _capacity);
@@ -438,7 +469,7 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
     {
         if (index < 0 || index + result.Length > Length)
         {
-            throw new Exception("Invalid index");
+            return false;
         }
 
         var span = new Span<T>(_pointer, _capacity);
@@ -471,13 +502,13 @@ public unsafe struct NativeRefList<T> : IRefList<NativeRefList<T>, T>, IDisposab
 }
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-public readonly struct NativeRefStack<T>(int capacity, bool init) : IRefStack<NativeRefStack<T>, T>, IDisposable
-where T : unmanaged
+public struct NativeRefStack<T>(int capacity, bool init) : IRefStack<NativeRefStack<T>, T>, IDisposable
+    where T : unmanaged
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static NativeRefStack<T> Create(int capacity = 1, bool init = false) => new(capacity, init);
 
-    private readonly NativeRefList<T> _list = new(capacity, init);
+    private NativeRefList<T> _list = new(capacity, init);
 
     public ref T this[int index]
     {
@@ -510,7 +541,7 @@ where T : unmanaged
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryPeek([NotNullWhen(true)] out RefIndexableItem<NativeRefStack<T>, T> result)
+    public bool TryPeek(out RefIndexableItem<NativeRefStack<T>, T> result)
     {
         if (_list.Length == 0)
         {
@@ -523,7 +554,7 @@ where T : unmanaged
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryPop([NotNullWhen(true)] out T result)
+    public bool TryPop(out T result)
     {
         if (_list.Length == 0)
         {
@@ -549,12 +580,14 @@ where T : unmanaged
 }
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-public readonly struct NativeRefQueue<T>(int capacity = 1, bool init = false) : IRefQueue<NativeRefQueue<T>, T>, IDisposable
-where T : unmanaged
+public struct NativeRefQueue<T>(int capacity = 1, bool init = false)
+    : IRefQueue<NativeRefQueue<T>, T>, IDisposable
+    where T : unmanaged
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static NativeRefQueue<T> Create(int capacity = 1, bool init = false) => new(capacity, init);
-    private readonly NativeRefList<T> _list = new(capacity, init);
+
+    private NativeRefList<T> _list = new(capacity, init);
 
     public int Length
     {
@@ -581,7 +614,7 @@ where T : unmanaged
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryDequeue([NotNullWhen(true)] out T result)
+    public bool TryDequeue(out T result)
     {
         if (_list.Length == 0)
         {
@@ -600,7 +633,7 @@ where T : unmanaged
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public bool TryPeek([NotNullWhen(true)] out RefIndexableItem<NativeRefQueue<T>, T> result)
+    public bool TryPeek(out RefIndexableItem<NativeRefQueue<T>, T> result)
     {
         if (_list.Length == 0)
         {
@@ -637,6 +670,7 @@ public static class RefIndexableExtensions
         }
     }
 }
+
 public static class RefReadOnlyIndexableExtensions
 {
     extension<TSelf, T>(TSelf self)

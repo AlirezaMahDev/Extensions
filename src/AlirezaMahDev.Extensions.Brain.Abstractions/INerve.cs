@@ -4,6 +4,7 @@ public interface INerve<TData, TLink>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
+    ConcurrentDictionary<DataOffset,Lazy<ConnectionWrapRefReadOnlyIndexable<TData,TLink>>> RefReadOnlyBlockCache { get; }
     INerveCache Cache { get; }
 
     IDataAccess Access { get; }

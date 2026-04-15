@@ -163,12 +163,7 @@ internal sealed class NerveCacheSection(string name, NerveCache cache) : INerveC
                         return result;
                     }
 
-                    if (status.NotFound)
-                    {
-                        return null;
-                    }
-
-                    throw new("Unexpected status");
+                    return status.NotFound ? null : throw new("Unexpected status");
                 }
             }
         }

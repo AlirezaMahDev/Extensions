@@ -1,7 +1,7 @@
 namespace AlirezaMahDev.Extensions.Brain.Abstractions;
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public readonly ref struct PredictValueRef<TLink>(
+public readonly struct PredictValue<TLink>(
     TLink link,
     float score = float.MaxValue,
     uint weight = uint.MaxValue)

@@ -2,21 +2,30 @@ namespace AlirezaMahDev.Extensions.Abstractions;
 
 public static class NearBinarySearchSpanExtensions
 {
-    extension<T>(Memory<T> memory)
+    extension(Range)
+    {
+        public static Range Merge(Range parent, Range child)
+        {
+            return new(parent.Start.Value + child.Start.Value, parent.Start.Value + child.End.Value);
+        }
+    }
+
+    extension<TSelf, T>(TSelf refReadOnlyBlock)
+        where TSelf : IRefReadOnlyBlock<TSelf, T>, allows ref struct
     {
         [MustDisposeResource]
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public MemoryList<Memory<T>> Near(T value,
+        public NativeRefList<Range> Near(T value,
             ScopedComparisonChain<T> comparisonChain,
             int depth)
         {
-            MemoryList<Memory<T>> result = [memory];
+            NativeRefList<Range> result = [new(0, ^0)];
             foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
-                MemoryList<Memory<T>> newResult = [];
+                NativeRefList<Range> newResult = [];
                 foreach (var item in result)
                 {
-                    item.NearCore(newResult, value, comparison.CurrentComparison, depth);
+                    refReadOnlyBlock[item].NearCore(item, newResult, value, comparison.CurrentComparison, depth);
                 }
 
                 result.Dispose();
@@ -27,20 +36,22 @@ public static class NearBinarySearchSpanExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private void NearCore(MemoryList<Memory<T>> result,
+        private void NearCore(
+            Range item,
+            NativeRefList<Range> result,
             T value,
             ScopedRefReadOnlyComparison<T> readOnlyComparison,
             int depth)
         {
-            if (memory.IsEmpty)
+            if (refReadOnlyBlock.IsEmpty)
             {
                 return;
             }
 
-            var binarySearchRange = memory.Span.AsReadOnlySpanWrap().BinarySearchRange(value, readOnlyComparison);
+            var binarySearchRange = refReadOnlyBlock.BinarySearchRange(value, readOnlyComparison);
             if (binarySearchRange.TryGetRange(out var range))
             {
-                result.Add(memory[range]);
+                result.Add(Range.Merge(item, range));
             }
 
             if (depth == 0)
@@ -62,34 +73,36 @@ public static class NearBinarySearchSpanExtensions
             }
 
 
-            if (before >= 0 && before < memory.Length)
+            if (before >= 0 && before < refReadOnlyBlock.Length)
             {
-                memory[..(before + 1)]
-                    .NearCore(result, memory.Span[before], readOnlyComparison, depth - 1);
+                Range start = ..(before + 1);
+                refReadOnlyBlock[start]
+                    .NearCore(Range.Merge(item, start), result, refReadOnlyBlock[before], readOnlyComparison, depth - 1);
             }
 
-            if (after >= 0 && after < memory.Length)
+            if (after >= 0 && after < refReadOnlyBlock.Length)
             {
-                memory[after..]
-                    .NearCore(result, memory.Span[after], readOnlyComparison, depth - 1);
+                Range start = after..;
+                refReadOnlyBlock[start]
+                    .NearCore(Range.Merge(item, start), result, refReadOnlyBlock[after], readOnlyComparison, depth - 1);
             }
         }
 
         [MustDisposeResource]
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public MemoryList<Memory<T>> Near<TBridge>(ref TBridge value,
+        public NativeRefList<Range> Near<TBridge>(ref TBridge value,
             ScopedRefReadOnlyFunc<T, TBridge> func,
             ScopedComparisonChain<TBridge> comparisonChain,
             int depth)
             where TBridge : allows ref struct
         {
-            MemoryList<Memory<T>> result = [memory];
+            NativeRefList<Range> result = [new(0, refReadOnlyBlock.Length)];
             foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
-                MemoryList<Memory<T>> newResult = [];
+                NativeRefList<Range> newResult = [];
                 foreach (var item in result)
                 {
-                    item.NearCore(newResult, ref value, func, comparison.CurrentComparison, depth);
+                    refReadOnlyBlock[item].NearCore(item, ref newResult, ref value, func, comparison.CurrentComparison, depth);
                 }
 
                 result.Dispose();
@@ -100,23 +113,24 @@ public static class NearBinarySearchSpanExtensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private void NearCore<TBridge>(MemoryList<Memory<T>> result,
+        private void NearCore<TBridge>(
+            Range item,
+            ref NativeRefList<Range> result,
             ref TBridge value,
             ScopedRefReadOnlyFunc<T, TBridge> func,
             ScopedRefReadOnlyComparison<TBridge> readOnlyComparison,
             int depth)
             where TBridge : allows ref struct
         {
-            if (memory.IsEmpty)
+            if (refReadOnlyBlock.IsEmpty)
             {
                 return;
             }
 
-            var span = memory.Span;
-            var binarySearchRange = span.AsReadOnlySpanWrap().BinarySearchRange(ref value, func, readOnlyComparison);
+            var binarySearchRange = refReadOnlyBlock.BinarySearchRange(ref value, func, readOnlyComparison);
             if (binarySearchRange.TryGetRange(out var range))
             {
-                result.Add(memory[range]);
+                result.Add(Range.Merge(item, range));
             }
 
             if (depth == 0)
@@ -138,18 +152,20 @@ public static class NearBinarySearchSpanExtensions
             }
 
 
-            if (before >= 0 && before < memory.Length)
+            if (before >= 0 && before < refReadOnlyBlock.Length)
             {
-                var bridge = func(ref span[before]);
-                memory[..(before + 1)]
-                    .NearCore(result, ref bridge, func, readOnlyComparison, depth - 1);
+                var bridge = func(in refReadOnlyBlock[before]);
+                Range start = ..(before + 1);
+                refReadOnlyBlock[start]
+                    .NearCore(Range.Merge(item, start), ref result, ref bridge, func, readOnlyComparison, depth - 1);
             }
 
-            if (after >= 0 && after < memory.Length)
+            if (after >= 0 && after < refReadOnlyBlock.Length)
             {
-                var bridge = func(ref span[after]);
-                memory[after..]
-                    .NearCore(result, ref bridge, func, readOnlyComparison, depth - 1);
+                var bridge = func(in refReadOnlyBlock[after]);
+                Range start = after..;
+                refReadOnlyBlock[start]
+                    .NearCore(Range.Merge(item, start), ref result, ref bridge, func, readOnlyComparison, depth - 1);
             }
         }
     }

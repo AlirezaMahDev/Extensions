@@ -6,9 +6,9 @@ namespace AlirezaMahDev.Extensions.Brain;
 
 internal class Nerve<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-TData,
+    TData,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-TLink> : INerve<TData, TLink>, IDisposable
+    TLink> : INerve<TData, TLink>, IDisposable
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
@@ -20,6 +20,11 @@ TLink> : INerve<TData, TLink>, IDisposable
     private readonly Connection _connection;
     private readonly CellWrap<ConnectionValue<TLink>, TData, TLink> _rootConnectionWrap;
     private readonly NerveCache _cache;
+
+    public ConcurrentDictionary<DataOffset, Lazy<ConnectionWrapRefReadOnlyIndexable<TData, TLink>>> RefReadOnlyBlockCache
+    {
+        get;
+    } = new();
 
     public IDataAccess Access
     {

@@ -1,11 +1,8 @@
 namespace AlirezaMahDev.Extensions.Abstractions;
 
-
 public interface ILockerStatus
 {
-    bool IsFree { get; }
-    int WriterId { get; }
-    uint ReaderCount { get; }
+    ReaderWriterLockerState LockerState { get; }
 }
 
 public static class LockerStatusExtensions
@@ -13,12 +10,48 @@ public static class LockerStatusExtensions
     extension<TSelf>(TSelf self)
         where TSelf : ILockerStatus
     {
+        public bool IsFree
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+            get
+            {
+                var state = self.LockerState;
+                return state.ThreadId == Environment.CurrentManagedThreadId || state is { ThreadId: 0, ReaderCount: 0, WriterCount: 0 };
+            }
+        }
+
+        public int ThreadId
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+            get
+            {
+                return self.LockerState.ThreadId;
+            }
+        }
+
+        public int WriterCount
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+            get
+            {
+                return self.LockerState.WriterCount is var writerCount && writerCount < 0 ? -writerCount : writerCount;
+            }
+        }
         public bool HasWriter
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
             get
             {
-                return self.WriterId != 0;
+                return self.WriterCount > 0;
+            }
+        }
+
+        public int ReaderCount
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+            get
+            {
+                return self.LockerState.ReaderCount;
             }
         }
 
@@ -33,41 +66,20 @@ public static class LockerStatusExtensions
     }
 }
 
+
 [StructLayout(LayoutKind.Sequential, Size = 8, Pack = 1)]
 public struct ReaderWriterLocker : ILockerStatus
 {
     private long _state;
+    private static readonly ThreadLocal<MemoryValue<int>> HasReader = new(() => new(0));
 
-    public bool IsFree
+    public ReaderWriterLockerState LockerState
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get
         {
             var lastStateLong = Volatile.Read(ref _state);
-            ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
-            return lastState.WriterId == 0 && lastState.ReaderCount == 0;
-        }
-    }
-
-    public int WriterId
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            var lastStateLong = Volatile.Read(ref _state);
-            ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
-            return lastState.WriterId;
-        }
-    }
-
-    public uint ReaderCount
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        get
-        {
-            var lastStateLong = Volatile.Read(ref _state);
-            ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
-            return lastState.ReaderCount;
+            return Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
         }
     }
 
@@ -87,14 +99,15 @@ public struct ReaderWriterLocker : ILockerStatus
 
         int retry = 0;
         SpinWait spinWait = default;
-        var start = Environment.TickCount64;
+        var startTime = Environment.TickCount64;
         do
         {
             var lastStateLong = Volatile.Read(ref _state);
             ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
             var newStateLong = lastStateLong;
             ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
-            if (lastState.WriterId != 0)
+
+            if (lastState.ThreadId != 0 && (lastState.ThreadId != Environment.CurrentManagedThreadId || lastState.WriterCount < 0))
             {
                 spinWait.SpinOnce();
                 retry++;
@@ -110,8 +123,13 @@ public struct ReaderWriterLocker : ILockerStatus
                 continue;
             }
 
+            if (lastState.ThreadId != Environment.CurrentManagedThreadId)
+            {
+                Interlocked.Increment(ref HasReader.Value.Value);
+            }
+
             return true;
-        } while (!cancellationToken.IsCancellationRequested && retry < maxRetry && (timeout < 0 || Environment.TickCount64 - start < timeout));
+        } while (!cancellationToken.IsCancellationRequested && retry < maxRetry && (timeout < 0 || Environment.TickCount64 - startTime < timeout));
         cancellationToken.ThrowIfCancellationRequested();
         return false;
     }
@@ -132,12 +150,22 @@ public struct ReaderWriterLocker : ILockerStatus
                 throw new InvalidOperationException("No read lock to release");
             }
 
+            if (lastState.WriterCount > 0 && lastState.ThreadId != Environment.CurrentManagedThreadId)
+            {
+                throw new InvalidOperationException("Cannot release read lock while another thread holds an active write lock.");
+            }
+
             newState.ReaderCount--;
 
             if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
             {
                 spinWait.SpinOnce();
                 continue;
+            }
+
+            if (lastState.ThreadId != Environment.CurrentManagedThreadId)
+            {
+                Interlocked.Decrement(ref HasReader.Value.Value);
             }
 
             return;
@@ -162,107 +190,168 @@ public struct ReaderWriterLocker : ILockerStatus
 
         int retry = 0;
         SpinWait spinWait = default;
-        var start = Environment.TickCount64;
+        long startTime = Environment.TickCount64;
         int currentManagedThreadId = Environment.CurrentManagedThreadId;
         try
         {
-            do
+            switch (TrySetCurrentThread(currentManagedThreadId, ref spinWait, startTime, timeout, ref retry, maxRetry, cancellationToken))
             {
-                var lastStateLong = Volatile.Read(ref _state);
-                ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
-                var newStateLong = lastStateLong;
-                ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
-
-                if (lastState.WriterId != 0)
-                {
-                    spinWait.SpinOnce();
-                    retry++;
-                    continue;
-                }
-
-                newState.WriterId = currentManagedThreadId;
-
-                if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
-                {
-                    spinWait.SpinOnce();
-                    retry++;
-                    continue;
-                }
-
-                break;
-            } while (!cancellationToken.IsCancellationRequested && retry < maxRetry && (timeout < 0 || Environment.TickCount64 - start < timeout));
-
-            cancellationToken.ThrowIfCancellationRequested();
-            if (timeout >= 0 && Environment.TickCount64 - start > timeout)
-            {
-                while (true)
-                {
-                    var lastStateLong = Volatile.Read(ref _state);
-                    ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
-                    var newStateLong = lastStateLong;
-                    ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
-
-                    if (lastState.WriterId != currentManagedThreadId)
+                case true:
+                    if (TryWaitExitAllReaderAndSetWriterOne(ref spinWait, startTime, timeout, ref retry, maxRetry, cancellationToken))
                     {
+                        return true;
+                    }
+                    else
+                    {
+                        ResetThreadId(currentManagedThreadId, ref spinWait);
                         return false;
                     }
-
-                    newState.WriterId = 0;
-
-                    if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
-                    {
-                        spinWait.SpinOnce();
-                        continue;
-                    }
-                    break;
-                }
-                return false;
+                case null:
+                    return TryIncreaseWriterCount(ref spinWait, startTime, timeout, ref retry, maxRetry, cancellationToken);
+                case false:
+                    return false;
             }
-
-            do
-            {
-
-                var lastStateLong = Volatile.Read(ref _state);
-                ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
-                var newStateLong = lastStateLong;
-                ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
-
-                if (lastState.ReaderCount == 0)
-                {
-                    return true;
-                }
-
-                spinWait.SpinOnce();
-                retry++;
-            } while (!cancellationToken.IsCancellationRequested && retry < maxRetry && (timeout < 0 || Environment.TickCount64 - start < timeout));
-
-            cancellationToken.ThrowIfCancellationRequested();
-            return false;
         }
         catch
         {
-            while (true)
+            ResetThreadId(currentManagedThreadId, ref spinWait);
+            throw;
+        }
+    }
+
+    private bool TryIncreaseWriterCount(ref SpinWait spinWait, long startTime, long timeout, ref int retry, int maxRetry, CancellationToken cancellationToken = default)
+    {
+        do
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var lastStateLong = Volatile.Read(ref _state);
+            ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
+            var newStateLong = lastStateLong;
+            ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
+
+            newState.WriterCount++;
+
+            if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
             {
-                var lastStateLong = Volatile.Read(ref _state);
-                ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
-                var newStateLong = lastStateLong;
-                ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
+                spinWait.SpinOnce();
+                retry++;
+                continue;
+            }
 
-                if (lastState.WriterId != currentManagedThreadId)
-                {
-                    return false;
-                }
+            return true;
+        } while (retry < maxRetry && (timeout < 0 || Environment.TickCount64 - startTime < timeout));
+        return false;
+    }
 
-                newState.WriterId = 0;
+    private bool? TrySetCurrentThread(int currentManagedThreadId, ref SpinWait spinWait, long startTime, long timeout, ref int retry, int maxRetry, CancellationToken cancellationToken = default)
+    {
+        do
+        {
+            cancellationToken.ThrowIfCancellationRequested();
 
-                if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
+            var lastStateLong = Volatile.Read(ref _state);
+            ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
+            var newStateLong = lastStateLong;
+            ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
+
+            if (Volatile.Read(ref HasReader.Value.Value) != 0)
+            {
+                throw new InvalidOperationException("Cannot enter write lock because the current thread already holds a read lock (Upgrade is not supported). Release read lock first.");
+            }
+
+            if (lastState.ThreadId == currentManagedThreadId)
+            {
+                if (lastState.WriterCount < 0)
                 {
                     spinWait.SpinOnce();
+                    retry++;
                     continue;
                 }
+                else
+                {
+                    return null;
+                }
+            }
+
+            if (lastState.ThreadId != 0)
+            {
+                spinWait.SpinOnce();
+                retry++;
+                continue;
+            }
+
+            newState.ThreadId = currentManagedThreadId;
+            newState.WriterCount = -1;
+
+            if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
+            {
+                spinWait.SpinOnce();
+                retry++;
+                continue;
+            }
+
+            return true;
+        } while (retry < maxRetry && (timeout < 0 || Environment.TickCount64 - startTime < timeout));
+        return false;
+    }
+
+    private bool TryWaitExitAllReaderAndSetWriterOne(ref SpinWait spinWait, long startTime, long timeout, ref int retry, int maxRetry, CancellationToken cancellationToken = default)
+    {
+        do
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var lastStateLong = Volatile.Read(ref _state);
+            ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
+            var newStateLong = lastStateLong;
+            ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
+
+            if (lastState.ReaderCount != 0)
+            {
+                spinWait.SpinOnce();
+                retry++;
+                continue;
+            }
+
+            newState.WriterCount = 1;
+
+            if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
+            {
+                spinWait.SpinOnce();
+                retry++;
+                continue;
+            }
+
+            return true;
+        } while (retry < maxRetry && (timeout < 0 || Environment.TickCount64 - startTime < timeout));
+        return false;
+    }
+
+    private void ResetThreadId(int currentManagedThreadId, ref SpinWait spinWait)
+    {
+        while (true)
+        {
+            var lastStateLong = Volatile.Read(ref _state);
+            ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
+            var newStateLong = lastStateLong;
+            ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
+
+            if (lastState.ThreadId != currentManagedThreadId)
+            {
                 break;
             }
-            throw;
+
+            newState.ThreadId = 0;
+            newState.WriterCount = 0;
+
+            if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
+            {
+                spinWait.SpinOnce();
+                continue;
+            }
+
+            break;
         }
     }
 
@@ -276,17 +365,27 @@ public struct ReaderWriterLocker : ILockerStatus
             ref var lastState = ref Unsafe.As<long, ReaderWriterLockerState>(ref lastStateLong);
             var newStateLong = lastStateLong;
             ref var newState = ref Unsafe.As<long, ReaderWriterLockerState>(ref newStateLong);
-            if (lastState.ReaderCount != 0)
+
+            if (lastState.WriterCount == 0 || lastState.ThreadId == 0)
             {
-                throw new("you are not in write lock");
+                throw new InvalidOperationException("you are not in write lock");
             }
 
-            if (lastState.WriterId != Environment.CurrentManagedThreadId)
+            if (lastState.ThreadId != Environment.CurrentManagedThreadId)
             {
-                throw new("you are not in write lock on this thread");
+                throw new InvalidOperationException("you are not in write lock on this thread");
             }
 
-            newState.WriterId = 0;
+            if (lastState.WriterCount == 1 && lastState.ReaderCount > 0)
+            {
+                throw new InvalidOperationException("Cannot exit write lock while holding a nested read lock. Release read lock first.");
+            }
+
+            newState.WriterCount--;
+            if (newState.WriterCount == 0)
+            {
+                newState.ThreadId = 0;
+            }
 
             if (Interlocked.CompareExchange(ref _state, newStateLong, lastStateLong) != lastStateLong)
             {
@@ -305,8 +404,9 @@ public struct ReaderWriterLocker : ILockerStatus
 [StructLayout(LayoutKind.Sequential, Size = 8, Pack = 1)]
 public struct ReaderWriterLockerState
 {
-    public int WriterId;
-    public uint ReaderCount;
+    public int ThreadId;
+    public short WriterCount;
+    public ushort ReaderCount;
 }
 
 public static class ReaderWriterLockerExtensions

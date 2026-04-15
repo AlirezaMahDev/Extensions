@@ -4,9 +4,9 @@ public static class NerveHelper<TData, TLink>
     where TData : unmanaged, ICellData<TData>
     where TLink : unmanaged, ICellLink<TLink>
 {
-    public static ScopedComparisonChain<ThinkValueRef<TData, TLink>> SleepComparisons { get; }
+    public static ScopedComparisonChain<ThinkValue<TData, TLink>> SleepComparisons { get; }
     public static ScopedComparisonChain<Think<TData, TLink>> ThinkComparisons { get; }
-    public static ScopedComparisonChain<PredictValueRef<TLink>> NearNextComparisons { get; }
+    public static ScopedComparisonChain<PredictValue<TLink>> NearNextComparisons { get; }
 
     static NerveHelper()
     {
@@ -28,7 +28,7 @@ public static class NerveHelper<TData, TLink>
                 .UnWrap;
     }
 
-    private static ComparisonWrap<ScopedComparisonChain<ThinkValueRef<TData, TLink>>, ThinkValueRef<TData, TLink>>
+    private static ComparisonWrap<ScopedComparisonChain<ThinkValue<TData, TLink>>, ThinkValue<TData, TLink>>
         SleepComparisonWrap()
     {
         using var dataSleepComparisonEnumerator =
@@ -37,7 +37,7 @@ public static class NerveHelper<TData, TLink>
         var currentDataSleepReadOnlyComparisonEnumerator =
             dataSleepComparisonEnumerator.Current.CurrentComparison;
         var comparisonWrap =
-            ScopedComparisonChain<ThinkValueRef<TData, TLink>>.ChainOrder((scoped ref readonly a, scoped ref readonly b) =>
+            ScopedComparisonChain<ThinkValue<TData, TLink>>.ChainOrder((scoped ref readonly a, scoped ref readonly b) =>
                 currentDataSleepReadOnlyComparisonEnumerator(in a.Data, in b.Data));
         while (dataSleepComparisonEnumerator.MoveNext())
         {
@@ -59,7 +59,7 @@ public static class NerveHelper<TData, TLink>
         return comparisonWrap;
     }
 
-    private static ComparisonWrap<ScopedComparisonChain<PredictValueRef<TLink>>, PredictValueRef<TLink>>
+    private static ComparisonWrap<ScopedComparisonChain<PredictValue<TLink>>, PredictValue<TLink>>
         NearNextComparisonWrap()
     {
         using var comparisonEnumerator =
@@ -68,7 +68,7 @@ public static class NerveHelper<TData, TLink>
         var currentReadOnlyComparisonEnumerator =
             comparisonEnumerator.Current.CurrentComparison;
         var comparisonWrap =
-            ScopedComparisonChain<PredictValueRef<TLink>>.ChainOrder((scoped ref readonly a, scoped ref readonly b) =>
+            ScopedComparisonChain<PredictValue<TLink>>.ChainOrder((scoped ref readonly a, scoped ref readonly b) =>
                 currentReadOnlyComparisonEnumerator(in a.Link, in b.Link));
         while (comparisonEnumerator.MoveNext())
         {

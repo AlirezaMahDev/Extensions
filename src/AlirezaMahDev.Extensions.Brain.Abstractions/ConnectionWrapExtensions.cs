@@ -129,20 +129,35 @@ public static class ConnectionWrapExtensions
         where TLink : unmanaged, ICellLink<TLink>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        public MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>>? GetConnectionsWrapMemory()
+        [MustDisposeResource]
+        public MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>> GetConnectionsWrapMemory()
         {
             int length = wrap.Location.ReadLock((scoped ref readonly x) => x.Count);
             if (length == 0)
             {
-                return null;
+                return [];
             }
+
             var result = MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>>.Create(length);
             int index = 0;
             foreach (var item in wrap.GetConnectionsWrap())
             {
                 result[index++] = item;
             }
+
             return result;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        public ConnectionWrapRefReadOnlyIndexable<TData, TLink> GetConnectionWrapRefReadOnlyIndexable()
+        {
+            return wrap.Nerve.RefReadOnlyBlockCache.GetOrAdd(wrap.Location.Offset,
+                    static (_, arg) =>
+                        new(() =>
+                                new(arg),
+                            LazyThreadSafetyMode.ExecutionAndPublication),
+                    wrap)
+                .Value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

@@ -52,7 +52,9 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
             in connectionWrapNeuronWrap.RefReadOnlyValue.Data);
         if (Count > 2)
         {
-            LinkDifference = TLink.ThinkDifference(ref previous.LinkDifference, in link.Value, in connectionValue.RefReadOnlyValue.Link);
+            LinkDifference = TLink.ThinkDifference(ref previous.LinkDifference,
+                in link.Value,
+                in connectionValue.RefReadOnlyValue.Link);
         }
 
         ScoreSum = previous.ScoreSum + connectionValue.RefReadOnlyValue.Score;
@@ -75,12 +77,19 @@ public sealed class Think<TData, TLink> : IEnumerable<Think<TData, TLink>>
 
     [MustDisposeResource]
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public MemoryList<Memory<CellWrap<ConnectionValue<TLink>, TData, TLink>>>? GetNextConnectionWrap(
-        PredictValueRef<TLink> link,
+    public MemoryList<Memory<CellWrap<ConnectionValue<TLink>, TData, TLink>>> GetNextConnectionWrap(
+        PredictValue<TLink> link,
         int depth)
     {
-        using var connectionsWrapRefReadOnlyIndexable = ConnectionWrap.GetConnectionsWrapMemory();
-        return connectionsWrapRefReadOnlyIndexable?.NearConnection(ref link, depth);
+        var connectionsWrapRefReadOnlyIndexable = ConnectionWrap.GetConnectionWrapRefReadOnlyIndexable();
+        using var result = connectionsWrapRefReadOnlyIndexable.NearConnection(ref link, depth);
+        MemoryList<Memory<CellWrap<ConnectionValue<TLink>, TData, TLink>>> memoryList = new(result.Length);
+        foreach (var range in result)
+        {
+            memoryList.Add(connectionsWrapRefReadOnlyIndexable.Memory[range]);
+        }
+
+        return memoryList;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
