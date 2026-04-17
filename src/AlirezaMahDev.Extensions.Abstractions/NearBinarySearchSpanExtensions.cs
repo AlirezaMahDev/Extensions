@@ -19,13 +19,14 @@ public static class NearBinarySearchSpanExtensions
             ScopedComparisonChain<T> comparisonChain,
             int depth)
         {
-            NativeRefList<Range> result = [new(0, ^0)];
+            NativeRefList<Range> result = [new(0, refReadOnlyBlock.Length)];
             foreach (var comparison in comparisonChain.Wrap().GetComparisonChains())
             {
                 NativeRefList<Range> newResult = [];
                 foreach (var item in result)
                 {
-                    refReadOnlyBlock[item].NearCore(item, newResult, value, comparison.CurrentComparison, depth);
+                    refReadOnlyBlock[item]
+                        .NearCore(item, ref newResult, value, comparison.CurrentComparison, depth);
                 }
 
                 result.Dispose();
@@ -38,7 +39,7 @@ public static class NearBinarySearchSpanExtensions
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         private void NearCore(
             Range item,
-            NativeRefList<Range> result,
+            ref NativeRefList<Range> result,
             T value,
             ScopedRefReadOnlyComparison<T> readOnlyComparison,
             int depth)
@@ -77,14 +78,22 @@ public static class NearBinarySearchSpanExtensions
             {
                 Range start = ..(before + 1);
                 refReadOnlyBlock[start]
-                    .NearCore(Range.Merge(item, start), result, refReadOnlyBlock[before], readOnlyComparison, depth - 1);
+                    .NearCore(Range.Merge(item, start),
+                        ref result,
+                        refReadOnlyBlock[before],
+                        readOnlyComparison,
+                        depth - 1);
             }
 
             if (after >= 0 && after < refReadOnlyBlock.Length)
             {
                 Range start = after..;
                 refReadOnlyBlock[start]
-                    .NearCore(Range.Merge(item, start), result, refReadOnlyBlock[after], readOnlyComparison, depth - 1);
+                    .NearCore(Range.Merge(item, start),
+                        ref result,
+                        refReadOnlyBlock[after],
+                        readOnlyComparison,
+                        depth - 1);
             }
         }
 
@@ -102,7 +111,8 @@ public static class NearBinarySearchSpanExtensions
                 NativeRefList<Range> newResult = [];
                 foreach (var item in result)
                 {
-                    refReadOnlyBlock[item].NearCore(item, ref newResult, ref value, func, comparison.CurrentComparison, depth);
+                    refReadOnlyBlock[item]
+                        .NearCore(item, ref newResult, ref value, func, comparison.CurrentComparison, depth);
                 }
 
                 result.Dispose();

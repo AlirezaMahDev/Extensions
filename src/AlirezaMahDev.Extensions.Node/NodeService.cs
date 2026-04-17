@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Channels;
 
 namespace AlirezaMahDev.Extensions.Node;
@@ -9,9 +10,13 @@ public abstract class NodeService
     public Channel<NodeTaskRequest> Channel { get; } =
         System.Threading.Channels.Channel.CreateUnbounded<NodeTaskRequest>();
 
-    public virtual ValueTask<JsonElement?> InitializeAsync(CancellationToken cancellationToken = default)
+    public virtual ValueTask<JsonObject> InitializeAsync(CancellationToken cancellationToken = default)
     {
-        return ValueTask.FromResult<JsonElement?>(null);
+        var jsonObject = new JsonObject
+        {
+            { "path", Environment.CurrentDirectory }
+        };
+        return ValueTask.FromResult(jsonObject);
     }
 
     public virtual async Task InvokeVoidAsync(string name, CancellationToken cancellationToken = default)
@@ -62,10 +67,23 @@ public abstract class NodeService
 
 public abstract class NodeService<TConfig> : NodeService
 {
-    public override async ValueTask<JsonElement?> InitializeAsync(CancellationToken cancellationToken = default)
+    public override async ValueTask<JsonObject> InitializeAsync(CancellationToken cancellationToken = default)
     {
-        return JsonSerializer.SerializeToElement(await InitializeConfigAsync(cancellationToken),
-            NodeDefaults.JsonSerializerOptions);
+        var jsonObject = await base.InitializeAsync(cancellationToken);
+        var config = await InitializeConfigAsync(cancellationToken);
+        if (config is not null)
+        {
+            var configNode = JsonSerializer.SerializeToNode(config, NodeDefaults.JsonSerializerOptions);
+            if (configNode is JsonObject configJsonObject)
+            {
+                foreach (var item in configJsonObject)
+                {
+                    jsonObject.Add(item.Key, item.Value);
+                }
+            }
+        }
+
+        return jsonObject;
     }
 
     public virtual ValueTask<TConfig?> InitializeConfigAsync(CancellationToken cancellationToken = default)

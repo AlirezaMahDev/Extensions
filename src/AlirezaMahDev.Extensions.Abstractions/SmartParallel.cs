@@ -143,6 +143,28 @@ public static class SmartParallel
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static async ValueTask ForEachAsync<T>(Channel<T> values,
+        CancellationToken cancellationToken,
+        Func<T, CancellationToken, ValueTask> body)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return;
+        }
+
+        await InvokeAsyncCore(Environment.ProcessorCount,
+            (values, body),
+            static async (_, state, token) =>
+            {
+                await foreach (var value in state.values.Reader.ReadAllAsync(token))
+                {
+                    await state.body(value, token);
+                }
+            },
+            cancellationToken);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static async ValueTask ForEachAsync<T>(IAsyncEnumerable<T> values,
         CancellationToken cancellationToken,
         Func<T, CancellationToken, ValueTask> body)
@@ -274,7 +296,7 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
@@ -287,7 +309,7 @@ public static class SmartParallel
         InvokeCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
@@ -300,7 +322,7 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Count,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
@@ -313,7 +335,7 @@ public static class SmartParallel
         InvokeCore(values.Count,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
@@ -326,7 +348,7 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values.Span[index], token),
             cancellationToken);
     }
@@ -339,7 +361,7 @@ public static class SmartParallel
         InvokeCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values.Span[index], token),
             cancellationToken);
     }
@@ -352,7 +374,7 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values.Span[index], token),
             cancellationToken);
     }
@@ -365,7 +387,7 @@ public static class SmartParallel
         InvokeCore(values.Length,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values.Span[index], token),
             cancellationToken);
     }
@@ -378,7 +400,7 @@ public static class SmartParallel
         return InvokeAsyncCore(values.Count,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
@@ -391,7 +413,7 @@ public static class SmartParallel
         InvokeCore(values.Count,
             (values, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.values[index], token),
             cancellationToken);
     }
@@ -405,7 +427,7 @@ public static class SmartParallel
         return InvokeAsyncCore(Math.Max(0, toExclusive - fromInclusive),
             (fromInclusive, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.fromInclusive + index, token),
             cancellationToken);
     }
@@ -419,7 +441,7 @@ public static class SmartParallel
         InvokeCore(Math.Max(0, toExclusive - fromInclusive),
             (fromInclusive, body),
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state.body(state.fromInclusive + index, token),
             cancellationToken);
     }
@@ -431,7 +453,7 @@ public static class SmartParallel
         return InvokeAsyncCore(actions.Length,
             actions,
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state[index](token),
             cancellationToken);
     }
@@ -443,7 +465,7 @@ public static class SmartParallel
         InvokeCore(actions.Length,
             actions,
             [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-            static (index, state, token) =>
+        static (index, state, token) =>
                 state[index](token),
             cancellationToken);
     }

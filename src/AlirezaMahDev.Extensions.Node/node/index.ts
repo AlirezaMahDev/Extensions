@@ -7,14 +7,14 @@ type NodeTaskResponse<TOutput = any> = { id: string, name: string, success: bool
 
 export class DotnetWorkerBuilder<TConfig = any, TAppSettings = any> {
     public readonly map: Map<string, NodeTaskFunc> = new Map()
-    public readonly config: TConfig | undefined;
+    public readonly config: TConfig;
     public readonly appsettings: TAppSettings;
 
     private constructor() {
-        const args = process.argv.splice(2).join(' ');
-        this.config = args?.trim().length > 0 ? JSON.parse(args) : undefined;
+        const args = process.env["Config"]!;
+        this.config = JSON.parse(args);
         this.map.set("check", input => input);
-        this.appsettings = JSON.parse(fs.readFileSync(`${__dirname}/appsettings.json`).toString());
+        this.appsettings = JSON.parse(fs.readFileSync(`${(this.config as any).path}/appsettings.json`).toString());
     }
 
     public static create<TConfig = any, TAppSettings = any>(): DotnetWorkerBuilder<TConfig, TAppSettings> {

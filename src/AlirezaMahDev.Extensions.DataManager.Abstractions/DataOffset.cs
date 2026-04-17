@@ -2,7 +2,7 @@ using System.Runtime.Intrinsics;
 
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
-[StructLayout(LayoutKind.Sequential)]
+[StructLayout(LayoutKind.Sequential, Size = 16, Pack = 1)]
 [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
 public readonly struct DataOffset(int fileId, int partIndex, int offset, int length)
     : IScopedRefReadOnlyEquatable<DataOffset>, IScopedInEqualityOperators<DataOffset, DataOffset, bool>

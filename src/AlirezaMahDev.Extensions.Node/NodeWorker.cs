@@ -49,9 +49,10 @@ internal partial class NodeWorker<TNodeService, TNodeServiceOptions>(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var config = (await _nodeService.InitializeAsync(stoppingToken).ConfigureAwait(false))?.ToString();
+        var jsonObject = await _nodeService.InitializeAsync(stoppingToken).ConfigureAwait(false);
+        var args = jsonObject.ToJsonString(NodeDefaults.JsonSerializerOptions);
         var workingDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        _process.StartInfo = new("node", $"{_options.Assembly.GetName().Name}.js {config}")
+        _process.StartInfo = new("bun", $"{_options.Assembly.GetName().Name}.js")
         {
             WorkingDirectory = workingDirectory,
             RedirectStandardInput = true,
@@ -61,11 +62,14 @@ internal partial class NodeWorker<TNodeService, TNodeServiceOptions>(
             StandardOutputEncoding = Encoding.UTF8,
             StandardErrorEncoding = Encoding.UTF8,
             CreateNoWindow = false,
-            UseShellExecute = false
+            UseShellExecute = false,
+            Environment =
+            {
+                {"Config", args}
+            }
         };
 
-        LogInformation($"start process {_name}: {workingDirectory} {_process.StartInfo.FileName} {
-            _process.StartInfo.Arguments}");
+        LogInformation($"start process {_name}: {workingDirectory} {_process.StartInfo.FileName} {_process.StartInfo.Arguments}");
 
         await Task.Yield();
 

@@ -11,7 +11,7 @@
 
     <Exec ConsoleToMsBuild="true"
           IgnoreExitCode="false"
-          Command="npx esbuild &quot;$(NodeInput)&quot; --outfile=&quot;$(NodeOutput)&quot; --format=cjs --platform=node --target=esnext --bundle"/>
+          Command="bun build &quot;$(NodeInput)&quot; --outfile=&quot;$(NodeOutput)&quot; --format=cjs --target=bun --bundle"/>
 
     <ItemGroup>
       <Content Include="$(NodeOutput)">

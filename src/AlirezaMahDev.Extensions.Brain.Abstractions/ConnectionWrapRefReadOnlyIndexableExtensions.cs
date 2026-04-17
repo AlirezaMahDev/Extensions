@@ -13,13 +13,14 @@ public static class ConnectionWrapRefReadOnlyIndexableExtensions
             int depth)
         {
             return readOnlyIndexable
-                .AsRefReadOnlyBlock<ConnectionWrapRefReadOnlyIndexable<TData, TLink>,
-                    CellWrap<ConnectionValue<TLink>, TData, TLink>>()
-                .Near<RefReadOnlyBlock<ConnectionWrapRefReadOnlyIndexable<TData, TLink>,
-                        CellWrap<ConnectionValue<TLink>, TData, TLink>>, CellWrap<ConnectionValue<TLink>, TData, TLink>,
-                    ThinkValue<TData, TLink>>(ref pair,
-                    static (scoped ref readonly x) =>
-                        x.Location.UnsafeAccessRefReadOnly((scoped ref readonly connectionValue) =>
+                .AsRefReadOnlyBlock<ConnectionWrapRefReadOnlyIndexable<TData, TLink>, DataOffset>()
+                .Near<RefReadOnlyBlock<ConnectionWrapRefReadOnlyIndexable<TData, TLink>, DataOffset>, DataOffset, ThinkValue<TData, TLink>>(ref pair, (scoped ref readonly x) =>
+                    {
+                        DataLocation<ConnectionValue<TLink>>.Read(readOnlyIndexable.Nerve.Access, x, out var location);
+                        var cellWrap = new CellWrap<ConnectionValue<TLink>, TData, TLink>(
+                            readOnlyIndexable.Nerve, location);
+                        return cellWrap.Location.UnsafeAccessRefReadOnly(
+                        (scoped ref readonly connectionValue) =>
                             new ThinkValue<TData, TLink>(
                                 default,
                                 connectionValue.Link,
@@ -27,8 +28,9 @@ public static class ConnectionWrapRefReadOnlyIndexableExtensions
                                 connectionValue.Weight
                             )) with
                         {
-                            Data = x.NeuronWrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Data)
-                        },
+                            Data = cellWrap.NeuronWrap.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) => value.Data)
+                        };
+                    },
                     NerveHelper<TData, TLink>.SleepComparisons,
                     depth);
         }
@@ -44,12 +46,7 @@ public static class ConnectionWrapRefReadOnlyIndexableExtensions
                 return NativeRefList<Range>.Create();
             }
 
-            using var memoryList = MemoryList<CellWrap<ConnectionValue<TLink>, TData, TLink>>
-                .Create(readOnlyIndexable.Length);
-            foreach (var item in readOnlyIndexable)
-            {
-                memoryList.Add(item);
-            }
+            using var memoryList = readOnlyIndexable.GetCellWraps(0, readOnlyIndexable.Length);
             memoryList.Memory.Span.Sort((scoped ref readonly x) =>
                         x.Location.UnsafeAccessRefReadOnly((scoped ref readonly value) =>
                             new PredictValue<TLink>(value.Link, value.Score, value.Weight)),

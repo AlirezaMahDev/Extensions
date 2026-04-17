@@ -50,10 +50,10 @@ public static class NerveHelper<TData, TLink>
             TLink.SleepComparison().GetComparisonChains().GetEnumerator();
         while (linkSleepComparisonEnumerator.MoveNext())
         {
-            var currenLinkSleepReadOnlyComparisonEnumerator =
+            var currentLinkSleepReadOnlyComparisonEnumerator =
                 linkSleepComparisonEnumerator.Current.CurrentComparison;
             comparisonWrap.ChainOrder((scoped ref readonly a, scoped ref readonly b) =>
-                currenLinkSleepReadOnlyComparisonEnumerator(in a.Link, in b.Link));
+                currentLinkSleepReadOnlyComparisonEnumerator(in a.Link, in b.Link));
         }
 
         return comparisonWrap;
@@ -90,18 +90,18 @@ public static class NerveHelper<TData, TLink>
             dataComparisonEnumerator.Current.CurrentComparison;
         var comparisonWrap =
             ScopedComparisonChain<Think<TData, TLink>>.ChainOrder((scoped ref readonly a, scoped ref readonly b) =>
-                currentDataReadOnlyComparisonEnumerator(ref a.DataDifference, ref b.DataDifference));
+                currentDataReadOnlyComparisonEnumerator(in a.DataDifference, in b.DataDifference));
         while (dataComparisonEnumerator.MoveNext())
         {
             currentDataReadOnlyComparisonEnumerator = dataComparisonEnumerator.Current.CurrentComparison;
             comparisonWrap.ChainOrder((scoped ref readonly a, scoped ref readonly b) =>
-                currentDataReadOnlyComparisonEnumerator(ref a.DataDifference, ref b.DataDifference));
+                currentDataReadOnlyComparisonEnumerator(in a.DataDifference, in b.DataDifference));
         }
 
         foreach (var comparisonChain in TLink.ThinkComparison().GetComparisonChains())
         {
             comparisonWrap.ChainOrder((scoped ref readonly a, scoped ref readonly b) =>
-                comparisonChain.CurrentComparison(ref a.LinkDifference, ref b.LinkDifference));
+                comparisonChain.CurrentComparison(in a.LinkDifference, in b.LinkDifference));
         }
 
         return comparisonWrap;

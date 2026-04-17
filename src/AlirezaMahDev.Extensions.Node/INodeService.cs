@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading.Channels;
 
 namespace AlirezaMahDev.Extensions.Node;
@@ -7,7 +8,7 @@ public interface INodeService
 {
     Channel<NodeTaskRequest> Channel { get; }
 
-    ValueTask<JsonElement?> InitializeAsync(CancellationToken cancellationToken = default);
+    ValueTask<JsonObject> InitializeAsync(CancellationToken cancellationToken = default);
 
     Task InvokeVoidAsync(string name, CancellationToken cancellationToken = default);
 

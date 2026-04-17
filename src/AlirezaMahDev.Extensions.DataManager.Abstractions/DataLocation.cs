@@ -1,6 +1,7 @@
 namespace AlirezaMahDev.Extensions.DataManager.Abstractions;
 
 [method: MethodImpl(MethodImplOptions.AggressiveInlining)]
+[StructLayout(LayoutKind.Sequential, Size = 32, Pack = 1)]
 public readonly struct DataLocation<TValue>(DataOffset offset, IDataAccess access, IDataAlive alive)
     : IScopedRefReadOnlyEquatable<DataLocation<TValue>>
     where TValue : unmanaged, IDataValue<TValue>

@@ -17,7 +17,7 @@ internal sealed class NerveCache : INerveCache, IDisposable
     private readonly ConcurrentDictionary<string, NerveCacheSection> _cache = [];
     private readonly IDevice _logDevice;
 
-    private FasterKV<NerveCacheIdKey, DataOffset> Kv
+    private Lazy<FasterKV<NerveCacheIdKey, DataOffset>> Kv
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
         get;
@@ -33,23 +33,24 @@ internal sealed class NerveCache : INerveCache, IDisposable
     internal NerveCache(string path)
     {
         _logDevice = Devices.CreateLogDevice(Path.Combine(path, "cache", "device.log"));
-        Kv = new(size: 1L << IndexBits,
-            logSettings: new()
-            {
-                LogDevice = _logDevice,
-                ObjectLogDevice = new NullDevice(),
-                MemorySizeBits = LogBits,
-                PageSizeBits = PageBits,
-                SegmentSizeBits = SegmentBits,
-                ReadCacheSettings = new()
+        Kv = new Lazy<FasterKV<NerveCacheIdKey, DataOffset>>(() => new(size: 1L << IndexBits,
+                logSettings: new()
                 {
-                    MemorySizeBits = ReadCacheBits,
+                    LogDevice = _logDevice,
+                    ObjectLogDevice = new NullDevice(),
+                    MemorySizeBits = LogBits,
                     PageSizeBits = PageBits,
-                }
-            },
-            comparer: new NerveCacheIdKeyComparer());
+                    SegmentSizeBits = SegmentBits,
+                    ReadCacheSettings = new()
+                    {
+                        MemorySizeBits = ReadCacheBits,
+                        PageSizeBits = PageBits,
+                    }
+                },
+                comparer: new NerveCacheIdKeyComparer()),
+            LazyThreadSafetyMode.ExecutionAndPublication);
         Session = new(
-            () => Kv.For(new SimpleFunctions<NerveCacheIdKey, DataOffset, Empty>())
+            () => Kv.Value.For(new SimpleFunctions<NerveCacheIdKey, DataOffset, Empty>())
                 .NewSession<SimpleFunctions<NerveCacheIdKey, DataOffset, Empty>>(),
             trackAllValues: true
         );
@@ -63,7 +64,8 @@ internal sealed class NerveCache : INerveCache, IDisposable
             session.CompletePending(true);
         }
 
-        Kv.Log.FlushAndEvict(wait: true);
+        if (Kv.IsValueCreated)
+            Kv.Value.Log.FlushAndEvict(wait: true);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -77,7 +79,8 @@ internal sealed class NerveCache : INerveCache, IDisposable
             }
         }
 
-        Kv.Dispose();
+        if (Kv.IsValueCreated)
+            Kv.Value.Dispose();
         _logDevice.Dispose();
     }
 
